@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>재무 MBTI 진단 - 잼플 (Jample)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --primary: #FF8A3D;
+      --primary-dark: #E67220;
+      --brown: #8B5A2B;
+      --cream: #FFF8E8;
+      --border-color: #EFE6D8;
+    }
+    body {
+      background-color: #E2E8F0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+    .app-frame {
+      width: 100%;
+      max-width: 400px;
+      height: 840px;
+      background-color: #FFFFFF;
+      border-radius: 36px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .option-card {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .option-card:hover {
+      transform: translateY(-2px);
+    }
+    .center-bar-transition {
+      transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .floating-anim {
+      animation: floating 3s ease-in-out infinite;
+    }
+    @keyframes floating {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    .jample-mini-icon {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .nav-bar { 
+      background: #FFF; 
+      border-top: 1px solid var(--border-color); 
+      display: flex; 
+      justify-content: space-around; 
+      padding: 8px 0 10px 0;
+      flex-shrink: 0;
+    }
+    .nav-item { 
+      border: none; 
+      background: none; 
+      flex: 1; 
+      cursor: pointer; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 4px; 
+    }
+    .nav-icon { 
+      width: 28px; 
+      height: 28px; 
+      object-fit: contain; 
+    }
+    .nav-label { 
+      font-size: 11px; 
+      color: #9E9E9E; 
+      font-weight: 600; 
+    }
+    .nav-item.active .nav-label { 
+      color: var(--primary); 
+      font-weight: bold; 
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-frame">
+    
+    <div class="content-area">
+      <!-- 상단 헤더 -->
+      <header class="flex justify-between items-center mb-3 border-b border-[#EFE6D8] pb-3 flex-shrink-0">
+        <div class="flex items-center">
+          <img src="logo.png" class="h-6 object-contain" alt="Jample">
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-[#8B5A2B] bg-[#FFF8E8] px-2.5 py-1 rounded-full border border-[#F5E5C9]">
+            재무 MBTI
+          </span>
+          <div id="badge-progress" class="hidden text-xs font-extrabold text-[#E67220] bg-[#FFF8E8] border border-[#F5E5C9] px-2.5 py-1 rounded-full">
+            <span id="current-q-num">1</span> / <span id="total-q-num">8</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- SCREEN 1: 시작 화면 -->
+      <div id="screen-start" class="flex-1 flex flex-col items-center justify-center text-center py-2">
+        <div class="w-20 h-20 rounded-full bg-[#FFF8E8] border-2 border-[#FF8A3D] flex items-center justify-center mb-3 shadow-sm floating-anim p-2">
+          <img src="RING2.png" class="w-16 h-16 object-contain" alt="배움 재무링" onerror="this.src='RING1.png'">
+        </div>
+
+        <span class="inline-block text-[11px] font-extrabold text-[#E67220] bg-[#FFF8E8] border border-[#F5E5C9] px-3 py-0.5 rounded-full mb-1.5">
+          3분 맞춤 성향 진단
+        </span>
+        <h2 class="text-xl font-black text-slate-800 leading-snug mb-1">
+          내 안에 숨은 진짜<br><span class="text-[#FF8A3D]">재무 캐릭터는?</span>
+        </h2>
+        <p class="text-slate-500 text-xs mb-4">
+          돈 모으는 습관부터 부채 감각까지 진단하고<br>나에게 꼭 맞는 <b>현금흐름 처방전</b>을 확인해보세요!
+        </p>
+
+        <div class="w-full bg-[#FDFBF7] p-3.5 rounded-2xl border border-[#EFE6D8] text-left space-y-2.5 mb-4">
+          <div>
+            <label class="block text-xs font-bold text-[#8B5A2B] mb-1">1. 연령대</label>
+            <select id="user-age" class="w-full p-2 rounded-xl border border-slate-300 text-xs font-medium bg-white outline-none">
+              <option value="20대">20대 (사회초년생/청년)</option>
+              <option value="30대" selected>30대 (본격적인 자산형성기)</option>
+              <option value="40대">40대 (자산확장 및 지출정점기)</option>
+              <option value="50대">50대 (은퇴준비 및 성숙기)</option>
+              <option value="60대 이상">60대 이상 (자산보존기)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#8B5A2B] mb-1">2. 주거 형태</label>
+            <select id="user-housing" class="w-full p-2 rounded-xl border border-slate-300 text-xs font-medium bg-white outline-none">
+              <option value="독립">독립 생활 중 (1인 가구 또는 세대주)</option>
+              <option value="비독립">가족/부모님과 함께 거주 중</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#8B5A2B] mb-1">3. 내 명의 부동산 보유 여부</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="cursor-pointer border border-slate-300 rounded-xl p-2 flex items-center justify-center gap-1.5 font-bold text-xs bg-white has-[:checked]:border-[#FF8A3D] has-[:checked]:bg-[#FFF8E8] has-[:checked]:text-[#E67220] transition-all">
+                <input type="radio" name="property_owner" value="Y" checked class="hidden">
+                <img src="my_icon_rent.png" class="jample-mini-icon" alt="자가">
+                <span>있어요</span>
+              </label>
+              <label class="cursor-pointer border border-slate-300 rounded-xl p-2 flex items-center justify-center gap-1.5 font-bold text-xs bg-white has-[:checked]:border-[#FF8A3D] has-[:checked]:bg-[#FFF8E8] has-[:checked]:text-[#E67220] transition-all">
+                <input type="radio" name="property_owner" value="N" class="hidden">
+                <img src="report_icon_expense.png" class="jample-mini-icon" alt="전월세">
+                <span>없어요</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-[#8B5A2B] mb-1">4. 현재 보유 대출 여부</label>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="cursor-pointer border border-slate-300 rounded-xl p-2 flex items-center justify-center gap-1.5 font-bold text-xs bg-white has-[:checked]:border-[#FF8A3D] has-[:checked]:bg-[#FFF8E8] has-[:checked]:text-[#E67220] transition-all">
+                <input type="radio" name="debt_owner" value="Y" checked class="hidden">
+                <img src="my_icon_insurance.png" class="jample-mini-icon" alt="대출있음">
+                <span>있어요</span>
+              </label>
+              <label class="cursor-pointer border border-slate-300 rounded-xl p-2 flex items-center justify-center gap-1.5 font-bold text-xs bg-white has-[:checked]:border-[#FF8A3D] has-[:checked]:bg-[#FFF8E8] has-[:checked]:text-[#E67220] transition-all">
+                <input type="radio" name="debt_owner" value="N" class="hidden">
+                <img src="report_icon_defense.png" class="jample-mini-icon" alt="무차입">
+                <span>없어요 (무차입)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="startAdaptiveQuiz()" class="w-full py-3.5 bg-[#FF8A3D] hover:bg-[#E67220] text-white font-extrabold text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2">
+          <span>진단 시작하기</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+      </div>
+
+      <!-- SCREEN 2: 퀴즈 화면 -->
+      <div id="screen-quiz" class="hidden flex-1 flex flex-col justify-between py-1">
+        <div>
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-3 border border-slate-200/50">
+            <div id="bar-progress" class="bg-[#FF8A3D] h-full w-0 transition-all duration-300 ease-out"></div>
+          </div>
+
+          <div class="mb-3">
+            <span id="txt-category" class="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-[#FFF8E8] text-[#E67220] rounded border border-[#F5E5C9]">
+              저축 습관
+            </span>
+            <h3 id="txt-question" class="text-base font-black text-slate-900 mt-1.5 leading-snug">
+              질문 내용
+            </h3>
+          </div>
+
+          <div id="container-options" class="space-y-2"></div>
+        </div>
+
+        <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-slate-100 flex-shrink-0">
+          <button id="btn-prev" onclick="goToPrevQuestion()" class="px-2.5 py-1 text-slate-500 hover:text-slate-900 font-bold text-xs flex items-center gap-1 disabled:opacity-30">
+            <i class="fa-solid fa-arrow-left"></i> 이전 질문
+          </button>
+          <span class="text-[10.5px] text-slate-400">솔직한 느낌 그대로 선택해 주세요.</span>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: 결과 화면 -->
+      <div id="screen-result" class="hidden flex-1 flex flex-col items-center py-1">
+        <div id="res-mbti-tag" class="px-3 py-0.5 bg-[#FFF8E8] text-[#E67220] border border-[#F5E5C9] font-black text-xs rounded-full mb-2.5 tracking-wider uppercase">
+          P.L.S.D 유형
+        </div>
+
+        <div id="res-char-img-wrap" class="w-full max-w-[280px] rounded-2xl overflow-hidden shadow-sm border border-slate-200 mb-3 bg-white text-center"></div>
+
+        <!-- 4대 축 게이지 바 -->
+        <div class="w-full bg-[#FDFBF7] p-3.5 rounded-2xl border border-[#EFE6D8] mb-3 shadow-sm">
+          <div class="text-center mb-2.5">
+            <h4 class="text-[11px] font-black text-[#8B5A2B] uppercase">나의 4대 재무 밸런스</h4>
+          </div>
+
+          <!-- 축 1: P vs F -->
+          <div class="mb-2.5">
+            <div class="flex justify-between items-center text-[11px] mb-0.5">
+              <div id="label-axis-p" class="flex items-center gap-1">
+                <span class="px-1 py-0.2 rounded bg-slate-100 font-mono font-bold">P</span>
+                <span>부동산·실물</span>
+                <span id="pct-axis-p" class="font-mono font-bold">50%</span>
+              </div>
+              <div id="label-axis-f" class="flex items-center gap-1">
+                <span id="pct-axis-f" class="font-mono font-bold">50%</span>
+                <span>금융자산</span>
+                <span class="px-1 py-0.2 rounded bg-slate-100 font-mono font-bold">F</span>
+              </div>
+            </div>
+            <div class="w-full h-2.5 bg-slate-200/70 rounded-full flex relative overflow-hidden">
+              <div class="w-1/2 h-full flex justify-end">
+                <div id="bar-left-pf" class="center-bar-transition h-full rounded-l-full" style="width: 50%;"></div>
+              </div>
+              <div class="w-0.5 h-full bg-white z-10"></div>
+              <div class="w-1/2 h-full flex justify-start">
+                <div id="bar-right-pf" class="center-bar-transition h-full rounded-r-full" style="width: 50%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 축 2: H vs L -->
+          <div class="mb-2.5">
+            <div class="flex justify-between items-center text-[11px] mb-0.5">
+              <div id="label-axis-h" class="flex items-center gap-1">
+                <span class="px-1 py-0.2 rounded bg-slate-100 font-mono font-bold">H</span>
+                <span>고소득·투자</span>
+                <span id="pct-axis-h" class="font-mono font-bold">50%</span>
+              </div>
+              <div id="label-axis-l" class="flex items-center gap-1">
+                <span id="pct-axis-l" class="font-mono font-bold">50%</span>
+                <span>안정소득</span>
+                <span class="px-1 py-0.2 rounded bg-slate-100 font-mono font-bold">L</span>
+              </div>
+            </div>
+            <div class="w-full h-2.5 bg-slate-200/70 rounded-full flex relative overflow-hidden">
+              <div class="w-1/2 h-full flex justify-end">
+                <div id="bar-left-hl" class="center-bar-transition h-full rounded-l-full" style="width: 50%;"></div>
+              </div>
+              <div class="w-0.5 h-full bg-white z-10"></div>
+              <div class="w-1/2 h-full flex justify-start">
+                <div id="bar-right-hl" class="center-bar-transition h-full rounded-r-full" style="width: 50%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 축 3: S vs E -->
+          <div class="mb-2.5">
+            <div class="flex justify-between items-center text-[11px] mb-0.5">
+              <div id="label-axis-s" class="flex items-center gap-1">
+                <span class="px-1 py-0.2 rounded bg-slate-100 font-mono font-bold">S</span>
+                <span>저축·축적</span>
+                <span id="pct-axis-s" class="font-mono font-bold">50%</span>
+              </div>
+              <div id="label-axis-e" class="flex items-center gap-1">
+                <span id="pct-axis-e" class="font-mono font-bold">50%</span>
+                <span>지출·소비</span>
+                <span class="px-1 py-0.2 rounded bg-slate-100 font-mono font-bold">E</span>
+              </div>
+            </div>
+            <div class="w-full h-2.5 bg-slate-200/70 rounded-full flex relative overflow-hidden">
+              <div class="w-1/2 h-full flex justify-end">
+                <div id="bar-left-se" class="center-bar-transition h-full rounded-l-full" style="width: 50%;"></div>
+              </div>
+              <div class="w-0.5 h-full bg-white z-10"></div>
+              <div class="w-1/2 h-full flex justify-start">
+                <div id="bar-right-se" class="center-bar-transition h-full rounded-r-full" style="width: 50%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 축 4: C vs D -->
+          <div>
+            <div class="flex justify-between items-center text-[11px] mb-0.5">
+              <div id="label-axis-c" class="flex items-center gap-1">
+                <span class="px-1 py-0.2 rounded bg-slate-100 font-mono font-bold">C</span>
+                <span>자기자본</span>
+                <span id="pct-axis-c" class="font-mono font-bold">50%</span>
+              </div>
+              <div id="label-axis-d" class="flex items-center gap-1">
+                <span id="pct-axis-d" class="font-mono font-bold">50%</span>
+                <span>부채(대출)</span>
+                <span class="px-1 py-0.2 rounded bg-slate-100 font-mono font-bold">D</span>
+              </div>
+            </div>
+            <div class="w-full h-2.5 bg-slate-200/70 rounded-full flex relative overflow-hidden">
+              <div class="w-1/2 h-full flex justify-end">
+                <div id="bar-left-cd" class="center-bar-transition h-full rounded-l-full" style="width: 50%;"></div>
+              </div>
+              <div class="w-0.5 h-full bg-white z-10"></div>
+              <div class="w-1/2 h-full flex justify-start">
+                <div id="bar-right-cd" class="center-bar-transition h-full rounded-r-full" style="width: 50%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 유의사항 & 조언 -->
+        <div class="w-full space-y-2 text-left text-xs mb-3">
+          <div class="p-3 bg-amber-50/80 border border-amber-200 rounded-xl">
+            <h4 class="font-black text-amber-900 mb-1 flex items-center gap-1.5">
+              <img src="report_icon_surplus.png" class="jample-mini-icon" alt="유의">
+              <span>유의사항</span>
+            </h4>
+            <p id="res-caution" class="text-slate-700 leading-relaxed whitespace-pre-line"></p>
+          </div>
+          <div class="p-3 bg-[#FFF8E8] border border-[#F5E5C9] rounded-xl">
+            <h4 class="font-black text-[#8B5A2B] mb-1 flex items-center gap-1.5">
+              <img src="report_icon_wish.png" class="jample-mini-icon" alt="Action Plan">
+              <span>재무링의 Action Plan</span>
+            </h4>
+            <p id="res-advice" class="text-slate-700 leading-relaxed whitespace-pre-line"></p>
+          </div>
+        </div>
+
+        <!-- 정다운미래 맞춤 솔루션 브릿지 카드 -->
+        <div class="w-full rounded-2xl overflow-hidden shadow-sm mb-3 border border-[#FF8A3D]/30" style="background: linear-gradient(145deg, #FFF8E8 0%, #FFFFFF 100%);">
+          <div class="p-4 text-center">
+            <span class="inline-block text-[10px] font-extrabold bg-[#FF8A3D] text-white px-2.5 py-0.5 rounded-full mb-1.5 tracking-wider">
+              FINANCIAL PARTNER · 정다운미래
+            </span>
+            <h3 class="text-sm font-black text-slate-900 leading-snug mb-1" id="banner-custom-title">
+              "진단만으로 끝내지 마세요.<br>실행을 함께 만듭니다."
+            </h3>
+            <p class="text-slate-500 text-[11px] leading-relaxed">
+              친절하고 이성적인 관점으로 당신의 재무적 자유와<br>
+              객관적인 현금흐름 솔루션을 1:1로 함께 설계합니다.
+            </p>
+          </div>
+
+          <div class="p-3 bg-[#FDFBF7] border-t border-[#EFE6D8] flex flex-col gap-2">
+            <!-- 네이버 폼 1:1 상담신청 링크 -->
+            <a id="btn-apply-consulting" 
+               href="https://naver.me/xM52kK1W" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="w-full py-3 px-3 bg-[#FF8A3D] hover:bg-[#E67220] text-white font-extrabold text-xs rounded-xl transition-all flex items-center justify-center shadow-sm">
+              <span id="btn-apply-text">1:1 맞춤 재무코칭 신청하기</span>
+            </a>
+            
+            <!-- 정다운미래 아임웹 홈페이지 링크 -->
+            <a href="https://jeongdaunfuture.imweb.me" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="w-full py-2.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold text-[11px] rounded-xl transition-all flex items-center justify-center">
+              <span>정다운미래 홈페이지 구경하기</span>
+            </a>
+          </div>
+        </div>
+
+        <button onclick="resetAndRestart()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center">
+          <span>테스트 다시하기</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 하단 내비게이션 바 -->
+    <nav class="nav-bar">
+      <button class="nav-item" onclick="navToAppTab('home')">
+        <img src="nav_home_off.png" class="nav-icon" alt="홈">
+        <span class="nav-label">홈</span>
+      </button>
+      <button class="nav-item" onclick="navToAppTab('report')">
+        <img src="nav_report_off.png" class="nav-icon" alt="리포트">
+        <span class="nav-label">리포트</span>
+      </button>
+      <button class="nav-item active" onclick="navToAppTab('care')">
+        <img src="nav_care_on.png" class="nav-icon" alt="재무케어">
+        <span class="nav-label">재무케어</span>
+      </button>
+      <button class="nav-item" onclick="navToAppTab('my')">
+        <img src="nav_my_off.png" class="nav-icon" alt="마이">
+        <span class="nav-label">마이</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <script>
+    const rawQuestionMaster = [
+      {
+        id: 1, factor: 'S-E', category: '저축 습관',
+        question: '월급이나 수입이 들어오면 저축·투자는 얼마나 하시나요?', applicableTo: 'all',
+        options: [
+          { text: '남는 돈이 거의 없어 저축을 거의 못 해요 (10% 이하)', score: { S: 1, E: 5 } },
+          { text: '조금씩이라도 떼어놓는 편이에요 (10~30% 수준)', score: { S: 2, E: 4 } },
+          { text: '수입의 3분의 1 정도는 꼬박꼬박 모아요 (30~40%)', score: { S: 3, E: 3 } },
+          { text: '수입의 절반 가까이 적극적으로 모아요 (40~50%)', score: { S: 4, E: 2 } },
+          { text: '수입의 절반(50%) 이상은 무조건 먼저 저축해요', score: { S: 5, E: 1 } }
+        ]
+      },
+      {
+        id: 2, factor: 'P-F', category: '자산 형태',
+        question: '내가 가진 전체 재산 중 집이나 땅(부동산)의 비중은 어느 정도인가요?', applicableTo: 'property_only',
+        options: [
+          { text: '부동산보다는 예금·주식 등 금융자산이 훨씬 많아요', score: { P: 1, F: 5 } },
+          { text: '금융자산이 조금 더 많은 편이에요', score: { P: 2, F: 4 } },
+          { text: '부동산과 금융자산이 반반 정도예요', score: { P: 3, F: 3 } },
+          { text: '재산의 상당 부분이 부동산에 묶여 있어요', score: { P: 4, F: 2 } },
+          { text: '재산의 대부분(80% 이상)이 집·부동산에 들어가 있어요', score: { P: 5, F: 1 } }
+        ]
+      },
+      {
+        id: 201, factor: 'P-F', category: '자산 형태',
+        question: '내가 가진 전체 돈 중 전·월세 보증금이 차지하는 비중은 어느 정도인가요?', applicableTo: 'no_property_only',
+        options: [
+          { text: '보증금보다 예적금·주식 등 굴리는 돈이 훨씬 많아요', score: { P: 1, F: 5 } },
+          { text: '금융자산이 보증금보다 조금 더 여유 있어요', score: { P: 2, F: 4 } },
+          { text: '보증금과 모아둔 금융자산이 반반 정도예요', score: { P: 3, F: 3 } },
+          { text: '가진 돈의 상당 부분이 보증금에 묶여 있어요', score: { P: 4, F: 2 } },
+          { text: '모아둔 돈의 대부분이 전·월세 보증금에 다 들어가 있어요', score: { P: 5, F: 1 } }
+        ]
+      },
+      {
+        id: 3, factor: 'C-D', category: '대출 부담',
+        question: '한 달 수입 중에서 대출 원금이나 이자로 나가는 돈의 비중은?', applicableTo: 'debt_only',
+        options: [
+          { text: '대출로 빠져나가는 돈이 아주 소액이에요 (20% 이하)', score: { C: 4, D: 2 } },
+          { text: '수입의 3분의 1 정도가 대출 갚는 데 들어가요 (30~40%)', score: { C: 3, D: 3 } },
+          { text: '대출 상환 때문에 생활비가 꽤 빠듯해요 (40~50%)', score: { C: 2, D: 4 } },
+          { text: '수입의 절반 이상이 빚 갚는 데 나가요 (50% 이상)', score: { C: 1, D: 5 } }
+        ]
+      },
+      {
+        id: 301, factor: 'C-D', category: '무차입 여유',
+        question: '대출이 전혀 없는 무차입 상태에서 자산을 불려나가는 나의 느낌은?', applicableTo: 'no_debt_only',
+        options: [
+          { text: '빚이 전혀 없어 마음이 편안하고 안전 자산을 탄탄히 모아요', score: { C: 5, D: 1 } },
+          { text: '빚은 없지만 레버리지를 안 쓰니 자산 불리는 속도가 더디게 느껴져요', score: { C: 4, D: 2 } },
+          { text: '안전하게 가고 있지만 때로는 대출을 활용해볼까 고민도 돼요', score: { C: 4, D: 2 } }
+        ]
+      },
+      {
+        id: 4, factor: 'C-D', category: '내 집 지분',
+        question: '가지고 계신 집(부동산)에 담보대출이 얼마나 껴있나요?', applicableTo: 'property_and_debt',
+        options: [
+          { text: '대출과 빚이 대부분이에요 (내 돈 지분 30% 이하)', score: { C: 1, D: 5 } },
+          { text: '대출이 내 돈보다 조금 더 많아요', score: { C: 2, D: 4 } },
+          { text: '대출 반, 내 돈 반 정도예요', score: { C: 3, D: 3 } },
+          { text: '대출은 일부이고 대부분 제 순수 자본이에요', score: { C: 4, D: 2 } }
+        ]
+      },
+      {
+        id: 402, factor: 'C-D', category: '무차입 자가',
+        question: '대출 없이 완전히 내 명의로 보유한 자가 부동산을 소유한 소감은?', applicableTo: 'property_no_debt',
+        options: [
+          { text: '이자 부담이 전혀 없어 든든하고 최고의 안정감을 누려요', score: { C: 5, D: 1 } },
+          { text: '든든하지만 부동산에 너무 자산이 집중되어 유동성이 아쉬워요', score: { C: 4, D: 2 } }
+        ]
+      },
+      {
+        id: 401, factor: 'C-D', category: '보증금과 대출',
+        question: '현재 살고 계신 전·월세 보증금 중 전세대출이나 빌린 돈의 비중은?', applicableTo: 'lease_and_debt',
+        options: [
+          { text: '보증금의 대부분이 대출이나 빌린 돈이에요', score: { C: 1, D: 5 } },
+          { text: '대출 반, 내 순수 자금 반 정도예요', score: { C: 3, D: 3 } },
+          { text: '대출은 소액이고 대부분 제가 모은 돈이에요', score: { C: 4, D: 2 } }
+        ]
+      },
+      {
+        id: 7, factor: 'S-E', category: '생활비 지출',
+        question: '수입 중 순수 먹고사는 데 쓰는 생활비(식비/쇼핑 등)는 얼마나 되나요?', applicableTo: 'all',
+        options: [
+          { text: '정말 최소한으로만 아껴 써요 (수입의 20% 이하)', score: { S: 5, E: 1 } },
+          { text: '알뜰하게 관리하며 검소하게 살아요 (20~30%)', score: { S: 4, E: 2 } },
+          { text: '남들 쓰는 만큼 평범하게 쓰고 살아요 (30~40%)', score: { S: 3, E: 3 } },
+          { text: '하고 싶은 건 하면서 여유롭게 쓰는 편이에요 (40~50%)', score: { S: 2, E: 4 } },
+          { text: '돈을 벌면 대부분 쓰는 편이라 남는 게 없어요 (50% 이상)', score: { S: 1, E: 5 } }
+        ]
+      },
+      {
+        id: 8, factor: 'H-L', category: '소득 수준',
+        question: '현재 나의 월평균 수입(세후 기준)은 대략 어느 구간에 해당하나요?', applicableTo: 'all',
+        options: [
+          { text: '200만원 이하', score: { H: 1, L: 5 } },
+          { text: '200만 ~ 500만원', score: { H: 2, L: 4 } },
+          { text: '500만 ~ 1,000만원', score: { H: 3, L: 3 } },
+          { text: '1,000만 ~ 3,000만원', score: { H: 4, L: 2 } },
+          { text: '3,000만원 이상', score: { H: 5, L: 1 } }
+        ]
+      },
+      {
+        id: 17, factor: 'H-L', category: '재테크 스타일',
+        question: '모아두는 돈 중 주식, 펀드, 코인 같은 투자 상품의 비중은?', applicableTo: 'all',
+        options: [
+          { text: '원금 잃는 건 절대 싫어요! 은행 예·적금만 해요 (100%)', score: { H: 1, L: 5 } },
+          { text: '예적금이 대부분이고 소액만 맛보기로 투자해요 (30% 이하)', score: { H: 2, L: 4 } },
+          { text: '안전자산과 투자자산을 반반 정도 섞어요 (30~50%)', score: { H: 3, L: 3 } },
+          { text: '수익률을 높이기 위해 투자를 적극적으로 해요 (50~70%)', score: { H: 4, L: 2 } },
+          { text: '대부분 공격적으로 투자해요 (70% 이상)', score: { H: 5, L: 1 } }
+        ]
+      },
+      {
+        id: 25, factor: 'P-F', category: '금융 유동성',
+        question: '당장 현금화할 수 있는 금융자산(통장잔고/주식/연금)은 얼마나 든든한가요?', applicableTo: 'all',
+        options: [
+          { text: '대부분 집에 묶여 있어 통장에 여유 현금이 별로 없어요', score: { P: 5, F: 1 } },
+          { text: '통장에 비상금 정도로만 소액 유지하고 있어요', score: { P: 4, F: 2 } },
+          { text: '집 자산과 통장 금융자산이 균형 잡혀 있어요', score: { P: 3, F: 3 } },
+          { text: '언제든 굴릴 수 있는 금융자산이 꽤 든든해요', score: { P: 2, F: 4 } },
+          { text: '금융자산 중심으로 자유롭게 굴리고 있어요', score: { P: 1, F: 5 } }
+        ]
+      }
+    ];
+
+    const mbtiMasterData = {
+      'PHSC': { name: "마음 편한 만석꾼", subtitle: "빚 하나 없이 든든한 알짜 실속 부자", caution: "유동성 부족! 자산의 대부분이 부동산에 묶여 있을 수 있어요.", advice: "금융자산과 현금흐름을 확보하고 상속·절세 플랜을 사전에 점검하세요." },
+      'PHSD': { name: "야망 넘치는 집념가", subtitle: "대출도 능력! 큰 판을 짜는 스마트 자산가", caution: "금리 인상기엔 레버리지 부채 상환 부담이 급격히 커질 수 있어요.", advice: "DSR을 주기적으로 체크하고, 대출 만기 분산 계획을 세우세요." },
+      'PHEC': { name: "여유만만 갓생러", subtitle: "자산 걱정 없이 인생과 소비를 즐기는 부자", caution: "부동산 자산은 든든하지만, 소비가 커서 현금 저축 여력이 부족할 수 있어요.", advice: "소비 계획을 세분화하고 소득 일부가 자동 분산 투자되는 시스템을 구축하세요." },
+      'PHED': { name: "아슬아슬 통 큰 손", subtitle: "버는 만큼 화끈하게 쓰고 굴리는 야수형", caution: "과감한 소비와 부채의 조합은 경기 변동 시 장기적으로 불안정해질 수 있어요.", advice: "대출 상환 플랜을 재정비하고 불필요한 고정 지출을 우선 통제하세요." },
+      'PLSC': { name: "뚝심 있는 집순이 부자", subtitle: "집 한 채 꽉 쥐고 허리띠 조르는 절약파", caution: "집은 있으나 쓸 돈이 부족한 '하우스푸어' 유동성 함정에 빠질 수 있어요.", advice: "주택연금이나 배당 자산으로 월 현금흐름 파이프라인을 만드세요." },
+      'PLSD': { name: "내 집 사수한 존버족", subtitle: "대출 갚느라 라면 먹어도 집은 지킨다!", caution: "대출을 끼고 자산을 매입해 월 상환 부담금이 소득 대비 과도할 수 있어요.", advice: "체계적인 부채 다이어트와 고정비 조정을 검토하세요." },
+      'PLEC': { name: "안분지족 선비형", subtitle: "빚 없이 내 페이스대로 소소하게 즐기는 삶", caution: "대출은 없지만 소득이 낮고 소비 성향이 있어 자산 유지비 감당이 벅찰 수 있어요.", advice: "보유 부동산의 관리비와 세금 부담을 냉정히 분석해보세요." },
+      'PLED': { name: "숨 가쁜 등산가", subtitle: "이자 내고 생활비 내느라 숨이 턱턱 차는 상황", caution: "대출 원리금, 고정 유지비, 생활비까지 겹친 고위험 구조예요.", advice: "부동산 자산 매각 또는 저금리 대환 등 긴급 출구전략을 세우세요." },
+      'FHSC': { name: "통장 두둑한 스마트 자본가", subtitle: "돈 굴리는 눈 밝고 자립을 꿈꾸는 똑순이", caution: "자산 증식과 절약에만 치중하다가 현재 삶의 질을 놓칠 수 있어요.", advice: "'계획 있는 가치 소비' 예산을 따로 두어 현재의 행복도 함께 챙기세요." },
+      'FHSD': { name: "스릴 즐기는 투자 승부사", subtitle: "대출도 투자 기회로 삼는 공격적 금융러", caution: "과도한 레버리지로 빚과 투자의 안전 경계가 모호해질 수 있어요.", advice: "위험자산과 안전자산 비율을 엄격히 지키고 비상 현금을 필수 확보하세요." },
+      'FHEC': { name: "폼생폼사 트렌드리더", subtitle: "잘 벌고 화끈하게 쓰며 현재를 즐기는 멋쟁이", caution: "현재의 높은 소득과 유동성이 영원히 지속되지 않을 수 있어요.", advice: "소비 계획서 작성과 함께 소득 공백기를 대비한 은퇴 연금 플랜을 병행하세요." },
+      'FHED': { name: "롤러코스터 라이더", subtitle: "들어오면 다 빠져나가 긴장감이 넘치는 구조", caution: "높은 지출과 부채가 맞물려 소득 감소 시 회복 시간이 오래 걸려요.", advice: "신용카드 할부를 즉시 멈추고 고정지출 10% 감축부터 실행하세요." },
+      'FLSC': { name: "티끌 모아 태산 개미", subtitle: "빚 안 지고 한 푼 두 푼 모으는 알뜰파", caution: "너무 안전한 예적금만 고집하면 물가 상승으로 인한 기회비용이 커져요.", advice: "정기적금 외에 소액 적립식 ETF를 병행해 자산 성장 여력을 확보하세요." },
+      'FLSD': { name: "성실한 외줄타기꾼", subtitle: "적은 월급으로 대출 갚고 저축까지 애쓰는 노력파", caution: "적은 소득으로 빚 갚고 저축하느라 만성 재무 스트레스가 생길 수 있어요.", advice: "신용점수를 점검하고 정부지원 저금리 대환 대출 여부부터 확인하세요." },
+      'FLEC': { name: "오늘만 사는 낭만파", subtitle: "빚은 안 내지만 기분 따라 탕진하는 힐링러", caution: "소소한 충동 소비가 습관화되면 씨앗 모으기가 매우 어려워져요.", advice: "1일 1소비 체크와 생활비 수위조절 카드로 지출을 통제해보세요." },
+      'FLED': { name: "SOS 구원투수 필요형", subtitle: "카드값과 대출의 늪에서 탈출이 시급한 상황", caution: "지출과 빚 의존도가 높아 일상 유지가 위협받을 위험이 커요.", advice: "잼플의 재무진단을 통해 지출 다이어트와 부채 구조조정을 시작하세요." }
+    };
+
+    let activeQuestions = [];
+    let currentIndex = 0;
+    let answerStore = [];
+
+    function startAdaptiveQuiz() {
+      const hasProperty = document.querySelector('input[name="property_owner"]:checked').value === 'Y';
+      const hasDebt = document.querySelector('input[name="debt_owner"]:checked').value === 'Y';
+
+      activeQuestions = rawQuestionMaster.filter(q => {
+        if (q.applicableTo === 'all') return true;
+        if (hasProperty && q.applicableTo === 'property_only') return true;
+        if (!hasProperty && q.applicableTo === 'no_property_only') return true;
+        if (hasDebt && q.applicableTo === 'debt_only') return true;
+        if (!hasDebt && q.applicableTo === 'no_debt_only') return true;
+        if (hasProperty && hasDebt && q.applicableTo === 'property_and_debt') return true;
+        if (hasProperty && !hasDebt && q.applicableTo === 'property_no_debt') return true;
+        if (!hasProperty && hasDebt && q.applicableTo === 'lease_and_debt') return true;
+        return false;
+      });
+
+      currentIndex = 0;
+      answerStore = new Array(activeQuestions.length).fill(null);
+
+      document.getElementById('screen-start').classList.add('hidden');
+      document.getElementById('screen-result').classList.add('hidden');
+      document.getElementById('screen-quiz').classList.remove('hidden');
+      document.getElementById('badge-progress').classList.remove('hidden');
+      document.getElementById('total-q-num').textContent = activeQuestions.length;
+
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      const currentQ = activeQuestions[currentIndex];
+      document.getElementById('current-q-num').textContent = currentIndex + 1;
+      const progress = ((currentIndex + 1) / activeQuestions.length) * 100;
+      document.getElementById('bar-progress').style.width = `${progress}%`;
+
+      document.getElementById('txt-category').textContent = currentQ.category;
+      document.getElementById('txt-question').textContent = currentQ.question;
+
+      const container = document.getElementById('container-options');
+      container.innerHTML = '';
+
+      currentQ.options.forEach((opt, idx) => {
+        const isSelected = answerStore[currentIndex] === idx;
+        const btn = document.createElement('button');
+        btn.className = `option-card w-full p-3 rounded-2xl border text-left font-semibold text-xs transition-all flex items-center justify-between ${
+          isSelected
+            ? 'bg-[#FFF8E8] border-[#FF8A3D] text-[#E67220] shadow-sm font-bold'
+            : 'bg-white border-slate-200 text-slate-700 hover:border-[#FF8A3D] hover:bg-[#FDFBF7]'
+        }`;
+        btn.onclick = () => onSelectOption(idx);
+        btn.innerHTML = `
+          <span class="flex-1 pr-2 leading-relaxed">${opt.text}</span>
+          <div class="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center flex-shrink-0 ${isSelected ? 'border-[#FF8A3D] bg-[#FF8A3D] text-white' : 'bg-white'}">
+            ${isSelected ? '<i class="fa-solid fa-check text-[9px]"></i>' : ''}
+          </div>
+        `;
+        container.appendChild(btn);
+      });
+
+      document.getElementById('btn-prev').disabled = currentIndex === 0;
+    }
+
+    function onSelectOption(optionIndex) {
+      answerStore[currentIndex] = optionIndex;
+      setTimeout(() => {
+        if (currentIndex < activeQuestions.length - 1) {
+          currentIndex++;
+          renderQuestion();
+        } else {
+          computeAndShowResults();
+        }
+      }, 160);
+    }
+
+    function goToPrevQuestion() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderQuestion();
+      }
+    }
+
+    function computeAndShowResults() {
+      const scores = { P: 0, F: 0, H: 0, L: 0, S: 0, E: 0, C: 0, D: 0 };
+      answerStore.forEach((ansIdx, qIdx) => {
+        if (ansIdx !== null) {
+          const scoreMap = activeQuestions[qIdx].options[ansIdx].score;
+          for (let key in scoreMap) scores[key] += scoreMap[key];
+        }
+      });
+
+      const p_f = scores.P >= scores.F ? 'P' : 'F';
+      const h_l = scores.H >= scores.L ? 'H' : 'L';
+      const s_e = scores.S >= scores.E ? 'S' : 'E';
+      const c_d = scores.C >= scores.D ? 'C' : 'D';
+      const mbtiCode = `${p_f}${h_l}${s_e}${c_d}`;
+
+      const totalPF = (scores.P + scores.F) || 1;
+      const pPct = Math.round((scores.P / totalPF) * 100);
+      const fPct = 100 - pPct;
+
+      const totalHL = (scores.H + scores.L) || 1;
+      const hPct = Math.round((scores.H / totalHL) * 100);
+      const lPct = 100 - hPct;
+
+      const totalSE = (scores.S + scores.E) || 1;
+      const sPct = Math.round((scores.S / totalSE) * 100);
+      const ePct = 100 - sPct;
+
+      const totalCD = (scores.C + scores.D) || 1;
+      const cPct = Math.round((scores.C / totalCD) * 100);
+      const dPct = 100 - cPct;
+
+      displayResultView(mbtiCode, { pPct, fPct, hPct, lPct, sPct, ePct, cPct, dPct });
+    }
+
+    function displayResultView(code, r) {
+      document.getElementById('screen-quiz').classList.add('hidden');
+      document.getElementById('badge-progress').classList.add('hidden');
+      document.getElementById('screen-result').classList.remove('hidden');
+
+      const item = mbtiMasterData[code] || mbtiMasterData['PHSC'];
+
+      document.getElementById('res-mbti-tag').textContent = `${code.split('').join('.')} 유형`;
+      document.getElementById('res-caution').textContent = item.caution;
+      document.getElementById('res-advice').textContent = item.advice;
+
+      const imgWrap = document.getElementById('res-char-img-wrap');
+      imgWrap.innerHTML = `
+        <img src="${code}.png" 
+             alt="${item.name}" 
+             class="w-full h-auto object-cover rounded-2xl"
+             onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'p-5 text-center\\'><h2 class=\\'text-lg font-black text-slate-900 mb-1\\'>${item.name}</h2><p class=\\'text-slate-500 text-xs\\'>${item.subtitle}</p></div>';">
+      `;
+
+      // 브릿지 배너 텍스트 개인화 (상담 신청 링크: https://naver.me/xM52kK1W)
+      document.getElementById('banner-custom-title').innerHTML = `
+        "${item.name} 유형을 위한<br><span class="text-[#FF8A3D]">맞춤 돈 관리 솔루션</span>을 시작하세요"
+      `;
+      document.getElementById('btn-apply-text').textContent = `[${item.name}] 1:1 맞춤 재무코칭 신청하기`;
+
+      renderDivergingAxis('pf', 'p', 'f', r.pPct, r.fPct, 'bg-[#FF8A3D]', 'bg-[#FFCC99]', 'text-[#E67220]');
+      renderDivergingAxis('hl', 'h', 'l', r.hPct, r.lPct, 'bg-emerald-500', 'bg-emerald-200', 'text-emerald-600');
+      renderDivergingAxis('se', 's', 'e', r.sPct, r.ePct, 'bg-amber-500', 'bg-amber-200', 'text-amber-600');
+      renderDivergingAxis('cd', 'c', 'd', r.cPct, r.dPct, 'bg-rose-500', 'bg-rose-200', 'text-rose-600');
+
+      try { confetti({ particleCount: 70, spread: 50, origin: { y: 0.6 } }); } catch(e) {}
+    }
+
+    function renderDivergingAxis(axisCode, leftId, rightId, leftPct, rightPct, strongColor, softColor, textColor) {
+      const barLeft = document.getElementById(`bar-left-${axisCode}`);
+      const barRight = document.getElementById(`bar-right-${axisCode}`);
+      const labelLeft = document.getElementById(`label-axis-${leftId}`);
+      const labelRight = document.getElementById(`label-axis-${rightId}`);
+      const pctLeft = document.getElementById(`pct-axis-${leftId}`);
+      const pctRight = document.getElementById(`pct-axis-${rightId}`);
+
+      pctLeft.textContent = `${leftPct}%`;
+      pctRight.textContent = `${rightPct}%`;
+
+      barLeft.style.width = `${leftPct}%`;
+      barRight.style.width = `${rightPct}%`;
+
+      barLeft.className = `center-bar-transition h-full rounded-l-full ${leftPct >= rightPct ? strongColor : softColor}`;
+      barRight.className = `center-bar-transition h-full rounded-r-full ${rightPct > leftPct ? strongColor : softColor}`;
+
+      if (leftPct >= rightPct) {
+        labelLeft.className = `flex items-center gap-1 font-black ${textColor}`;
+        labelRight.className = 'flex items-center gap-1 font-medium text-slate-400';
+      } else {
+        labelLeft.className = 'flex items-center gap-1 font-medium text-slate-400';
+        labelRight.className = `flex items-center gap-1 font-black ${textColor}`;
+      }
+    }
+
+    function resetAndRestart() {
+      document.getElementById('screen-result').classList.add('hidden');
+      document.getElementById('screen-start').classList.remove('hidden');
+    }
+
+    function navToAppTab(tabName) {
+      window.location.href = `index.html?tab=${tabName}`;
+    }
+  </script>
+</body>
+</html>

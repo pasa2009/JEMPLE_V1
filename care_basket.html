@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>목적자금 바구니 설계 - 잼플 (Jample)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #FF8A3D;
+      --primary-dark: #E67220;
+      --brown: #8B5A2B;
+      --cream: #FFF8E8;
+      --border-color: #EFE6D8;
+    }
+    body {
+      background-color: #E2E8F0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+    .app-frame {
+      width: 100%;
+      max-width: 400px;
+      height: 840px;
+      background-color: #FFFFFF;
+      border-radius: 36px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* 하단 내비게이션 바 스타일 */
+    .nav-bar { 
+      background: #FFF; 
+      border-top: 1px solid var(--border-color); 
+      display: flex; 
+      justify-content: space-around; 
+      padding: 8px 0 10px 0;
+      flex-shrink: 0;
+    }
+    .nav-item { 
+      border: none; 
+      background: none; 
+      flex: 1; 
+      cursor: pointer; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 4px; 
+    }
+    .nav-icon { 
+      width: 28px; 
+      height: 28px; 
+      object-fit: contain; 
+    }
+    .nav-label { 
+      font-size: 11px; 
+      color: #9E9E9E; 
+      font-weight: 600; 
+    }
+    .nav-item.active .nav-label { 
+      color: var(--primary); 
+      font-weight: bold; 
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-frame">
+    
+    <!-- 본문 스크롤 영역 -->
+    <div class="content-area">
+      <!-- 상단 헤더: 좌측 [잼플 로고], 우측 [목적자금 설계 배지] -->
+      <header class="flex justify-between items-center mb-3 border-b border-[#EFE6D8] pb-3 flex-shrink-0">
+        <div class="flex items-center">
+          <img src="logo.png" class="h-6 object-contain" alt="Jample">
+        </div>
+        <div class="flex items-center">
+          <span class="text-xs font-bold text-[#8B5A2B] bg-[#FFF8E8] px-2.5 py-1 rounded-full border border-[#F5E5C9]">
+            목적자금 설계
+          </span>
+        </div>
+      </header>
+
+      <!-- ==================== [STEP 1: 목적자금 설계] ==================== -->
+      <div id="step1View" class="flex flex-col justify-between flex-1">
+        <div class="space-y-3.5">
+          <div>
+            <div class="flex justify-between items-center text-xs font-semibold text-slate-400 mb-1">
+              <span class="text-[11px] font-bold text-slate-400">STEP 1 / 2</span>
+              <span class="bg-[#FFF8E8] text-[#E67220] border border-[#F5E5C9] px-2.5 py-0.5 rounded-full font-bold text-[11px]">플랜 설계</span>
+            </div>
+            
+            <h1 class="text-lg font-black text-slate-900 leading-snug">
+              어떤 꿈을 위해<br>돈을 모으고 계신가요?
+            </h1>
+            <p class="text-xs text-slate-500 mt-1">
+              목표를 설정하면 딱 맞는 저축·투자 플랜을 계산해 드려요.
+            </p>
+
+            <!-- 목적 프리셋 칩 -->
+            <div id="presetContainer" class="flex gap-1.5 overflow-x-auto py-2.5 no-scrollbar mt-1"></div>
+
+            <!-- 직접 입력 목적명 필드 -->
+            <div id="customGoalWrapper" class="hidden mt-1 mb-2">
+              <div class="bg-[#FDFBF7] p-2.5 rounded-xl border border-[#FF8A3D] shadow-sm flex items-center gap-2">
+                <span class="text-xs font-bold text-[#E67220] shrink-0">목적 이름:</span>
+                <input type="text" id="customGoalTitle" placeholder="예: 3년 뒤 자동차 교체, 안식년 여행" 
+                  class="w-full text-xs font-semibold text-slate-800 focus:outline-none bg-transparent">
+              </div>
+            </div>
+          </div>
+
+          <!-- 입력 필드 3개 -->
+          <div class="space-y-3">
+            <!-- 1. 목표 금액 -->
+            <div class="bg-[#FDFBF7] p-3 rounded-2xl border border-[#EFE6D8] shadow-sm">
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-bold text-[#8B5A2B]">1. 목표 금액</label>
+                <span id="targetAmountKorean" class="text-xs font-bold text-[#E67220]">5,000만 원</span>
+              </div>
+              <div class="flex items-center gap-2 mb-2">
+                <input type="text" id="targetAmount" value="50,000,000" inputmode="numeric"
+                  class="w-full text-base font-bold text-slate-900 bg-white px-3 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:border-[#FF8A3D] text-right pr-2">
+                <span class="text-xs font-bold text-slate-500 shrink-0">원</span>
+              </div>
+              <div class="flex gap-1.5">
+                <button type="button" onclick="addAmount(10000000)" class="text-[11px] bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">+1,000만</button>
+                <button type="button" onclick="addAmount(30000000)" class="text-[11px] bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">+3,000만</button>
+                <button type="button" onclick="addAmount(50000000)" class="text-[11px] bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">+5,000만</button>
+              </div>
+            </div>
+
+            <!-- 2. 목표 기간 -->
+            <div class="bg-[#FDFBF7] p-3 rounded-2xl border border-[#EFE6D8] shadow-sm">
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-bold text-[#8B5A2B]">2. 목표 기간</label>
+                <span id="monthsKorean" class="text-xs font-bold text-slate-600">3년 (36개월)</span>
+              </div>
+              <div class="flex items-center gap-2 mb-2">
+                <input type="text" id="months" value="36" inputmode="numeric"
+                  class="w-full text-base font-bold text-slate-900 bg-white px-3 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:border-[#FF8A3D] text-right pr-2">
+                <span class="text-xs font-bold text-slate-500 shrink-0">개월</span>
+              </div>
+              <div class="flex gap-1.5">
+                <button type="button" onclick="setMonths(12)" class="text-[11px] bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">1년</button>
+                <button type="button" onclick="setMonths(36)" class="text-[11px] bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">3년</button>
+                <button type="button" onclick="setMonths(60)" class="text-[11px] bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">5년</button>
+                <button type="button" onclick="setMonths(120)" class="text-[11px] bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">10년</button>
+              </div>
+            </div>
+
+            <!-- 3. 월 저축 가능액 -->
+            <div class="bg-[#FDFBF7] p-3 rounded-2xl border border-[#EFE6D8] shadow-sm">
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-bold text-[#8B5A2B]">3. 매월 모을 수 있는 돈</label>
+                <span id="monthlySavingKorean" class="text-xs font-bold text-[#E67220]">120만 원</span>
+              </div>
+              <div class="flex items-center gap-2 mb-2">
+                <input type="text" id="monthlySaving" value="1,200,000" inputmode="numeric"
+                  class="w-full text-base font-bold text-slate-900 bg-white px-3 py-1.5 rounded-xl border border-slate-200 focus:outline-none focus:border-[#FF8A3D] text-right pr-2">
+                <span class="text-xs font-bold text-slate-500 shrink-0">원</span>
+              </div>
+              <div class="flex gap-1.5">
+                <button type="button" onclick="addMonthly(100000)" class="text-[11px] bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">+10만</button>
+                <button type="button" onclick="addMonthly(300000)" class="text-[11px] bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">+30만</button>
+                <button type="button" onclick="addMonthly(500000)" class="text-[11px] bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg font-medium">+50만</button>
+              </div>
+            </div>
+
+            <!-- 실시간 진단 카드 -->
+            <div class="p-3.5 rounded-2xl border border-[#EFE6D8] bg-white shadow-sm space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-slate-400">실시간 진단</span>
+                <span id="statusBadge" class="text-[11px] px-2.5 py-0.5 rounded-full font-bold">진단 중</span>
+              </div>
+              <div>
+                <div class="text-[11px] font-medium text-slate-500">필요 연평균 수익률</div>
+                <div id="rateDisplay" class="text-2xl font-black text-slate-900 leading-none mt-1">연 0.0%</div>
+              </div>
+              <p id="guideMessage" class="text-xs text-slate-600 leading-relaxed bg-[#FDFBF7] p-2.5 rounded-xl border border-[#EFE6D8]"></p>
+              
+              <div>
+                <div class="flex justify-between text-[10px] font-semibold text-slate-500 mb-1">
+                  <span id="principalRatioText">원금 비중 (0%)</span>
+                  <span id="targetRatioText">목표 금액</span>
+                </div>
+                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
+                  <div id="barPrincipal" style="width: 0%" class="h-full bg-[#FF8A3D] transition-all duration-300"></div>
+                  <div id="barProfit" style="width: 0%" class="h-full bg-amber-400 transition-all duration-300"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                  <span id="principalValueText">원금: 0원</span>
+                  <span id="profitValueText">필요 수익: 0원</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 1 하단 버튼 -->
+        <div class="pt-4 pb-2">
+          <button type="button" id="btnGoToStep2" class="w-full py-3.5 bg-[#FF8A3D] hover:bg-[#E67220] active:scale-[0.99] text-white font-extrabold rounded-2xl shadow-md transition-all text-sm flex items-center justify-center gap-1.5">
+            <span>내 목적에 딱 맞는 계좌 확인하기</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==================== [STEP 2: 맞춤 계좌 & 펀드 솔루션] ==================== -->
+      <div id="step2View" class="hidden flex-col justify-between flex-1">
+        <div class="space-y-3.5">
+          <div>
+            <div class="flex justify-between items-center text-xs font-semibold text-slate-400 mb-1">
+              <span class="text-[11px] font-bold text-slate-400">STEP 2 / 2</span>
+              <span id="step2TypeBadge" class="bg-[#FFF8E8] text-[#E67220] border border-[#F5E5C9] px-2.5 py-0.5 rounded-full font-bold text-[11px]">계좌 솔루션</span>
+            </div>
+            
+            <h2 class="text-lg font-black text-slate-900 leading-snug">
+              <span id="summaryGoalName" class="text-[#E67220]">결혼자금</span> 플랜<br>
+              <span id="summaryActionTitle">추천 계좌와 펀드 구성</span>
+            </h2>
+            <p id="summaryPeriodText" class="text-xs text-slate-500 mt-1">
+              목표 기간 36개월 기준 맞춤 계좌
+            </p>
+          </div>
+
+          <!-- 메인 추천 배너 -->
+          <div id="recommendationBanner" class="p-4 rounded-2xl bg-gradient-to-r from-[#FF8A3D] to-[#E67220] text-white shadow-md">
+            <div id="bannerTag" class="text-[11px] font-bold text-orange-100 uppercase tracking-wider mb-1">맞춤 솔루션</div>
+            <div id="matchedAccountTitle" class="text-base font-black">ISA (개인종합자산관리계좌)</div>
+            <div id="matchedAccountDesc" class="text-xs text-white/90 mt-1 leading-relaxed">
+              설명 문구
+            </div>
+          </div>
+
+          <!-- 세분화된 펀드/금융상품 제안 리스트 -->
+          <div>
+            <div class="flex justify-between items-center px-1 mb-2">
+              <span class="text-xs font-bold text-slate-700">추천 상품 포트폴리오</span>
+              <span class="text-[10px] text-slate-400">초보자 맞춤형</span>
+            </div>
+            <div id="fundsContainer" class="space-y-2"></div>
+          </div>
+
+          <!-- 계좌 활용 팁 박스 -->
+          <div id="accountTipBox" class="p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-xs text-amber-900 leading-relaxed"></div>
+
+          <!-- 정다운미래 맞춤 솔루션 브릿지 카드 -->
+          <div class="w-full rounded-2xl overflow-hidden shadow-sm border border-[#FF8A3D]/30" style="background: linear-gradient(145deg, #FFF8E8 0%, #FFFFFF 100%);">
+            <div class="p-4 text-center">
+              <span class="inline-block text-[10px] font-extrabold bg-[#FF8A3D] text-white px-2.5 py-0.5 rounded-full mb-1.5 tracking-wider">
+                FINANCIAL PARTNER · 정다운미래
+              </span>
+              <h3 class="text-sm font-black text-slate-900 leading-snug mb-1">
+                "정다운미래는 돈의 흐름을 설계하고<br>습관을 만들고 실행을 함께 합니다."
+              </h3>
+              <p class="text-slate-500 text-[11px] leading-relaxed">
+                친절하고 이성적인 관점으로 당신의 재무적 자유와<br>객관적인 현금흐름 솔루션을 1:1로 함께 설계합니다.
+              </p>
+            </div>
+
+            <div class="p-3 bg-[#FDFBF7] border-t border-[#EFE6D8] flex flex-col gap-2">
+              <!-- 1. 네이버 폼 1:1 상담신청 링크 -->
+              <a href="https://naver.me/xM52kK1W" 
+                 target="_blank" 
+                 rel="noopener noreferrer" 
+                 class="w-full py-3 px-3 bg-[#FF8A3D] hover:bg-[#E67220] text-white font-extrabold text-xs rounded-xl transition-all flex items-center justify-center shadow-sm">
+                <span>1:1 맞춤 재무코칭 신청하기</span>
+              </a>
+              
+              <!-- 2. 정다운미래 아임웹 홈페이지 링크 -->
+              <a href="https://jeongdaunfuture.imweb.me" 
+                 target="_blank" 
+                 rel="noopener noreferrer" 
+                 class="w-full py-2.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold text-[11px] rounded-xl transition-all flex items-center justify-center">
+                <span>정다운미래 홈페이지 구경하기</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- 하단 링크: 다시 설계하기 -->
+          <div class="text-center pt-1 pb-2">
+            <button type="button" id="btnBackToStep1" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-all flex items-center justify-center">
+              <span>다시 설계하기</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== [상세보기 모달 팝업] ==================== -->
+    <div id="fundDetailModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="w-full max-w-sm bg-white rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-3.5 max-h-[85vh] overflow-y-auto">
+        <div class="flex justify-between items-start border-b border-slate-100 pb-2.5">
+          <div>
+            <span id="modalFundBadge" class="text-[10px] bg-[#FFF8E8] text-[#E67220] border border-[#F5E5C9] px-2 py-0.5 rounded font-bold">특징</span>
+            <h3 id="modalFundName" class="text-sm font-black text-slate-900 mt-1">상품 이름</h3>
+          </div>
+          <button type="button" onclick="closeFundModal()" class="text-slate-400 hover:text-slate-600 p-1">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+
+        <div class="space-y-2.5 text-xs leading-relaxed">
+          <div>
+            <div class="font-bold text-slate-700 mb-1">💡 왜 이 상품에 투자하나요?</div>
+            <p id="modalFundReason" class="text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100"></p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-center">
+            <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
+              <div class="text-[10px] text-slate-400 font-medium">위험도 수준</div>
+              <div id="modalFundRisk" class="text-xs font-bold text-slate-800 mt-0.5"></div>
+            </div>
+            <div class="bg-slate-50 p-2 rounded-xl border border-slate-100">
+              <div class="text-[10px] text-slate-400 font-medium">권장 포트폴리오 비중</div>
+              <div id="modalFundWeight" class="text-xs font-bold text-[#E67220] mt-0.5"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="font-bold text-slate-700 mb-1">📌 실제 대표 상품 예시 (국내 상장)</div>
+            <div id="modalFundExamples" class="space-y-1.5 text-slate-600"></div>
+          </div>
+
+          <div>
+            <div class="font-bold text-slate-700 mb-1">⚠️ 투자 전 꼭 알아둘 점</div>
+            <p id="modalFundCaution" class="text-amber-900 bg-amber-50 p-2.5 rounded-xl border border-amber-200/60"></p>
+          </div>
+        </div>
+
+        <button type="button" onclick="closeFundModal()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl active:scale-[0.99] transition-all">
+          확인 완료
+        </button>
+      </div>
+    </div>
+
+    <!-- 하단 4대 내비게이션 바 (index.html 이동) -->
+    <nav class="nav-bar">
+      <button class="nav-item" onclick="navToAppTab('home')">
+        <img src="nav_home_off.png" class="nav-icon" alt="홈">
+        <span class="nav-label">홈</span>
+      </button>
+      <button class="nav-item" onclick="navToAppTab('report')">
+        <img src="nav_report_off.png" class="nav-icon" alt="리포트">
+        <span class="nav-label">리포트</span>
+      </button>
+      <button class="nav-item active" onclick="navToAppTab('care')">
+        <img src="nav_care_on.png" class="nav-icon" alt="재무케어">
+        <span class="nav-label">재무케어</span>
+      </button>
+      <button class="nav-item" onclick="navToAppTab('my')">
+        <img src="nav_my_off.png" class="nav-icon" alt="마이">
+        <span class="nav-label">마이</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <script>
+    const PRESETS = [
+      { id: 'wedding', label: '결혼자금', amount: 50000000, months: 36, monthly: 1200000 },
+      { id: 'housing', label: '전세/주택', amount: 100000000, months: 60, monthly: 1400000 },
+      { id: 'travel', label: '여행/취미', amount: 5000000, months: 12, monthly: 400000 },
+      { id: 'retirement', label: '은퇴준비', amount: 200000000, months: 240, monthly: 500000 },
+      { id: 'custom', label: '+ 직접 입력', amount: 30000000, months: 36, monthly: 800000 }
+    ];
+
+    const FUND_DETAILS = {
+      '미국 S&P500 / 나스닥100 ETF (국내상장)': {
+        badge: '시장 대표성장',
+        risk: '중고위험',
+        weight: '30% ~ 40%',
+        reason: '애플, 마이크로소프트 등 세계 최고 수준의 미국 1등 기업들을 한 바구니에 담는 투자입니다. 장기 우상향 복리 수익률을 노리기에 최적입니다.',
+        examples: ['TIGER 미국S&P500', 'ACE 미국나스닥100', 'KODEX 미국S&P500TR'],
+        caution: '단기적으로는 환율 및 시장 상황에 따라 일시적 하락이 발생할 수 있으니 3년 이상 적립식 유지가 필수입니다.'
+      },
+      '미국 배당다우존스 / 월배당 펀드': {
+        badge: '안정적 배당수익',
+        risk: '중위험',
+        weight: '20% ~ 30%',
+        reason: '10년 이상 꾸준히 배당을 늘려온 우량 기업들에 투자합니다. 매달 또는 분기마다 계좌로 들어오는 현금 배당금을 재투자하여 복리 효과를 가속화합니다.',
+        examples: ['SOL 미국배당다우존스', 'TIGER 미국배당다우존스', 'ACE 미국고배당주'],
+        caution: '배당을 많이 준다고 해서 원금이 보장되는 것은 아닙니다. 주가 변동에 따른 평가손익도 함께 고려해야 합니다.'
+      },
+      '글로벌 올웨더 자산배분 펀드': {
+        badge: '하락장 방어',
+        risk: '중위험',
+        weight: '20% ~ 30%',
+        reason: '주식, 미국 국채, 금, 원자재에 골고루 분산하여 어떤 경제 국면에서도 계좌의 큰 폭락을 막아주는 안전벨트 역할을 합니다.',
+        examples: ['KODEX 미국채10년선물', 'ACE KRX금현물', 'TIGER 글로벌멀티에셋TDF'],
+        caution: '상승장에서 주식형 ETF보다 상승폭이 다소 낮을 수 있으나 계좌의 전체 변동성을 낮추는 데 목적이 있습니다.'
+      },
+      '초단기 금리형 ETF (CD금리 / KOFR)': {
+        badge: '하루단위 이자',
+        risk: '초저위험',
+        weight: '40% ~ 50%',
+        reason: '금융기관 간 하루짜리 대출 금리를 일 복리로 반영하는 파킹형 상품으로, 은행 예금보다 높은 이자를 챙기면서 언제든 현금화할 수 있습니다.',
+        examples: ['KODEX CD금리액티브', 'TIGER KOFR금리액티브'],
+        caution: '금리가 지속적으로 인하되는 국면에서는 기대 수익률이 다소 낮아질 수 있습니다.'
+      },
+      '단기 우량 국공채 펀드': {
+        badge: '예금 + α',
+        risk: '저위험',
+        weight: '30% ~ 40%',
+        reason: '대한민국 정부 및 국책은행이 발행한 만기 1년 이내의 채권에 투자하여 부도 위험 없이 정기예금 이상의 금리를 목표로 합니다.',
+        examples: ['KODEX 단기채권PLUS', 'KBSTAR KIS단기국공채'],
+        caution: '급격한 기준금리 변동 시 단기적으로 미세한 가격 등락이 있을 수 있습니다.'
+      },
+      '공모주 / 채권혼합형 펀드': {
+        badge: '알파 수익',
+        risk: '중저위험',
+        weight: '20%',
+        reason: '자산의 80%는 국채로 안전하게 지키고, 나머지 20% 이내로 IPO 공모주 청약에 참여하여 추가 수익을 노립니다.',
+        examples: ['하이플러스공모주채권혼합', 'KTB단기국공채공모주'],
+        caution: '공모주 시장 분위기에 따라 추가 수익이 미미할 수 있습니다.'
+      },
+      '1금융권 정기/자유적금': {
+        badge: '원금 100% 보장',
+        risk: '초안전',
+        weight: '60% ~ 70%',
+        reason: '5천만 원까지 예금자보호가 적용되며 정해진 만기까지 확정된 금리를 안정적으로 지급받는 가장 안전한 목돈 형성 수단입니다.',
+        examples: ['시중은행 청년도약계좌', '1금융권 비대면 우대 적금'],
+        caution: '중도 해지 시 약정된 기본 이율을 온전히 받지 못하므로 만기를 준수해야 합니다.'
+      },
+      '증권사 발행어음형 / RP형 CMA': {
+        badge: '수시 입출금',
+        risk: '초안전',
+        weight: '30% ~ 40%',
+        reason: '단 하루만 넣어두어도 약정 이자가 일 단위로 붙으며, 급한 지출이 있을 때 수수료 없이 언제든 꺼내 쓸 수 있습니다.',
+        examples: ['대형 증권사 발행어음형 CMA', '국공채 RP형 CMA'],
+        caution: '발행어음은 증권사의 신용등급을 바탕으로 발행되므로 대형 증권사를 이용하는 것이 유리합니다.'
+      },
+      '생애주기 TDF 2045/2050 펀드': {
+        badge: '자동 자산배분',
+        risk: '중위험',
+        weight: '50%',
+        reason: '은퇴 목표 연도에 맞춰 젊을 때는 성장 자산 위주로 굴리다 은퇴가 다가올수록 안전자산으로 알아서 비중을 조절해 줍니다.',
+        examples: ['미래에셋전략배분TDF2045', '삼성한국형TDF2050'],
+        caution: '은퇴 연도 숫자가 클수록 초기 주식 비중이 높아 변동성이 상대적으로 큽니다.'
+      },
+      '글로벌 지수 추종 ETF (전세계 주식)': {
+        badge: '장기 복리성장',
+        risk: '중고위험',
+        weight: '30%',
+        reason: '특정 국가나 테마에 편중되지 않고 전 세계 수천 개 우량 상장기업 전체에 적립식으로 분산투자합니다.',
+        examples: ['ACE 미국MSCI인덱스', 'TIGER 글로벌ACWI'],
+        caution: '10년 이상 긴 안목으로 유지할 때 강력한 복리 효과를 누릴 수 있습니다.'
+      },
+      '미국 단기/중기 국채 펀드 (IRP 안전자산용)': {
+        badge: '안전자산 30%',
+        risk: '저위험',
+        weight: '20% ~ 30%',
+        reason: '퇴직연금 IRP의 의무 안전자산 30% 규정을 준수하면서, 시장 위기 시 달러와 안전 채권의 가치 상승으로 계좌를 방어합니다.',
+        examples: ['ACE 미국채10년선물', 'KODEX 미국채단기'],
+        caution: '환율 변동에 따라 원화 환산 평가액에 등락이 발생할 수 있습니다.'
+      }
+    };
+
+    let currentPresetId = 'wedding';
+    let lastSimResult = null;
+
+    function parseNumber(str) {
+      if (!str) return 0;
+      const clean = String(str).replace(/[^0-9]/g, '');
+      return Number(clean) || 0;
+    }
+
+    function formatNumber(num) {
+      if (!num && num !== 0) return '';
+      return Number(num).toLocaleString('ko-KR');
+    }
+
+    function formatKoreanWon(value) {
+      if (!value || value <= 0) return '0원';
+      const eok = Math.floor(value / 100000000);
+      const man = Math.floor((value % 100000000) / 10000);
+      const won = value % 10000;
+      const parts = [];
+      if (eok > 0) parts.push(`${eok}억`);
+      if (man > 0) parts.push(`${man.toLocaleString()}만`);
+      if (won > 0) parts.push(`${won.toLocaleString()}`);
+      return `${parts.join(' ')} 원`;
+    }
+
+    function calculateFV(pmt, monthlyRate, months) {
+      if (monthlyRate === 0) return pmt * months;
+      return pmt * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate);
+    }
+
+    function calculateSimulation(targetAmount, months, monthlySaving) {
+      const totalPrincipal = monthlySaving * months;
+
+      if (totalPrincipal >= targetAmount) {
+        return {
+          totalPrincipal,
+          requiredReturnRate: 0,
+          requiredProfit: 0,
+          status: 'SAFE'
+        };
+      }
+
+      let low = 0.0;
+      let high = 1.0 / 12;
+      let mid = 0.0;
+
+      for (let i = 0; i < 40; i++) {
+        mid = (low + high) / 2;
+        const fv = calculateFV(monthlySaving, mid, months);
+        if (Math.abs(fv - targetAmount) < 1.0) break;
+        if (fv < targetAmount) low = mid;
+        else high = mid;
+      }
+
+      const annualRate = Math.round((mid * 12 * 100) * 10) / 10;
+      let status = 'SAFE';
+
+      if (annualRate <= 3.5) status = 'SAFE';
+      else if (annualRate <= 7.0) status = 'INVEST';
+      else if (annualRate <= 20.0) status = 'ADJUST';
+      else status = 'OVER_RISK';
+
+      return {
+        totalPrincipal,
+        requiredReturnRate: annualRate,
+        requiredProfit: targetAmount - totalPrincipal,
+        status
+      };
+    }
+
+    function updateUI() {
+      const targetAmount = parseNumber(document.getElementById('targetAmount').value);
+      const months = Math.max(1, parseNumber(document.getElementById('months').value));
+      const monthlySaving = parseNumber(document.getElementById('monthlySaving').value);
+
+      document.getElementById('targetAmountKorean').innerText = formatKoreanWon(targetAmount);
+      document.getElementById('monthlySavingKorean').innerText = formatKoreanWon(monthlySaving);
+      
+      const years = Math.floor(months / 12);
+      const remMonths = months % 12;
+      document.getElementById('monthsKorean').innerText = 
+        `${years > 0 ? years + '년 ' : ''}${remMonths > 0 ? remMonths + '개월' : ''} (${months}개월)`.trim();
+
+      const result = calculateSimulation(targetAmount, months, monthlySaving);
+      lastSimResult = result;
+
+      const statusBadge = document.getElementById('statusBadge');
+      const rateDisplay = document.getElementById('rateDisplay');
+      const guideMessage = document.getElementById('guideMessage');
+
+      if (result.status === 'SAFE') {
+        statusBadge.className = 'text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700';
+        statusBadge.innerText = '저축으로 충분 🟢';
+        rateDisplay.innerText = `연 ${result.requiredReturnRate}%`;
+        guideMessage.innerText = '투자를 하지 않아도 충분해요! 원금 손실 없는 은행 적금과 CMA 파킹통장으로 안전하게 모으세요.';
+      } else if (result.status === 'INVEST') {
+        statusBadge.className = 'text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-[#FFF8E8] text-[#E67220] border border-[#F5E5C9]';
+        statusBadge.innerText = '적절한 투자 필요 🟡';
+        rateDisplay.innerText = `연 ${result.requiredReturnRate}%`;
+        guideMessage.innerText = `원금만 모으면 ${formatKoreanWon(result.totalPrincipal)}이에요. 연 ${result.requiredReturnRate}% 수준의 펀드 투자를 함께 병행하면 목표를 달성할 수 있어요.`;
+      } else if (result.status === 'ADJUST') {
+        statusBadge.className = 'text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-amber-100 text-amber-700';
+        statusBadge.innerText = '목표 재조정 권장 🟠';
+        rateDisplay.innerText = `연 ${result.requiredReturnRate}%`;
+        guideMessage.innerText = '매년 7%가 넘는 높은 수익률이 필요해요. 손실 위험이 커질 수 있으니 저축액을 늘리거나 기간을 조금 늘려보세요.';
+      } else {
+        statusBadge.className = 'text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-rose-100 text-rose-700';
+        statusBadge.innerText = '위험 수준 🔴';
+        rateDisplay.innerText = '연 20% 초과';
+        guideMessage.innerText = '목표 달성을 위해 극단적인 고위험 투자가 필요합니다. 기간이나 저축 가능 금액을 현실적으로 조정해주세요.';
+      }
+
+      const principalRatio = targetAmount > 0 ? Math.min(100, Math.round((result.totalPrincipal / targetAmount) * 100)) : 0;
+      document.getElementById('barPrincipal').style.width = `${principalRatio}%`;
+      document.getElementById('barProfit').style.width = `${100 - principalRatio}%`;
+      document.getElementById('principalRatioText').innerText = `원금 비중 (${principalRatio}%)`;
+      document.getElementById('principalValueText').innerText = `원금: ${formatKoreanWon(result.totalPrincipal)}`;
+      document.getElementById('profitValueText').innerText = `필요 수익: ${formatKoreanWon(result.requiredProfit)}`;
+    }
+
+    function setupInteractiveInput(id) {
+      const el = document.getElementById(id);
+      el.addEventListener('focus', () => { el.value = ''; });
+      el.addEventListener('input', (e) => {
+        const rawVal = parseNumber(e.target.value);
+        e.target.value = rawVal > 0 ? formatNumber(rawVal) : '';
+        updateUI();
+      });
+      el.addEventListener('blur', () => {
+        if (!el.value || el.value.trim() === '') el.value = '0';
+        updateUI();
+      });
+    }
+
+    function addAmount(val) {
+      const el = document.getElementById('targetAmount');
+      el.value = formatNumber(parseNumber(el.value) + val);
+      updateUI();
+    }
+    function setMonths(val) {
+      document.getElementById('months').value = formatNumber(val);
+      updateUI();
+    }
+    function addMonthly(val) {
+      const el = document.getElementById('monthlySaving');
+      el.value = formatNumber(parseNumber(el.value) + val);
+      updateUI();
+    }
+
+    function renderPresets() {
+      const container = document.getElementById('presetContainer');
+      const customWrapper = document.getElementById('customGoalWrapper');
+      container.innerHTML = '';
+
+      PRESETS.forEach(preset => {
+        const btn = document.createElement('button');
+        const isActive = currentPresetId === preset.id;
+        btn.type = 'button';
+        btn.className = `px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+          isActive 
+            ? 'bg-[#FF8A3D] text-white shadow-sm' 
+            : 'bg-white text-slate-600 border border-slate-200 hover:border-[#FF8A3D]'
+        }`;
+        btn.innerText = preset.label;
+        btn.onclick = () => {
+          currentPresetId = preset.id;
+          if (preset.id === 'custom') {
+            customWrapper.classList.remove('hidden');
+            setTimeout(() => {
+              document.getElementById('customGoalTitle').focus();
+            }, 50);
+          } else {
+            customWrapper.classList.add('hidden');
+          }
+          document.getElementById('targetAmount').value = formatNumber(preset.amount);
+          document.getElementById('months').value = formatNumber(preset.months);
+          document.getElementById('monthlySaving').value = formatNumber(preset.monthly);
+          renderPresets();
+          updateUI();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function goToStep2() {
+      const months = Math.max(1, parseNumber(document.getElementById('months').value));
+      const isRetirement = (currentPresetId === 'retirement');
+      const isSafe = (lastSimResult && lastSimResult.status === 'SAFE');
+
+      let goalName = '';
+      if (currentPresetId === 'custom') {
+        const customTitle = document.getElementById('customGoalTitle').value.trim();
+        goalName = customTitle ? customTitle : '나만의 목적자금';
+      } else {
+        goalName = PRESETS.find(p => p.id === currentPresetId)?.label || '목적자금';
+      }
+
+      document.getElementById('summaryGoalName').innerText = goalName;
+      document.getElementById('summaryPeriodText').innerText = `목표 기간 ${months}개월 (${(months/12).toFixed(1)}년) · 요구 수익률 연 ${lastSimResult.requiredReturnRate}%`;
+
+      const banner = document.getElementById('recommendationBanner');
+      const bannerTag = document.getElementById('bannerTag');
+      const bannerTitle = document.getElementById('matchedAccountTitle');
+      const bannerDesc = document.getElementById('matchedAccountDesc');
+      const fundsContainer = document.getElementById('fundsContainer');
+      const tipBox = document.getElementById('accountTipBox');
+
+      fundsContainer.innerHTML = '';
+
+      if (isRetirement) {
+        banner.className = 'p-4 rounded-2xl bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-md';
+        bannerTag.innerText = '은퇴/노후 전용 계좌';
+        bannerTitle.innerText = '연금저축펀드 & IRP';
+        bannerDesc.innerText = '매년 최대 16.5%의 연말정산 세액공제를 받으며 55세 이후까지 비과세 복리로 자산을 키우는 최적의 노후 바구니입니다.';
+        
+        renderFundCards([
+          { name: '생애주기 TDF 2045/2050 펀드', badge: '자동 자산배분', desc: '은퇴 시점에 맞춰 주식과 채권 비중을 알아서 리밸런싱해주는 펀드', risk: '중위험' },
+          { name: '글로벌 지수 추종 ETF (전세계 주식)', badge: '장기 복리성장', desc: '전 세계 1등 기업들에 장기 적립식으로 분산투자하는 대표 인덱스 펀드', risk: '중고위험' },
+          { name: '미국 단기/중기 국채 펀드 (IRP 안전자산용)', badge: '안전자산 30%', desc: 'IRP 안전자산 의무 비중(30%)을 채우며 하락장을 방어하는 채권 펀드', risk: '저위험' }
+        ]);
+
+        tipBox.innerHTML = '<strong>💡 연금 운용 팁:</strong> 매년 돌려받는 세액공제 환급금을 다시 연금저축에 재투자하면 복리 효과로 20년 뒤 수천만 원의 추가 자산이 형성됩니다.';
+      }
+      else if (isSafe) {
+        banner.className = 'p-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md';
+        bannerTag.innerText = '원금 보존 중심 솔루션';
+        bannerTitle.innerText = '1금융권 적금 & CMA 통장';
+        bannerDesc.innerText = '현재 저축액만으로도 목표를 달성할 수 있어요! 굳이 원금 손실 위험을 안고 투자할 필요 없이 안전한 확정금리 상품을 권장합니다.';
+
+        renderFundCards([
+          { name: '1금융권 정기/자유적금', badge: '원금 100% 보장', desc: '정해진 만기까지 안정된 확정 이자(연 3~4%대)를 확실하게 챙기는 상품', risk: '초안전' },
+          { name: '증권사 발행어음형 / RP형 CMA', badge: '수시 입출금', desc: '하루만 맡겨도 매일 연 3%대 이자가 붙으며 언제든 찾을 수 있는 파킹 계좌', risk: '초안전' }
+        ]);
+
+        tipBox.innerHTML = '<strong>💡 코칭 한마디:</strong> 무리한 투자는 불필요한 스트레스를 줍니다. 지금 페이스대로 안전하게 모아 목표를 확실하게 완성해 보세요.';
+      }
+      else if (months < 36) {
+        banner.className = 'p-4 rounded-2xl bg-gradient-to-r from-[#FF8A3D] to-amber-600 text-white shadow-md';
+        bannerTag.innerText = '3년 미만 단기 투자 계좌';
+        bannerTitle.innerText = 'CMA 계좌 + 단기 저변동 펀드';
+        bannerDesc.innerText = '3년 안에 쓸 돈은 큰 하락이 오면 위험해요! 수시 입출금이 가능한 CMA 안에서 가격 변동이 매우 작은 펀드로 초과수익을 노립니다.';
+
+        renderFundCards([
+          { name: '초단기 금리형 ETF (CD금리 / KOFR)', badge: '하루단위 이자', desc: '은행 파킹통장보다 높은 금리를 일 단위 복리로 안정적으로 쌓아가는 상품', risk: '초저위험' },
+          { name: '단기 우량 국공채 펀드', badge: '예금 + α', desc: '만기 1년 내외의 국가·우량 은행 채권에 투자해 정기예금 이상의 금리를 추구', risk: '저위험' },
+          { name: '공모주 / 채권혼합형 펀드', badge: '알파 수익', desc: '채권 80%로 원금을 방어하고 공모주나 우량 배당주로 추가 수익 창출', risk: '중저위험' }
+        ]);
+
+        tipBox.innerHTML = '<strong>💡 단기 투자 원칙:</strong> 3년 이내 자금은 주식 비중을 20% 이내로 엄격히 제한하여 목표 시점에 손실 상태로 해지하는 일을 방지해야 합니다.';
+      }
+      else {
+        banner.className = 'p-4 rounded-2xl bg-gradient-to-r from-[#FF8A3D] to-[#E67220] text-white shadow-md';
+        bannerTag.innerText = '3년 이상 중기 목돈 계좌';
+        bannerTitle.innerText = 'ISA (개인종합자산관리계좌)';
+        bannerDesc.innerText = '3년 이상 굴릴 수 있는 자금이므로 최대 200~400만 원 비과세 혜택을 받으며 본격적인 펀드·ETF 투자를 하기에 가장 완벽한 계좌입니다.';
+
+        renderFundCards([
+          { name: '미국 S&P500 / 나스닥100 ETF (국내상장)', badge: '시장 대표성장', desc: '세계 최강 미국 1등 기업들에 장기 분산투자하여 자본 성장을 극대화', risk: '중고위험' },
+          { name: '미국 배당다우존스 / 월배당 펀드', badge: '안정적 배당수익', desc: '배당금을 매월 안정적으로 받아 재투자할 수 있는 탄탄한 우량 가치주 펀드', risk: '중위험' },
+          { name: '글로벌 올웨더 자산배분 펀드', badge: '하락장 방어', desc: '주식, 채권, 원자재에 골고루 나누어 시장 급락기에도 계좌를 안전하게 지킴', risk: '중위험' }
+        ]);
+
+        tipBox.innerHTML = '<strong>💡 ISA 절세 혜택:</strong> 일반 계좌라면 15.4% 떼일 세금을 아껴 전액 재투자할 수 있어 3~5년 뒤 만기 수령액이 크게 벌어집니다.';
+      }
+
+      document.getElementById('step1View').classList.add('hidden');
+      document.getElementById('step2View').classList.remove('hidden');
+      document.getElementById('step2View').classList.add('flex');
+    }
+
+    function renderFundCards(funds) {
+      const container = document.getElementById('fundsContainer');
+      container.innerHTML = '';
+      
+      funds.forEach((f) => {
+        const card = document.createElement('div');
+        card.className = 'p-3 rounded-xl border border-[#EFE6D8] bg-[#FDFBF7] hover:border-[#FF8A3D] transition-all shadow-sm';
+        card.innerHTML = `
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-bold text-slate-800">${f.name}</span>
+            <span class="text-[10px] bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded font-semibold">${f.badge}</span>
+          </div>
+          <p class="text-[11px] text-slate-500 leading-tight">${f.desc}</p>
+          <div class="mt-1.5 flex justify-between items-center text-[10px] text-slate-400">
+            <span>위험도: <strong class="text-slate-600">${f.risk}</strong></span>
+            <button type="button" onclick="openFundModal('${f.name}')" class="text-[#E67220] font-bold hover:underline">
+              상세보기 ❯
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function openFundModal(fundName) {
+      const detail = FUND_DETAILS[fundName];
+      if (!detail) return;
+
+      document.getElementById('modalFundName').innerText = fundName;
+      document.getElementById('modalFundBadge').innerText = detail.badge;
+      document.getElementById('modalFundReason').innerText = detail.reason;
+      document.getElementById('modalFundRisk').innerText = detail.risk;
+      document.getElementById('modalFundWeight').innerText = detail.weight;
+      document.getElementById('modalFundCaution').innerText = detail.caution;
+
+      const exContainer = document.getElementById('modalFundExamples');
+      exContainer.innerHTML = '';
+      detail.examples.forEach(ex => {
+        const item = document.createElement('div');
+        item.className = 'text-xs bg-slate-100 px-2.5 py-1 rounded-lg text-slate-700 font-medium';
+        item.innerText = `• ${ex}`;
+        exContainer.appendChild(item);
+      });
+
+      document.getElementById('fundDetailModal').classList.remove('hidden');
+    }
+
+    function closeFundModal() {
+      document.getElementById('fundDetailModal').classList.add('hidden');
+    }
+
+    function goToStep1() {
+      document.getElementById('step2View').classList.add('hidden');
+      document.getElementById('step2View').classList.remove('flex');
+      document.getElementById('step1View').classList.remove('hidden');
+      document.getElementById('step1View').classList.add('flex');
+    }
+
+    function navToAppTab(tabName) {
+      window.location.href = `index.html?tab=${tabName}`;
+    }
+
+    document.getElementById('btnGoToStep2').addEventListener('click', goToStep2);
+    document.getElementById('btnBackToStep1').addEventListener('click', goToStep1);
+
+    document.getElementById('fundDetailModal').addEventListener('click', (e) => {
+      if (e.target.id === 'fundDetailModal') closeFundModal();
+    });
+
+    setupInteractiveInput('targetAmount');
+    setupInteractiveInput('months');
+    setupInteractiveInput('monthlySaving');
+
+    renderPresets();
+    updateUI();
+  </script>
+</body>
+</html>

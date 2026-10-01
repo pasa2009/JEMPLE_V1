@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>잼플 (Jample) - 재무링과 함께하는 돈 루틴</title>
+  <style>
+    :root {
+      --primary: #FF8A3D;        /* 메인 오렌지 */
+      --primary-dark: #E67220;   /* 딥 오렌지 */
+      --brown: #8B5A2B;          /* 도토리 브라운 */
+      --sprout: #7CC242;         /* 새싹 그린 */
+      --cream: #FFF8E8;          /* 크림 화이트 */
+      --bg-color: #F8F9FA;
+      --card-bg: #FFFFFF;
+      --text-main: #212529;
+      --text-sub: #6C757D;
+      --border-color: #EFE6D8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #E2E8F0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    
+    .app-frame {
+      width: 100%;
+      max-width: 400px;
+      height: 840px;
+      background-color: var(--bg-color);
+      border-radius: 36px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* ─── C안 브랜드 스플래시 화면 스타일 ─── */
+    #splash-screen {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #FFFFFF 0%, var(--cream) 100%);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.45s ease-out, visibility 0.45s;
+    }
+    #splash-screen.fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .splash-logo {
+      height: 38px;
+      object-fit: contain;
+      margin-bottom: 20px;
+      animation: popIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .splash-mascot-box {
+      width: 120px;
+      height: 120px;
+      background: #FFFFFF;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid var(--primary);
+      box-shadow: 0 10px 24px rgba(255,138,61,0.22);
+      margin-bottom: 18px;
+      animation: bounceIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .splash-mascot-img {
+      width: 96px;
+      height: 96px;
+      object-fit: contain;
+    }
+    .splash-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--brown);
+      letter-spacing: -0.3px;
+      animation: fadeIn 0.8s ease-out 0.25s both;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes bounceIn {
+      0% { transform: translateY(20px) scale(0.6); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    /* ─────────────────────────────────────── */
+
+    .screen { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 20px; }
+    .screen.active { display: flex; }
+
+    /* 통일된 상단 헤더 스타일 */
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .brand-logo-img { height: 26px; object-fit: contain; display: block; }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-sub-title { font-size: 13.5px; font-weight: bold; color: var(--brown); }
+    
+    .card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(139,90,43,0.06); border: 1px solid var(--border-color); }
+
+    .welcome-container {
+      flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px 10px;
+    }
+    .welcome-mascot-box {
+      width: 140px; height: 140px; background: var(--cream); border-radius: 50%;
+      display: flex; justify-content: center; align-items: center; overflow: hidden;
+      margin-bottom: 16px; border: 3px solid var(--primary); box-shadow: 0 8px 16px rgba(255,138,61,0.2);
+      animation: float 2.5s ease-in-out infinite;
+    }
+    .welcome-mascot-img {
+      width: 110px; height: 110px; object-fit: contain;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .welcome-title { font-size: 22px; font-weight: bold; color: var(--text-main); margin-bottom: 12px; line-height: 1.35; }
+    .welcome-sub { font-size: 13.5px; color: var(--text-sub); line-height: 1.6; margin-bottom: 30px; }
+    .feature-tag-list { display: flex; gap: 8px; margin-bottom: 36px; }
+    .feature-tag { background: var(--cream); color: var(--brown); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1px solid #F5E5C9; }
+
+    /* 온보딩 상단 배너 */
+    .onboarding-ring-banner {
+      background: var(--cream); border-radius: 16px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 18px; border: 1px solid #F5E5C9;
+    }
+    .ring-avatar-small-img {
+      width: 50px; height: 50px; object-fit: contain; flex-shrink: 0;
+    }
+    .ring-banner-text { font-size: 13px; color: var(--brown); font-weight: 500; line-height: 1.4; }
+
+    /* 홈 상단 목표 진척도 카드 */
+    .goal-progress-box {
+      text-align: center; padding: 16px 14px; background: linear-gradient(180deg, var(--cream) 0%, #FFFFFF 100%);
+      border-radius: 20px; margin-bottom: 12px; border: 1px solid var(--border-color);
+    }
+    .speech-bubble {
+      background: #FFF; border: 1.5px solid var(--primary); padding: 6px 12px; border-radius: 14px;
+      font-size: 12px; color: var(--primary-dark); display: inline-block; margin-bottom: 8px; line-height: 1.45; font-weight: 600;
+      box-shadow: 0 2px 6px rgba(255,138,61,0.1);
+      transition: color 0.3s;
+    }
+    .ring-avatar-main-img {
+      width: 90px; height: 90px; object-fit: contain; display: block; margin: 0 auto 8px auto;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.06));
+    }
+    .goal-bar-bg { width: 100%; height: 10px; background: #EFEFEF; border-radius: 5px; overflow: hidden; margin-bottom: 6px; }
+    .goal-bar-fill { height: 100%; width: 27%; background: linear-gradient(90deg, #81C784, var(--sprout)); transition: width 0.4s ease-out; }
+    .goal-metric-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-sub); }
+
+    /* 캘린더 영역 */
+    .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+    .cal-day-label { font-size: 11px; color: var(--text-sub); margin-bottom: 4px; }
+    .cal-cell {
+      background: #F8F9FA; border-radius: 8px; padding: 5px 2px; min-height: 48px; font-size: 11px;
+      display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; border: 1px solid transparent;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .cal-cell:hover { background: #F1F3F5; }
+    .cal-cell.today { border: 2px solid var(--primary); background: #FFF; font-weight: bold; }
+    .cal-cell.selected-cursor { outline: 2.5px solid var(--primary-dark); background: #FFF3E0 !important; font-weight: bold; }
+    .cal-cell.future-day { opacity: 0.45; cursor: not-allowed; background: #F8F9FA !important; }
+    .cal-cell.pre-launch-day { opacity: 0.4; background: #F1F3F5 !important; cursor: not-allowed; }
+    .cal-day-text { width: 100%; text-align: right; display: block; font-size: 10.5px; padding-right: 2px; }
+    .stamp-dot { font-size: 12px; text-align: center; }
+    .fixed-pin { font-size: 8.5px; background: #FFEBEE; color: #C62828; padding: 1px 2px; border-radius: 3px; margin-top: 1px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+    .cal-banner-prelaunch {
+      background: #ECEFF1; color: #546E7A; font-size: 11px; text-align: center; padding: 6px; border-radius: 8px; margin-bottom: 8px; font-weight: 600;
+    }
+
+    /* 생활비 수위조절 카드 */
+    .gauge-title { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+    .gauge-bar-bg { width: 100%; height: 8px; background: #E9ECEF; border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+    .gauge-bar { height: 100%; width: 100%; background: #42A5F5; transition: width 0.3s, background-color 0.3s; }
+
+    .btn-main { background: var(--primary); color: #FFF; border: none; border-radius: 14px; padding: 14px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; box-shadow: 0 4px 10px rgba(255,138,61,0.25); display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-main:active { background: var(--primary-dark); }
+    .btn-secondary { background: #FFF; border: 1.5px solid var(--border-color); color: var(--brown); border-radius: 14px; padding: 12px; font-size: 14px; font-weight: bold; width: 100%; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-secondary:active { background: #F8F9FA; }
+    .action-row { display: flex; gap: 8px; margin-top: auto; }
+
+    /* 리포트 스타일 */
+    .report-card-title {
+      font-size: 14px; font-weight: bold; color: var(--brown); display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+    }
+    .report-title-icon {
+      width: 26px; height: 26px; object-fit: contain; flex-shrink: 0;
+    }
+    .report-badge {
+      display: inline-block; font-size: 11.5px; font-weight: bold; padding: 4px 10px; border-radius: 12px; margin-bottom: 8px;
+    }
+    .report-stat-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;
+    }
+    .report-stat-box {
+      background: #FDFBF7; border-radius: 16px; padding: 12px 8px; text-align: center; border: 1px solid var(--border-color);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .report-stat-box-icon {
+      width: 44px; height: 44px; object-fit: contain; margin-bottom: 6px;
+    }
+    .report-cat-row {
+      display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; margin-bottom: 6px;
+    }
+    .report-cat-bar-bg {
+      width: 100%; height: 6px; background: #ECEFF1; border-radius: 3px; overflow: hidden; margin-bottom: 10px;
+    }
+    .report-cat-bar-fill {
+      height: 100%; background: var(--primary); border-radius: 3px;
+    }
+
+    /* 공통 3D 아이콘 라벨 스타일 */
+    .ui-label-with-icon {
+      display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold; color: var(--brown); margin-bottom: 6px;
+    }
+    .ui-input-icon {
+      width: 20px; height: 20px; object-fit: contain; flex-shrink: 0;
+    }
+    .ui-btn-icon {
+      width: 20px; height: 20px; object-fit: contain; flex-shrink: 0;
+    }
+    .ui-card-title {
+      font-size: 14px; font-weight: bold; color: var(--brown); display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    }
+    .ui-title-icon {
+      width: 24px; height: 24px; object-fit: contain; flex-shrink: 0;
+    }
+
+    /* 하단 내비게이션 바 */
+    .nav-bar { 
+      background: #FFF; border-top: 1px solid var(--border-color); 
+      display: flex; justify-content: space-around; padding: 8px 0 10px 0; 
+    }
+    .nav-item { 
+      border: none; background: none; flex: 1; cursor: pointer; 
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; 
+    }
+    .nav-icon { 
+      width: 28px; height: 28px; object-fit: contain; transition: transform 0.15s ease-out; 
+    }
+    .nav-label { 
+      font-size: 11px; color: #9E9E9E; font-weight: 600; 
+    }
+    .nav-item.active .nav-label { 
+      color: var(--primary); font-weight: bold; 
+    }
+    .nav-item.active .nav-icon { 
+      transform: scale(1.08); 
+    }
+
+    .step-box { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .step-title { font-size: 20px; font-weight: bold; color: var(--text-main); margin-bottom: 6px; }
+    .step-sub { font-size: 13.5px; color: var(--text-sub); margin-bottom: 20px; line-height: 1.4; }
+    .input-group { margin-bottom: 16px; }
+    .input-label { font-size: 13px; font-weight: bold; color: var(--brown); margin-bottom: 6px; display: block; }
+    .input-text { 
+      width: 100%; padding: 14px; border: 1.5px solid var(--border-color); border-radius: 12px; font-size: 16px; 
+      text-align: right; background: #FFF;
+    }
+    .input-text:focus { outline: none; border-color: var(--primary); }
+    .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .chip { padding: 8px 14px; border-radius: 20px; background: #F8F9FA; font-size: 13px; cursor: pointer; border: 1.5px solid var(--border-color); color: var(--text-main); }
+    .chip.selected { background: var(--cream); border-color: var(--primary); color: var(--primary-dark); font-weight: bold; }
+
+    .fixed-item {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--cream); border-radius: 10px; padding: 8px 12px; margin-bottom: 6px; font-size: 13px; border: 1px solid #F5E5C9;
+    }
+    .fixed-item-left { display: flex; align-items: center; gap: 8px; color: var(--brown); font-weight: bold; }
+    .fixed-item-right { display: flex; align-items: center; gap: 8px; }
+    .fixed-delete-btn { color: #E53935; cursor: pointer; font-size: 14px; border: none; background: none; padding: 2px 6px; }
+
+    .fixed-form-card {
+      background: #FDFBF7; border: 1px dashed var(--border-color); border-radius: 12px; padding: 12px; margin-top: 10px;
+    }
+    .fixed-form-row {
+      display: flex; gap: 8px; margin-bottom: 8px;
+    }
+    .input-mini {
+      width: 100%; padding: 10px 12px; border: 1.5px solid var(--border-color); border-radius: 10px; font-size: 13.5px; background: #FFF;
+    }
+    .input-mini:focus { outline: none; border-color: var(--primary); }
+
+    .sheet-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: flex-end; }
+    .sheet-overlay.active { display: flex; }
+    .sheet-content { background: #FFF; width: 100%; border-radius: 24px 24px 0 0; padding: 22px 20px; animation: slideUp 0.25s ease-out; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    .receipt-scan-banner {
+      background: var(--cream); border: 1.5px dashed var(--primary); border-radius: 14px;
+      padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px; cursor: pointer;
+    }
+    .receipt-preview-box {
+      display: none; align-items: center; gap: 10px; margin-bottom: 12px;
+      padding: 8px 10px; background: #F1F8E9; border-radius: 10px; border: 1px solid #C8E6C9;
+    }
+    .receipt-preview-img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; }
+  </style>
+</head>
+<body>
+
+<div class="app-frame">
+
+  <!-- ================= [C안] 1.3초 브랜드 스플래시 화면 ================= -->
+  <div id="splash-screen">
+    <img src="logo.png" class="splash-logo" alt="Jample">
+    <div class="splash-mascot-box">
+      <img src="RING1.png" class="splash-mascot-img" alt="씨앗 재무링">
+    </div>
+    <div class="splash-text">재무링과 함께하는 쉬운 돈 루틴</div>
+  </div>
+
+  <!-- ================= 0. 웰컴 인트로 화면 ================= -->
+  <div id="screen-welcome" class="screen active">
+    <div class="welcome-container">
+      <div class="welcome-mascot-box">
+        <img src="RING1.png" class="welcome-mascot-img" alt="씨앗 재무링">
+      </div>
+      <div class="welcome-title">
+        "돈은 씨앗입니다.<br>
+        오늘 심고, 내일 키우세요!"
+      </div>
+      <div class="welcome-sub">
+        작은 돈도 소중한 씨앗이 되어<br>
+        당신의 미래를 키우는 <b>재무링</b>이 함께합니다.
+      </div>
+      
+      <div class="feature-tag-list">
+        <span class="feature-tag">#도토리정원</span>
+        <span class="feature-tag">#5단계성장</span>
+        <span class="feature-tag">#쉬운돈루틴</span>
+      </div>
+
+      <button class="btn-main" onclick="startOnboarding()">
+        <img src="my_icon_setting.png" class="ui-btn-icon" alt="정원 만들기">
+        <span>1분 만에 도토리 정원 만들기</span>
+      </button>
+      <div style="font-size:12px; color:var(--text-sub); margin-top:14px;">가입 없이 바로 체험해볼 수 있어요!</div>
+    </div>
+  </div>
+
+  <!-- ================= 1. 온보딩 화면 ================= -->
+  <div id="screen-onboarding" class="screen">
+    <!-- 온보딩 1단계: 월급날 & 수입 -->
+    <div id="step-1" class="step-box">
+      <div class="onboarding-ring-banner">
+        <img src="RING1.png" class="ring-avatar-small-img" alt="1단계 씨앗 재무링">
+        <div class="ring-banner-text"><b>씨앗 재무링:</b><br>"한 달 동안 정원에 심을 수 있는 소중한 씨앗(수입)을 알려주세요!"</div>
+      </div>
+      <div class="step-title">월급날과 총 수입 입력</div>
+      <div class="step-sub">월급날을 기준으로 매달 달력이 리셋돼요.</div>
+      
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="my_icon_payday.png" class="ui-input-icon" alt="월급 기준일">
+          <span>매월 월급 기준일</span>
+        </label>
+        <input type="text" id="input-payday" class="input-text" placeholder="25일" value="25일" oninput="formatDayInput(this)">
+      </div>
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="my_icon_income.png" class="ui-input-icon" alt="총 수입">
+          <span>한 달 총 수입</span>
+        </label>
+        <input type="text" id="input-income" class="input-text" placeholder="3,000,000원" value="3,000,000원" oninput="formatCurrencyInput(this)">
+      </div>
+      <button class="btn-main" onclick="goToStep(2)">다음 단계로 넘어가기 →</button>
+    </div>
+
+    <!-- 온보딩 2단계: 고정지출 -->
+    <div id="step-2" class="step-box" style="display:none;">
+      <div class="onboarding-ring-banner">
+        <img src="RING2.png" class="ring-avatar-small-img" alt="2단계 배움 재무링">
+        <div class="ring-banner-text"><b>배움 재무링:</b><br>"숨만 쉬어도 나가는 고정지출을 먼저 떼어두어야 마음이 편해요!"</div>
+      </div>
+      <div class="step-title">고정지출 합계 등록</div>
+      <div class="step-sub">월세, 공과금, 대출이자, 보험료, 구독료 등</div>
+      
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="my_icon_fixed_list.png" class="ui-input-icon" alt="고정지출 총액">
+          <span>고정지출 총액</span>
+        </label>
+        <input type="text" id="input-fixed" class="input-text" placeholder="700,000원" value="700,000원" oninput="formatCurrencyInput(this)">
+      </div>
+      <div class="input-group" style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <img src="my_icon_calendar_pin.png" class="ui-input-icon" alt="달력 핀">
+          <span style="font-size:13px; font-weight:bold; color:var(--brown);">달력에 고정지출 표시하기</span>
+        </div>
+        <input type="checkbox" id="toggle-fixed-cal" checked style="width:20px; height:20px; accent-color:var(--primary);">
+      </div>
+      <button class="btn-main" onclick="goToStep(3)">다음 단계로 넘어가기 →</button>
+    </div>
+
+    <!-- 온보딩 3단계: 선저축 -->
+    <div id="step-3" class="step-box" style="display:none;">
+      <div class="onboarding-ring-banner">
+        <img src="RING3.png" class="ring-avatar-small-img" alt="3단계 실천 재무링">
+        <div class="ring-banner-text"><b>실천 재무링 (선저축 원칙):</b><br>"쓰고 남은 돈이 아니라, '먼저 저축할 돈'을 떼어두는 것이 핵심이에요!"</div>
+      </div>
+      <div class="step-title">매달 꼭 떼어두는 저축·투자</div>
+      <div class="step-sub">청약, 정기적금, 연금펀드, 투자 등 고정 저축액</div>
+      
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="my_icon_savings.png" class="ui-input-icon" onerror="this.src='report_icon_base.png'" alt="기본 저축">
+          <span>기본 저축·투자 금액</span>
+        </label>
+        <input type="text" id="input-savings" class="input-text" placeholder="500,000원" value="500,000원" oninput="formatCurrencyInput(this)">
+      </div>
+      <button class="btn-main" onclick="goToStep(4)">생활비 정하러 가기 →</button>
+    </div>
+
+    <!-- 온보딩 4단계: 생활비 목표 -->
+    <div id="step-4" class="step-box" style="display:none;">
+      <div class="onboarding-ring-banner">
+        <img src="RING4.png" class="ring-avatar-small-img" alt="4단계 성장 재무링">
+        <div class="ring-banner-text"><b>성장 재무링:</b><br>"이번 달 쓸 생활비를 정해주시면 하루 예산으로 쪼개서 지켜드릴게요!"</div>
+      </div>
+      <div class="step-title">한 달 생활비 목표 예산</div>
+      <div class="step-sub">식비, 카페, 장보기, 쇼핑 등에 쓸 순수 변동지출</div>
+      
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="my_icon_variable.png" class="ui-input-icon" alt="목표 생활비">
+          <span>목표 생활비(변동지출)</span>
+        </label>
+        <input type="text" id="input-variable" class="input-text" placeholder="1,000,000원" value="1,000,000원" oninput="formatCurrencyInput(this)">
+      </div>
+      <button class="btn-main" onclick="calculateAndGoStep5()">내 도토리 정원 확인하기 →</button>
+    </div>
+
+    <!-- 온보딩 5단계: 정원 완성 & 위시 목표 설정 -->
+    <div id="step-5" class="step-box" style="display:none;">
+      <div class="step-title" style="color:var(--primary-dark); display:flex; align-items:center; gap:8px;">
+        <img src="report_icon_defense.png" style="width:28px; height:28px; object-fit:contain;" alt="완성">
+        <span>도토리 정원이 완성되었어요!</span>
+      </div>
+      
+      <div class="card" style="background:#FFF; padding:14px; margin-bottom:12px; font-size:13.5px; line-height:1.6;">
+        수입 <b><span id="pie-income-val">3,000,000원</span></b> 중<br>
+        • 고정비: <span id="pie-fixed-val">700,000원</span><br>
+        • <b>기본저축: <span id="pie-savings-val" style="color:#2E7D32; font-weight:bold;">500,000원</span></b> (선저축 완료!)<br>
+        • 생활비: <span id="pie-variable-val">1,000,000원</span><br>
+        <hr style="border:none; border-top:1px dashed #E0E0E0; margin:8px 0;">
+        남는 여유 씨앗은 매월 <b style="color:var(--primary); font-size:17px;" id="pie-surplus-val">800,000원</b>이에요!
+      </div>
+
+      <div id="surplus-solution-box" class="card" style="background:var(--cream); border-color:#F5E5C9; margin-bottom:14px;"></div>
+
+      <div class="card" style="background:#FFF; padding:14px; margin-bottom:16px;">
+        <div class="ui-label-with-icon" id="reward-section-title">
+          <img src="my_icon_goal_target.png" class="ui-input-icon" alt="목적">
+          <span>여유자금을 모아서 이루고 싶은 목적</span>
+        </div>
+        <div class="chip-group" id="reward-chip-container" style="margin-top:10px;"></div>
+        <div id="custom-reward-box" style="display:none; margin-top:8px;">
+          <input type="text" id="input-custom-reward" class="input-text" style="text-align:left; font-size:13.5px;" placeholder="예: 첫 차 보증금 마련하기" oninput="updateCustomRewardText(this)">
+        </div>
+        <div style="margin-top:12px; padding-top:10px; border-top:1px solid #F1F3F5;">
+          <label class="ui-label-with-icon" style="justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <img src="my_icon_piggy.png" class="ui-input-icon" alt="목표 금액">
+              <span>달성 목표 금액</span>
+            </div>
+            <span id="expected-months-badge" style="font-size:11px; color:var(--primary); font-weight:normal;">약 4개월 소요 예상</span>
+          </label>
+          <input type="text" id="input-target-goal-amt" class="input-text" style="font-size:15px; padding:10px 12px;" value="3,000,000원" oninput="formatCurrencyInput(this); calculateTargetMonths(this);">
+        </div>
+      </div>
+
+      <button class="btn-main" id="btn-start-routine" onclick="finishOnboarding()">
+        <img src="report_icon_wish.png" class="ui-btn-icon" alt="시작">
+        <span>재무링과 첫 돈 루틴 시작하기!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= 2. [탭 1] 홈 화면 ================= -->
+  <div id="screen-home" class="screen">
+    <div class="header">
+      <img src="logo.png" class="brand-logo-img" alt="Jample">
+      <span id="badge-reward" style="font-size:12px; background:var(--cream); color:var(--brown); padding:4px 8px; border-radius:8px; border:1px solid #F5E5C9; display:flex; align-items:center; gap:4px;">
+        <img src="my_icon_goal_target.png" style="width:14px; height:14px; object-fit:contain;" alt="목표">
+        <span id="badge-reward-text">유럽/미주 여행</span>
+      </span>
+    </div>
+
+    <!-- 상단: 여유자금 모으기 목표 진척도 카드 -->
+    <div class="goal-progress-box">
+      <div class="speech-bubble" id="ring-message">"목표를 향해 첫 씨앗을 심었어요!"</div>
+      
+      <img id="home-ring-avatar" class="ring-avatar-main-img" src="RING1.png" alt="재무링 단계">
+
+      <div class="goal-bar-bg">
+        <div class="goal-bar-fill" id="home-goal-progress-bar" style="width: 27%;"></div>
+      </div>
+      <div class="goal-metric-row">
+        <span>모은 돈: <b id="home-current-saved-val" style="color:var(--primary);">800,000원</b></span>
+        <span>목표 <span id="home-target-goal-val">3,000,000원</span> (<b id="home-goal-percent">27%</b>)</span>
+      </div>
+    </div>
+
+    <!-- 잼플 달력 -->
+    <div class="card">
+      <div class="cal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="btn-secondary" style="padding:4px 8px; font-size:12px; width:auto;" onclick="changeMonth(-1)">◀</button>
+          <span style="font-size:14px; font-weight:bold; color:var(--text-main);" id="cal-month-title">2026년 10월</span>
+          <button class="btn-secondary" style="padding:4px 8px; font-size:12px; width:auto;" onclick="changeMonth(1)">▶</button>
+        </div>
+        <button id="btn-cal-expand" class="btn-secondary" style="width:auto; padding:4px 8px; font-size:11px;" onclick="toggleCalendarExpand()">▲ 주간으로 접기</button>
+      </div>
+
+      <div id="cal-prelaunch-banner" class="cal-banner-prelaunch" style="display:none;">
+        <img src="report_icon_surplus.png" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;" alt="씨앗">
+        <span>잼플을 시작하기 전 달이에요! 기록이 없어요.</span>
+      </div>
+
+      <div class="cal-grid" id="calendar-grid"></div>
+    </div>
+
+    <!-- 생활비 수위조절 카드 -->
+    <div class="card">
+      <div class="gauge-title">
+        <span style="font-weight:bold; color:var(--text-main);">생활비 수위조절</span>
+        <span id="remain-variable-text" style="color:#1976D2; font-weight:bold;">남은 돈: 1,000,000원</span>
+      </div>
+      <div class="gauge-bar-bg"><div class="gauge-bar" id="gauge-fill" style="width:100%;"></div></div>
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-sub);">
+        <span>목표 예산: <span id="target-budget-label">1,000,000원</span></span>
+        <span id="daily-recommend-label" style="font-weight:bold; color:#1976D2;">하루 약 33,000원 권장</span>
+      </div>
+      
+      <hr style="border:none; border-top:1px dashed #E0E0E0; margin:14px 0 12px 0;">
+      <button class="btn-secondary" style="width:100%; padding:10px; font-size:13px; color:var(--text-main);" onclick="openHistorySheet()">
+        <img src="my_icon_fixed_list.png" class="ui-input-icon" alt="내역">
+        <span>이번 달 지출 내역 확인하기</span>
+      </button>
+    </div>
+
+    <!-- 결산 버튼 -->
+    <button id="btn-monthly-settlement" class="btn-main" style="display:none; background:#43A047; box-shadow: 0 4px 10px rgba(67,160,71,0.25); margin-bottom:12px;" onclick="executeMonthlySettlement()">
+      <img src="report_icon_defense.png" class="ui-btn-icon" alt="결산">
+      <span>이번 달 결산하고 도토리 숲으로 보내기</span>
+    </button>
+
+    <!-- 하단 액션 버튼 -->
+    <div class="action-row">
+      <button class="btn-secondary" style="flex:1;" onclick="actionNoSpend()">
+        <img src="report_icon_nospend.png" class="ui-btn-icon" alt="무지출">
+        <span>무지출 성공!</span>
+      </button>
+      <button class="btn-main" style="flex:1.2;" onclick="openTodayExpenseSheet()">
+        <img src="my_icon_add.png" class="ui-btn-icon" alt="지출기록">
+        <span>지출 기록하기</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= 3. [탭 2] 리포트 화면 ================= -->
+  <div id="screen-report" class="screen">
+    <div class="header">
+      <div class="header-left">
+        <img src="logo.png" class="brand-logo-img" alt="Jample">
+        <span class="header-sub-title" id="report-header-month">10월 머니 리포트</span>
+      </div>
+    </div>
+
+    <!-- 1. 이번 달 머니 결산 총평 카드 -->
+    <div class="card" style="text-align:center; padding: 20px 14px;">
+      <div id="report-badge" class="report-badge" style="background:#E8F5E9; color:#2E7D32;">🌿 이번 달 루틴 달리는 중</div>
+      
+      <img id="report-ring-avatar" src="report_icon_total.png" style="width:80px; height:80px; object-fit:contain; margin:4px auto 8px auto; display:block;" alt="저축 아이콘">
+      
+      <div style="font-size:13px; color:var(--text-sub); margin-bottom:4px;" id="report-total-saved-label">현재까지 지켜낸 총 저축액 (중간 점검)</div>
+      <div style="font-size:24px; font-weight:bold; color:var(--primary-dark); margin-bottom:10px;" id="report-total-saved-won">1,300,000원</div>
+      
+      <div class="speech-bubble" id="report-ring-comment">
+        "생활비를 든든히 지켜내고 있어요.<br>이 페이스대로 결산까지 달려봐요!"
+      </div>
+
+      <div class="report-stat-grid">
+        <div class="report-stat-box">
+          <img src="report_icon_base.png" class="report-stat-box-icon" alt="선저축 완료">
+          <div style="font-size:15px; font-weight:bold; color:#2E7D32; margin-top:2px;" id="report-base-savings">500,000원</div>
+        </div>
+        <div class="report-stat-box">
+          <img src="report_icon_surplus.png" class="report-stat-box-icon" alt="남은 여유 씨앗">
+          <div style="font-size:15px; font-weight:bold; color:var(--primary); margin-top:2px;" id="report-surplus-savings">800,000원</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 목표 달성 로드맵 카드 -->
+    <div class="card">
+      <div class="report-card-title">
+        <img src="report_icon_wish.png" class="report-title-icon" alt="위시 목표 로드맵">
+        <span>위시 목표 달성 로드맵</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px;">
+        <span style="font-weight:600; color:var(--text-main);" id="report-goal-name">유럽/미주 낭만 여행</span>
+        <span style="font-weight:bold; color:var(--primary-dark);" id="report-goal-progress-percent">27% 달성</span>
+      </div>
+      <div class="goal-bar-bg" style="margin-bottom:8px;">
+        <div class="goal-bar-fill" id="report-goal-progress-bar" style="width:27%;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-sub); margin-bottom:10px;">
+        <span>누적 모은 돈: <b id="report-current-saved">800,000원</b></span>
+        <span>목표: <span id="report-target-amt">3,000,000원</span></span>
+      </div>
+      <div style="background:var(--cream); padding:8px 10px; border-radius:10px; font-size:11.5px; color:var(--brown); border:1px solid #F5E5C9;" id="report-pace-text">
+        ✨ 지금 속도라면 <b>약 3개월</b> 뒤 목표를 달성할 수 있어요!
+      </div>
+    </div>
+
+    <!-- 3. 생활비 3초 분석 카드 -->
+    <div class="card">
+      <div class="report-card-title" style="justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="report_icon_expense.png" class="report-title-icon" alt="생활비 지출 분석">
+          <span>생활비 지출 분석</span>
+        </div>
+        <span id="report-spent-ratio" style="font-size:11.5px; font-weight:bold; color:#1976D2;">예산 대비 0% 사용</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-sub); margin-bottom:12px;">
+        <span>목표 예산: <span id="report-variable-budget">1,000,000원</span></span>
+        <span>실제 지출: <b id="report-variable-spent" style="color:var(--text-main);">0원</b></span>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:bold; color:var(--text-main); margin-bottom:8px;">
+        <img src="report_icon_top3.png" style="width:18px; height:18px; object-fit:contain;" alt="주요 지출 TOP3">
+        <span>주요 지출 TOP 3</span>
+      </div>
+      <div id="report-top-categories">
+        <div style="text-align:center; color:var(--text-sub); font-size:12px; padding:15px 0;">지출 내역이 없습니다.</div>
+      </div>
+    </div>
+
+    <!-- 4. 무지출 챌린지 스탬프 보드 -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="report-card-title" style="justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="report_icon_nospend.png" class="report-title-icon" alt="무지출 챌린지">
+          <span>무지출 챌린지</span>
+        </div>
+        <span style="font-size:13px; font-weight:bold; color:var(--primary);" id="report-no-spend-days">총 0일 성공</span>
+      </div>
+      <p style="font-size:12px; color:var(--text-sub); line-height:1.5;" id="report-no-spend-desc">
+        무지출을 실천할 때마다 하루 생활비가 고스란히 목표 통장으로 쌓여요!
+      </p>
+    </div>
+  </div>
+
+  <!-- ================= 4. [탭 3] 재무케어 화면 (5대 모듈 정식 연동) ================= -->
+  <div id="screen-care" class="screen">
+    <div class="header">
+      <div class="header-left">
+        <img src="logo.png" class="brand-logo-img" alt="Jample">
+        <span class="header-sub-title">재무케어 진단소</span>
+      </div>
+    </div>
+
+    <!-- 1. 재무 MBTI 진단 -->
+    <div class="card" style="border-left:5px solid var(--primary); cursor:pointer;" onclick="location.href='care_mbti.html'">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="RING2.png" style="width:26px; height:26px; object-fit:contain;" alt="진단" onerror="this.src='RING1.png'">
+          <h4 style="color:var(--text-main); font-size:15px; font-weight:bold;">재무 MBTI 진단</h4>
+        </div>
+        <span style="font-size:11px; font-weight:bold; color:var(--primary-dark); background:var(--cream); border:1px solid #F5E5C9; padding:2px 8px; border-radius:12px;">성향 분석</span>
+      </div>
+      <p style="font-size:12px; color:var(--text-sub); line-height:1.4;">배움 재무링과 함께 돈 관리 성향과 내 금융 캐릭터를 찾아보세요.</p>
+    </div>
+
+    <!-- 2. 스마트 재무건강 진단 -->
+    <div class="card" style="border-left:5px solid #10B981; cursor:pointer;" onclick="location.href='care_diagnosis.html'">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="report_icon_defense.png" style="width:26px; height:26px; object-fit:contain;" alt="가계진단">
+          <h4 style="color:var(--text-main); font-size:15px; font-weight:bold;">스마트 재무건강 진단</h4>
+        </div>
+        <span style="font-size:11px; font-weight:bold; color:#047857; background:#ECFDF5; border:1px solid #A7F3D0; padding:2px 8px; border-radius:12px;">가계 검진</span>
+      </div>
+      <p style="font-size:12px; color:var(--text-sub); line-height:1.4;">또래 권장 표준치와 비교해 보는 1분 가계 현금흐름 처방전</p>
+    </div>
+
+    <!-- 3. 목적자금 바구니 설계법 -->
+    <div class="card" style="border-left:5px solid #1976D2; cursor:pointer;" onclick="location.href='care_basket.html'">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="report_icon_wish.png" style="width:26px; height:26px; object-fit:contain;" alt="목적자금">
+          <h4 style="color:var(--text-main); font-size:15px; font-weight:bold;">목적자금 바구니 설계법</h4>
+        </div>
+        <span style="font-size:11px; font-weight:bold; color:#1D4ED8; background:#EFF6FF; border:1px solid #BFDBFE; padding:2px 8px; border-radius:12px;">목돈 플랜</span>
+      </div>
+      <p style="font-size:12px; color:var(--text-sub); line-height:1.4;">300만 원 이상 목돈을 가장 안전하고 똑똑하게 모으는 비결</p>
+    </div>
+
+    <!-- 4. 투자 포트폴리오 건강검진 -->
+    <div class="card" style="border-left:5px solid var(--brown); cursor:pointer;" onclick="location.href='care_invest.html'">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="report_icon_expense.png" style="width:26px; height:26px; object-fit:contain;" alt="투자진단">
+          <h4 style="color:var(--text-main); font-size:15px; font-weight:bold;">투자 포트폴리오 건강검진</h4>
+        </div>
+        <span style="font-size:11px; font-weight:bold; color:var(--brown); background:var(--cream); border:1px solid #F5E5C9; padding:2px 8px; border-radius:12px;">자산 배분</span>
+      </div>
+      <p style="font-size:12px; color:var(--text-sub); line-height:1.4;">유형·지역·산업별 자산 배분과 하락장 방어 버퍼 점검</p>
+    </div>
+
+    <!-- 5. 대출 스마트 관리 -->
+    <div class="card" style="border-left:5px solid #E91E63; cursor:pointer;" onclick="location.href='care_debt.html'">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="my_icon_insurance.png" style="width:26px; height:26px; object-fit:contain;" alt="대출">
+          <h4 style="color:var(--text-main); font-size:15px; font-weight:bold;">대출 스마트 관리</h4>
+        </div>
+        <span style="font-size:11px; font-weight:bold; color:#BE123C; background:#FFF1F2; border:1px solid #FECDD3; padding:2px 8px; border-radius:12px;">부채 상환</span>
+      </div>
+      <p style="font-size:12px; color:var(--text-sub); line-height:1.4;">위험관리 방패로 소득 대비 금리 부담과 상환 순서를 점검합니다.</p>
+    </div>
+  </div>
+
+  <!-- ================= 5. [탭 4] 마이(MY) 화면 ================= -->
+  <div id="screen-my" class="screen">
+    <div class="header">
+      <div class="header-left">
+        <img src="logo.png" class="brand-logo-img" alt="Jample">
+        <span class="header-sub-title">내 자금관리 설정</span>
+      </div>
+    </div>
+    
+    <!-- 1. 도토리 정원 기본 설정 카드 -->
+    <div class="card">
+      <div class="ui-card-title">
+        <img src="my_icon_setting.png" class="ui-title-icon" alt="도토리 정원 기본 설정">
+        <span>도토리 정원 기본 설정</span>
+      </div>
+      
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="my_icon_payday.png" class="ui-input-icon" alt="월급 기준일">
+          <span>월급 기준일</span>
+        </label>
+        <input type="text" id="my-payday" class="input-text" oninput="formatDayInput(this)">
+      </div>
+
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="my_icon_income.png" class="ui-input-icon" alt="한 달 총 수입">
+          <span>한 달 총 수입</span>
+        </label>
+        <input type="text" id="my-income" class="input-text" oninput="formatCurrencyInput(this)">
+      </div>
+
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="my_icon_savings.png" class="ui-input-icon" onerror="this.src='report_icon_base.png'" alt="기본 저축">
+          <span>기본 저축·투자 (선저축)</span>
+        </label>
+        <input type="text" id="my-base-savings" class="input-text" oninput="formatCurrencyInput(this)">
+      </div>
+
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="my_icon_variable.png" class="ui-input-icon" alt="한 달 생활비 목표">
+          <span>한 달 생활비 목표</span>
+        </label>
+        <input type="text" id="my-variable" class="input-text" oninput="formatCurrencyInput(this)">
+      </div>
+    </div>
+
+    <!-- 2. 고정지출 세부 내역 카드 -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div class="ui-card-title" style="margin-bottom:0;">
+          <img src="my_icon_fixed_list.png" class="ui-title-icon" alt="고정지출 세부 내역">
+          <span>고정지출 세부 내역</span>
+        </div>
+        <span id="my-fixed-total-badge" style="font-size:13px; font-weight:bold; color:var(--primary);">합계: 700,000원</span>
+      </div>
+      
+      <div id="fixed-items-list" style="margin-bottom:12px;"></div>
+
+      <div class="fixed-form-card">
+        <div style="display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:bold; color:var(--brown); margin-bottom:8px;">
+          <img src="my_icon_add.png" style="width:18px; height:18px; object-fit:contain;" alt="등록">
+          <span>새로운 고정지출 등록</span>
+        </div>
+        <div class="fixed-form-row">
+          <input type="text" id="add-fixed-name" class="input-mini" placeholder="항목명 (예: 운동비, 월세)" style="flex: 1.4;">
+          <input type="text" id="add-fixed-day" class="input-mini" placeholder="출금일" style="flex: 0.9; text-align:right;" oninput="formatDayInput(this)">
+        </div>
+        <div style="margin-bottom:8px;">
+          <input type="text" id="add-fixed-amt" class="input-mini" placeholder="금액 (예: 150,000원)" style="text-align:right;" oninput="formatCurrencyInput(this)">
+        </div>
+        <button class="btn-main" style="padding:10px; font-size:13px; border-radius:10px;" onclick="addFixedItem()">
+          <img src="my_icon_add.png" class="ui-btn-icon" alt="추가">
+          <span>고정지출 항목 추가하기</span>
+        </button>
+      </div>
+
+      <div class="input-group" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; margin-bottom:0;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <img src="my_icon_calendar_pin.png" style="width:18px; height:18px; object-fit:contain;" alt="달력에 표시">
+          <span style="font-size:13px; font-weight:bold; color:var(--brown);">달력에 고정지출 표시</span>
+        </div>
+        <input type="checkbox" id="my-toggle-fixed" style="width:20px; height:20px; accent-color:var(--primary);">
+      </div>
+    </div>
+
+    <!-- 3. 목표 목적 & 달성 금액 카드 -->
+    <div class="card">
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="my_icon_goal_target.png" class="ui-input-icon" alt="목표 목적">
+          <span>목표 목적 (위시)</span>
+        </label>
+        <input type="text" id="my-goal-name" class="input-text" style="text-align:left; font-size:14px;" placeholder="예: 유럽/미주 낭만 여행">
+      </div>
+      <div class="input-group" style="margin-bottom:0;">
+        <label class="ui-label-with-icon">
+          <img src="my_icon_piggy.png" class="ui-input-icon" alt="달성 목표 금액">
+          <span>달성 목표 금액</span>
+        </label>
+        <input type="text" id="my-goal-amt" class="input-text" oninput="formatCurrencyInput(this)">
+      </div>
+    </div>
+
+    <button class="btn-main" onclick="saveMySettings()">
+      <img src="report_icon_defense.png" class="ui-btn-icon" alt="저장">
+      <span>설정 저장 및 정원 갱신</span>
+    </button>
+  </div>
+
+  <!-- ================= 하단 4대 탭 ================= -->
+  <div class="nav-bar" id="bottom-nav" style="display:none;">
+    <button class="nav-item active" onclick="switchTab('home', this)">
+      <img src="nav_home_on.png" class="nav-icon" data-name="home" alt="홈">
+      <span class="nav-label">홈</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('report', this)">
+      <img src="nav_report_off.png" class="nav-icon" data-name="report" alt="리포트">
+      <span class="nav-label">리포트</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('care', this)">
+      <img src="nav_care_off.png" class="nav-icon" data-name="care" alt="재무케어">
+      <span class="nav-label">재무케어</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('my', this)">
+      <img src="nav_my_off.png" class="nav-icon" data-name="my" alt="마이">
+      <span class="nav-label">마이</span>
+    </button>
+  </div>
+
+  <!-- ================= 월간 전체 지출 내역서 바텀시트 ================= -->
+  <div class="sheet-overlay" id="history-sheet" onclick="closeHistorySheet(event)">
+    <div class="sheet-content" onclick="event.stopPropagation()" style="height: 75vh; display: flex; flex-direction: column;">
+      <div style="font-size:16px; font-weight:bold; margin-bottom:16px; color:var(--brown); display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="my_icon_fixed_list.png" class="ui-input-icon" alt="내역">
+          <span id="history-sheet-title">이번 달 생활비 지출 내역</span>
+        </div>
+        <span style="cursor:pointer; padding:4px;" onclick="closeHistorySheet()">✕</span>
+      </div>
+      <div id="history-list-container" style="flex:1; overflow-y:auto; padding-bottom: 20px;"></div>
+    </div>
+  </div>
+
+  <!-- ================= 지출 등록 바텀시트 ================= -->
+  <div class="sheet-overlay" id="expense-sheet" onclick="closeExpenseSheet(event)">
+    <div class="sheet-content" onclick="event.stopPropagation()">
+      <div style="font-size:16px; font-weight:bold; margin-bottom:12px; color:var(--brown); display:flex; align-items:center; gap:8px;">
+        <img src="my_icon_add.png" class="ui-input-icon" alt="등록">
+        <span><span id="sheet-target-date-label">오늘</span> 쓴 생활비 등록</span>
+      </div>
+
+      <label class="receipt-scan-banner" for="receipt-file-input">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="report_icon_expense.png" style="width:28px; height:28px; object-fit:contain;" alt="영수증">
+          <div>
+            <b style="font-size:12.5px; color:var(--brown);">영수증 사진으로 자동 입력</b><br>
+            <span style="font-size:11px; color:var(--text-sub);">사진을 찍거나 올리면 금액을 읽어와요!</span>
+          </div>
+        </div>
+        <span style="font-size:12px; font-weight:bold; color:var(--primary); background:#FFF; padding:4px 8px; border-radius:8px; border:1px solid var(--border-color);">사진 첨부</span>
+      </label>
+      <input type="file" id="receipt-file-input" accept="image/*" style="display:none;" onchange="handleReceiptUpload(event)">
+
+      <div id="receipt-preview-box" class="receipt-preview-box">
+        <img id="receipt-preview-img" class="receipt-preview-img" src="" alt="영수증">
+        <div style="font-size:11.5px; color:#2E7D32; line-height:1.35;" id="receipt-status-text">
+          <b>계산기 재무링이 분석 중... 🔍</b>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="report_icon_expense.png" class="ui-input-icon" alt="지출 금액">
+          <span>지출 금액</span>
+        </label>
+        <input type="text" id="sheet-amount" class="input-text" placeholder="15,000원" autofocus oninput="formatCurrencyInput(this)">
+      </div>
+
+      <div class="input-group">
+        <label class="ui-label-with-icon">
+          <img src="report_icon_top3.png" class="ui-input-icon" alt="카테고리">
+          <span>카테고리</span>
+        </label>
+        <div class="chip-group" id="sheet-cats">
+          <div class="chip selected" onclick="selectCat(this)">🍚 식비</div>
+          <div class="chip" onclick="selectCat(this)">☕ 카페/간식</div>
+          <div class="chip" onclick="selectCat(this)">🛒 마트</div>
+          <div class="chip" onclick="selectCat(this)">🛍️ 쇼핑</div>
+          <div class="chip" onclick="selectCat(this)">🚕 교통</div>
+        </div>
+      </div>
+
+      <button class="btn-main" onclick="submitExpense()">
+        <img src="report_icon_defense.png" class="ui-btn-icon" alt="등록">
+        <span>등록하고 재무링 키우기</span>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const now = new Date();
+  const CURRENT_YEAR = now.getFullYear();
+  const CURRENT_MONTH = now.getMonth() + 1;
+  const TODAY = now.getDate();
+
+  function isFutureDate(y, m, d) {
+    const targetDate = new Date(y, m - 1, d);
+    const todayDate = new Date(CURRENT_YEAR, CURRENT_MONTH - 1, TODAY);
+    return targetDate > todayDate;
+  }
+
+  function isPreLaunchMonth(y, m) {
+    if (y < state.startYear) return true;
+    if (y === state.startYear && m < state.startMonth) return true;
+    return false;
+  }
+
+  function toWon(num) {
+    return Number(num || 0).toLocaleString() + '원';
+  }
+
+  function parseNumber(str) {
+    return parseInt(String(str).replace(/[^0-9]/g, '')) || 0;
+  }
+
+  function formatCurrencyInput(el) {
+    const num = parseNumber(el.value);
+    el.value = !num ? '' : num.toLocaleString() + '원';
+  }
+
+  function formatDayInput(el) {
+    const num = parseNumber(el.value);
+    el.value = !num ? '' : Math.min(31, Math.max(1, num)) + '일';
+  }
+
+  const RING_STAGES = {
+    1: { name: '씨앗 재무링', file: 'RING1.png' },
+    2: { name: '배움 재무링', file: 'RING2.png' },
+    3: { name: '실천 재무링', file: 'RING3.png' },
+    4: { name: '성장 재무링', file: 'RING4.png' },
+    5: { name: '꿈 재무링', file: 'RING5.png' }
+  };
+
+  const state = {
+    startYear: 2026,
+    startMonth: 9,
+    payday: 25,
+    income: 3000000,
+    fixedList: [
+      { id: 1, name: '월세', day: 25, amount: 500000 },
+      { id: 2, name: '통신비', day: 10, amount: 100000 },
+      { id: 3, name: '보험료', day: 15, amount: 100000 }
+    ],
+    fixedExpenses: 700000,
+    baseSavings: 500000,
+    variableBudget: 1000000,
+    surplus: 800000,
+    currentSaved: 800000,
+    targetGoalName: '유럽/미주 낭만 여행',
+    targetGoalAmount: 3000000,
+    ringLevel: 1,
+    showFixedInCal: true,
+    currentSpent: 0,
+    isExpandedCal: true,
+    noSpendDays: 0,
+    settledMonths: {},
+    dailyRecords: {
+      '2026-9-15': { amount: 14000, type: 'GREEN' },
+      '2026-9-20': { amount: 0, type: 'NO_SPEND' }
+    },     
+    expenseHistory: [
+      { id: 101, year: 2026, month: 9, day: 15, amount: 14000, category: '🍚 식비' }
+    ],   
+    viewYear: CURRENT_YEAR,
+    viewMonth: CURRENT_MONTH
+  };
+
+  let selectedYearForExpense = CURRENT_YEAR;
+  let selectedMonthForExpense = CURRENT_MONTH;
+  let selectedDayForExpense = TODAY;
+
+  function startOnboarding() {
+    document.getElementById('screen-welcome').classList.remove('active');
+    document.getElementById('screen-onboarding').classList.add('active');
+    goToStep(1);
+  }
+
+  function goToStep(step) {
+    document.querySelectorAll('.step-box').forEach(el => el.style.display = 'none');
+    document.getElementById(`step-${step}`).style.display = 'flex';
+  }
+
+  function calculateAndGoStep5() {
+    state.payday = parseNumber(document.getElementById('input-payday').value) || 25;
+    state.income = parseNumber(document.getElementById('input-income').value);
+    state.fixedExpenses = parseNumber(document.getElementById('input-fixed').value);
+    state.showFixedInCal = document.getElementById('toggle-fixed-cal').checked;
+    state.baseSavings = parseNumber(document.getElementById('input-savings').value);
+    state.variableBudget = parseNumber(document.getElementById('input-variable').value);
+    
+    state.surplus = state.income - (state.fixedExpenses + state.baseSavings + state.variableBudget);
+    state.currentSaved = Math.max(0, state.surplus);
+
+    document.getElementById('pie-income-val').innerText = toWon(state.income);
+    document.getElementById('pie-fixed-val').innerText = toWon(state.fixedExpenses);
+    document.getElementById('pie-savings-val').innerText = toWon(state.baseSavings);
+    document.getElementById('pie-variable-val').innerText = toWon(state.variableBudget);
+    document.getElementById('pie-surplus-val').innerText = toWon(state.surplus);
+
+    const solutionBox = document.getElementById('surplus-solution-box');
+    const startBtn = document.getElementById('btn-start-routine');
+
+    if (state.surplus >= 1000000) {
+      solutionBox.innerHTML = `
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <img src="RING4.png" style="width:48px; height:48px; object-fit:contain;" alt="성장 재무링">
+          <div>
+            <b style="color:var(--primary-dark); font-size:14px;">성장 재무링의 목돈 가이드</b>
+            <p style="font-size:12.5px; color:var(--text-main); margin-top:4px; line-height:1.45;">
+              기본 저축을 하고도 매월 <b>${toWon(state.surplus)}</b>이나 여유가 있어요! 
+              300만 원 이상의 큰 꿈을 세워두면 여유자금이 흩어지지 않고 빠르게 불어나요! 🌰
+            </p>
+          </div>
+        </div>
+      `;
+      startBtn.innerHTML = `
+        <img src="report_icon_wish.png" class="ui-btn-icon" alt="시작">
+        <span>목돈 모으기 루틴 시작하기!</span>
+      `;
+    } else {
+      solutionBox.innerHTML = `
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <img src="RING3.png" style="width:48px; height:48px; object-fit:contain;" alt="실천 재무링">
+          <div>
+            <b style="color:var(--brown); font-size:14px;">실천 재무링의 차곡차곡 가이드</b>
+            <p style="font-size:12.5px; color:var(--text-main); margin-top:4px; line-height:1.45;">
+              매달 조금씩 절약해서 모은 여유 씨앗으로도 300만 원 목돈을 충분히 만들 수 있어요!
+            </p>
+          </div>
+        </div>
+      `;
+      startBtn.innerHTML = `
+        <img src="report_icon_wish.png" class="ui-btn-icon" alt="시작">
+        <span>도토리 모으기 루틴 시작하기!</span>
+      `;
+    }
+
+    render300MillionGoalChips();
+    calculateTargetMonths();
+    goToStep(5);
+  }
+
+  function render300MillionGoalChips() {
+    const container = document.getElementById('reward-chip-container');
+    container.innerHTML = '';
+
+    const goals = [
+      { label: '✈ 유럽/미주 낭만 여행', val: '유럽/미주 낭만 여행', defAmt: 3500000 },
+      { label: '💻 최신 전자기기 풀세트', val: '최신 맥북·전자기기 풀세트', defAmt: 3000000 },
+      { label: '🛡️ 든든 비상금 통장', val: '든든한 300만 원 비상금 통장', defAmt: 3000000 },
+      { label: '🚗 첫 차 보증금/운전연수', val: '첫 차 보증금 마련', defAmt: 4000000 },
+      { label: '📈 첫 투자 시드머니', val: '목돈 굴리기 첫 투자 시드', defAmt: 5000000 }
+    ];
+
+    goals.forEach((item, idx) => {
+      const chip = document.createElement('div');
+      chip.className = `chip ${idx === 0 ? 'selected' : ''}`;
+      chip.innerText = item.label;
+      chip.onclick = () => selectGoalChip(chip, item.val, item.defAmt);
+      container.appendChild(chip);
+      if (idx === 0) {
+        state.targetGoalName = item.val;
+        state.targetGoalAmount = item.defAmt;
+        document.getElementById('input-target-goal-amt').value = toWon(item.defAmt);
+      }
+    });
+
+    const customChip = document.createElement('div');
+    customChip.className = 'chip';
+    customChip.innerText = '✍️ 직접 입력';
+    customChip.onclick = () => selectCustomGoal(customChip);
+    container.appendChild(customChip);
+  }
+
+  function selectGoalChip(el, name, defAmt) {
+    document.querySelectorAll('#reward-chip-container .chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('custom-reward-box').style.display = 'none';
+    state.targetGoalName = name;
+    state.targetGoalAmount = defAmt;
+    document.getElementById('input-target-goal-amt').value = toWon(defAmt);
+    calculateTargetMonths();
+  }
+
+  function selectCustomGoal(el) {
+    document.querySelectorAll('#reward-chip-container .chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    const customBox = document.getElementById('custom-reward-box');
+    customBox.style.display = 'block';
+    const input = document.getElementById('input-custom-reward');
+    input.focus();
+    state.targetGoalName = input.value.trim() || '나만의 300만 원 목표';
+  }
+
+  function updateCustomRewardText(input) {
+    state.targetGoalName = input.value.trim() || '나만의 300만 원 목표';
+  }
+
+  function calculateTargetMonths(el) {
+    if (el) state.targetGoalAmount = parseNumber(el.value);
+    const monthlyTotalSeed = state.baseSavings + Math.max(0, state.surplus);
+    const months = monthlyTotalSeed > 0 ? Math.ceil(state.targetGoalAmount / monthlyTotalSeed) : 12;
+    document.getElementById('expected-months-badge').innerText = `약 ${months}개월 소요 예상`;
+  }
+
+  function checkSettlementDay() {
+    const btn = document.getElementById('btn-monthly-settlement');
+    const currentMonthKey = `${state.viewYear}-${state.viewMonth}`;
+
+    if (state.settledMonths[currentMonthKey] || isPreLaunchMonth(state.viewYear, state.viewMonth)) {
+      btn.style.display = 'none';
+      return;
+    }
+
+    const payday = state.payday || 25;
+    const targetPayDate = new Date(state.viewYear, state.viewMonth - 1, payday);
+
+    const startDate = new Date(targetPayDate);
+    startDate.setDate(targetPayDate.getDate() - 3);
+
+    const endDate = new Date(targetPayDate);
+    endDate.setDate(targetPayDate.getDate() + 3);
+
+    const todayDate = new Date(CURRENT_YEAR, CURRENT_MONTH - 1, TODAY);
+
+    if (todayDate >= startDate && todayDate <= endDate) {
+      btn.style.display = 'flex';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  function finishOnboarding() {
+    document.getElementById('screen-onboarding').classList.remove('active');
+    document.getElementById('screen-home').classList.add('active');
+    document.getElementById('bottom-nav').style.display = 'flex';
+    document.getElementById('badge-reward-text').innerText = state.targetGoalName;
+    document.getElementById('target-budget-label').innerText = toWon(state.variableBudget);
+    
+    selectedYearForExpense = CURRENT_YEAR;
+    selectedMonthForExpense = CURRENT_MONTH;
+    selectedDayForExpense = TODAY;
+
+    updateGoalProgressBoard();
+    checkSettlementDay();
+    renderCalendar();
+    updateWaterLevel();
+  }
+
+  function updateGoalProgressBoard() {
+    const targetAmt = state.targetGoalAmount || 3000000;
+    const current = state.currentSaved || 0;
+    const percent = Math.min(100, Math.round((current / targetAmt) * 100));
+
+    document.getElementById('home-current-saved-val').innerText = toWon(current);
+    document.getElementById('home-target-goal-val').innerText = toWon(targetAmt);
+    document.getElementById('home-goal-percent').innerText = `${percent}%`;
+    document.getElementById('home-goal-progress-bar').style.width = `${percent}%`;
+
+    let newLevel = 1;
+    if (percent >= 80) newLevel = 5;
+    else if (percent >= 60) newLevel = 4;
+    else if (percent >= 40) newLevel = 3;
+    else if (percent >= 20) newLevel = 2;
+
+    state.ringLevel = newLevel;
+    const stage = RING_STAGES[newLevel];
+
+    document.getElementById('home-ring-avatar').src = stage.file;
+
+    const remainVariable = state.variableBudget - state.currentSpent;
+    const remainGoalAmt = Math.max(0, targetAmt - current);
+    const msgEl = document.getElementById('ring-message');
+    
+    if (remainVariable < 0) {
+      msgEl.innerText = `"이번 달 생활비를 초과했어요. 모아둘 여유 씨앗에서 조금 꺼내 쓸게요! 😥"`;
+      msgEl.style.color = '#D32F2F';
+    } else if (remainVariable > 0 && remainVariable < state.variableBudget * 0.1) {
+      msgEl.innerText = `"앗! 생활비가 거의 바닥났어요! 남은 기간은 무지출에 도전해볼까요? 💦"`;
+      msgEl.style.color = '#F57C00';
+    } else {
+      msgEl.style.color = 'var(--primary-dark)';
+      if (percent >= 100) {
+        msgEl.innerText = `"축하해요! ${state.targetGoalName} 목표를 100% 달성했어요!"`;
+      } else if (percent >= 50) {
+        msgEl.innerText = `"벌써 반 이상 왔어요! 목표까지 ${toWon(remainGoalAmt)} 남았어요"`;
+      } else {
+        msgEl.innerText = `"목표까지 차곡차곡! 오늘도 씨앗을 잘 지켜내 볼까요?"`;
+      }
+    }
+  }
+
+  function changeMonth(offset) {
+    state.viewMonth += offset;
+    if (state.viewMonth > 12) {
+      state.viewMonth = 1;
+      state.viewYear++;
+    } else if (state.viewMonth < 1) {
+      state.viewMonth = 12;
+      state.viewYear--;
+    }
+    
+    document.getElementById('cal-month-title').innerText = `${state.viewYear}년 ${state.viewMonth}월`;
+    
+    const preLaunchBanner = document.getElementById('cal-prelaunch-banner');
+    if (isPreLaunchMonth(state.viewYear, state.viewMonth)) {
+      preLaunchBanner.style.display = 'block';
+    } else {
+      preLaunchBanner.style.display = 'none';
+    }
+
+    const currentMonthHistory = state.expenseHistory.filter(e => e.year === state.viewYear && e.month === state.viewMonth);
+    state.currentSpent = currentMonthHistory.reduce((sum, e) => sum + e.amount, 0);
+
+    renderCalendar();
+    updateWaterLevel();
+    updateGoalProgressBoard();
+    checkSettlementDay();
+    
+    if (document.getElementById('history-sheet').classList.contains('active')) {
+      renderHistoryList();
+    }
+  }
+
+  function executeMonthlySettlement() {
+    const currentMonthKey = `${state.viewYear}-${state.viewMonth}`;
+    const overspent = Math.max(0, state.currentSpent - state.variableBudget);
+    const unspentVariable = Math.max(0, state.variableBudget - state.currentSpent);
+    const baseSurplus = Math.max(0, state.surplus);
+    
+    let monthSeed = 0;
+
+    if (overspent > 0) {
+      monthSeed = Math.max(0, baseSurplus - overspent);
+    } else {
+      monthSeed = baseSurplus + unspentVariable;
+    }
+
+    state.currentSaved += monthSeed;
+    state.settledMonths[currentMonthKey] = true;
+
+    if (monthSeed > 0) {
+      alert(`🌳 [${state.viewMonth}월 결산 완료!]\n\n이번 달 알뜰하게 남긴 생활비와 여유자금 총 ${toWon(monthSeed)}이(가) [${state.targetGoalName}] 목표로 무사히 이동했어요!\n(※ 떼어둔 선저축 금액은 제외되었습니다)\n\n새로운 달력으로 이동합니다!`);
+    } else {
+      alert(`🌳 [${state.viewMonth}월 결산 완료!]\n\n앗, 이번 달은 생활비가 초과되어 모을 예정이었던 여유 씨앗을 모두 사용했어요.\n다행히 기존에 모은 돈은 안전해요! 다음 달엔 꼭 예산 방어에 성공해봐요! 💪\n\n새로운 달력으로 이동합니다!`);
+    }
+
+    changeMonth(1);
+  }
+
+  function renderCalendar() {
+    const grid = document.getElementById('calendar-grid');
+    grid.innerHTML = '';
+    
+    ['일','월','화','수','목','금','토'].forEach(d => {
+      const dEl = document.createElement('div');
+      dEl.className = 'cal-day-label';
+      dEl.innerText = d;
+      grid.appendChild(dEl);
+    });
+
+    const year = state.viewYear;
+    const month = state.viewMonth;
+
+    if (state.isExpandedCal) {
+      const firstDayIndex = new Date(year, month - 1, 1).getDay();
+      const lastDate = new Date(year, month, 0).getDate();
+
+      for (let i = 0; i < firstDayIndex; i++) {
+        const empty = document.createElement('div');
+        empty.style.background = 'transparent';
+        grid.appendChild(empty);
+      }
+
+      for (let dayNum = 1; dayNum <= lastDate; dayNum++) {
+        grid.appendChild(createDayCell(dayNum, year, month));
+      }
+    } else {
+      const baseYear = (selectedYearForExpense === year && selectedMonthForExpense === month) ? selectedYearForExpense : year;
+      const baseMonth = (selectedYearForExpense === year && selectedMonthForExpense === month) ? selectedMonthForExpense : month;
+      const baseDay = (selectedYearForExpense === year && selectedMonthForExpense === month) ? selectedDayForExpense : (month === CURRENT_MONTH ? TODAY : 1);
+
+      const targetDateObj = new Date(baseYear, baseMonth - 1, baseDay);
+      const dayOfWeek = targetDateObj.getDay();
+
+      const sundayObj = new Date(targetDateObj);
+      sundayObj.setDate(targetDateObj.getDate() - dayOfWeek);
+
+      for (let i = 0; i < 7; i++) {
+        const currentD = new Date(sundayObj);
+        currentD.setDate(sundayObj.getDate() + i);
+
+        const y = currentD.getFullYear();
+        const m = currentD.getMonth() + 1;
+        const d = currentD.getDate();
+
+        grid.appendChild(createDayCell(d, y, m));
+      }
+    }
+  }
+
+  function createDayCell(dayNum, y, m) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    
+    const isToday = (dayNum === TODAY && m === CURRENT_MONTH && y === CURRENT_YEAR);
+    const isSelected = (dayNum === selectedDayForExpense && m === selectedMonthForExpense && y === selectedYearForExpense);
+    const isFuture = isFutureDate(y, m, dayNum);
+    const isPreLaunch = isPreLaunchMonth(y, m);
+
+    if (isToday) cell.classList.add('today');
+    if (isSelected) cell.classList.add('selected-cursor');
+    if (isFuture) cell.classList.add('future-day');
+    if (isPreLaunch) cell.classList.add('pre-launch-day');
+
+    cell.onclick = () => {
+      if (isPreLaunch) {
+        alert('이 달은 잼플을 시작하기 전 달이에요! 🌰\n기록을 추가하거나 수정할 수 없어요.');
+        return;
+      }
+      if (isFuture) {
+        alert('미래 날짜에는 지출을 입력할 수 없어요! 🐿️');
+        return;
+      }
+
+      document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected-cursor'));
+      cell.classList.add('selected-cursor');
+
+      selectedYearForExpense = y;
+      selectedMonthForExpense = m;
+      selectedDayForExpense = dayNum;
+
+      openExpenseSheet(dayNum, y, m);
+    };
+
+    let pinHtml = '';
+    if (state.showFixedInCal && !isPreLaunch) {
+      const matchedFixed = state.fixedList.filter(f => f.day === dayNum);
+      if (matchedFixed.length > 0) {
+        pinHtml = `<span class="fixed-pin">${matchedFixed[0].name}</span>`;
+      }
+    }
+
+    const dateKey = `${y}-${m}-${dayNum}`;
+    const record = state.dailyRecords[dateKey];
+    let stampHtml = '<span></span>';
+    
+    if (record) {
+      if (record.type === 'NO_SPEND') stampHtml = `<span class="stamp-dot">✨</span>`;
+      else if (record.type === 'GREEN') stampHtml = `<span class="stamp-dot">🟢</span>`;
+      else stampHtml = `<span class="stamp-dot">🟡</span>`;
+    }
+
+    cell.innerHTML = `<span class="cal-day-text">${dayNum}일</span>${stampHtml}${pinHtml}`;
+    return cell;
+  }
+
+  function toggleCalendarExpand() {
+    state.isExpandedCal = !state.isExpandedCal;
+    document.getElementById('btn-cal-expand').innerText = state.isExpandedCal ? '▲ 주간으로 접기' : '▼ 한 달 전체 펼치기';
+    renderCalendar();
+  }
+
+  function updateWaterLevel() {
+    const isPreLaunch = isPreLaunchMonth(state.viewYear, state.viewMonth);
+    const remain = state.variableBudget - state.currentSpent;
+    const gaugeFill = document.getElementById('gauge-fill');
+    const remainText = document.getElementById('remain-variable-text');
+    const recommendLabel = document.getElementById('daily-recommend-label');
+
+    if (isPreLaunch) {
+      remainText.innerText = '이용 전';
+      remainText.style.color = 'var(--text-sub)';
+      gaugeFill.style.width = '0%';
+      recommendLabel.innerText = '잼플 이용 전 달입니다';
+      recommendLabel.style.color = 'var(--text-sub)';
+      return;
+    }
+
+    if (remain < 0) {
+      remainText.innerText = `초과 지출: ${toWon(Math.abs(remain))}`;
+      remainText.style.color = '#D32F2F';
+      gaugeFill.style.width = '100%';
+      gaugeFill.style.background = '#E53935';
+      
+      recommendLabel.innerText = `하루 약 0원 권장 (짠테크 모드 켬!)`;
+      recommendLabel.style.color = '#D32F2F';
+    } else {
+      remainText.innerText = `남은 돈: ${toWon(remain)}`;
+      remainText.style.color = '#1976D2';
+      
+      const fillPercent = Math.min(100, (remain / state.variableBudget) * 100);
+      gaugeFill.style.width = `${fillPercent}%`;
+      gaugeFill.style.background = '#42A5F5';
+
+      const daysLeft = 30;
+      const baseDailyRecommend = Math.round((state.variableBudget / daysLeft) / 1000) * 1000;
+      let rawDailyRecommend = Math.round((remain / daysLeft) / 1000) * 1000;
+      const capLimit = Math.round((baseDailyRecommend * 1.5) / 1000) * 1000;
+
+      recommendLabel.style.color = '#1976D2';
+      if (rawDailyRecommend > capLimit) {
+        recommendLabel.innerText = `하루 약 ${toWon(capLimit)} 권장 (최대 1.5배 상한)`;
+      } else {
+        recommendLabel.innerText = `하루 약 ${toWon(rawDailyRecommend)} 권장`;
+      }
+    }
+  }
+
+  function actionNoSpend() {
+    const dateKey = `${CURRENT_YEAR}-${CURRENT_MONTH}-${TODAY}`;
+    state.noSpendDays += 1;
+    state.dailyRecords[dateKey] = { amount: 0, type: 'NO_SPEND' };
+    
+    const dailySaved = Math.round((state.variableBudget / 30) / 1000) * 1000;
+    state.currentSaved += dailySaved;
+    
+    updateGoalProgressBoard();
+    renderCalendar();
+    alert(`✨ 오늘 무지출 성공! 아낀 ${toWon(dailySaved)}이 목표 저축 통장에 추가되었어요.`);
+  }
+
+  function openHistorySheet() {
+    renderHistoryList();
+    document.getElementById('history-sheet-title').innerText = `${state.viewMonth}월 생활비 지출 내역 📋`;
+    document.getElementById('history-sheet').classList.add('active');
+  }
+
+  function closeHistorySheet(e) {
+    document.getElementById('history-sheet').classList.remove('active');
+  }
+
+  function renderHistoryList() {
+    const container = document.getElementById('history-list-container');
+    container.innerHTML = '';
+
+    const currentMonthHistory = state.expenseHistory.filter(e => e.year === state.viewYear && e.month === state.viewMonth);
+
+    if (currentMonthHistory.length === 0) {
+      const msg = isPreLaunchMonth(state.viewYear, state.viewMonth) ? '잼플 이용 전 달이므로 내역이 없습니다.' : '아직 등록된 지출 내역이 없어요.';
+      container.innerHTML = `<div style="text-align:center; color:var(--text-sub); padding:30px 10px; font-size:13px;">${msg}</div>`;
+      return;
+    }
+
+    const sortedHistory = [...currentMonthHistory].sort((a, b) => b.id - a.id);
+
+    sortedHistory.forEach(exp => {
+      const el = document.createElement('div');
+      el.className = 'fixed-item';
+      el.innerHTML = `
+        <div class="fixed-item-left">
+          <span style="font-size:11px; background:#F8F9FA; padding:3px 6px; border-radius:6px; color:var(--text-sub);">📅 ${exp.month}/${exp.day}</span>
+          <span style="color:var(--text-main); font-weight:600;">${exp.category}</span>
+        </div>
+        <div class="fixed-item-right">
+          <span style="font-weight:bold; color:var(--primary-dark);">${toWon(exp.amount)}</span>
+          <button class="fixed-delete-btn" onclick="deleteExpense(${exp.id})" title="삭제">✕</button>
+        </div>
+      `;
+      container.appendChild(el);
+    });
+  }
+
+  function deleteExpense(id) {
+    const expIndex = state.expenseHistory.findIndex(e => e.id === id);
+    if (expIndex === -1) return;
+    
+    const exp = state.expenseHistory[expIndex];
+    
+    if (exp.year === state.viewYear && exp.month === state.viewMonth) {
+      state.currentSpent -= exp.amount;
+    }
+
+    state.expenseHistory.splice(expIndex, 1);
+
+    const dayExpenses = state.expenseHistory.filter(e => e.year === exp.year && e.month === exp.month && e.day === exp.day);
+    const totalForDay = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const baseDailyRecommend = Math.round((state.variableBudget / 30) / 1000) * 1000;
+    
+    const dateKey = `${exp.year}-${exp.month}-${exp.day}`;
+
+    if (totalForDay === 0) {
+      delete state.dailyRecords[dateKey];
+    } else {
+      state.dailyRecords[dateKey] = {
+        amount: totalForDay,
+        type: totalForDay <= baseDailyRecommend ? 'GREEN' : 'YELLOW'
+      };
+    }
+
+    updateWaterLevel();
+    updateGoalProgressBoard();
+    renderCalendar();
+    renderHistoryList();
+  }
+
+  function openTodayExpenseSheet() {
+    selectedYearForExpense = CURRENT_YEAR;
+    selectedMonthForExpense = CURRENT_MONTH;
+    selectedDayForExpense = TODAY;
+
+    if (state.viewYear !== CURRENT_YEAR || state.viewMonth !== CURRENT_MONTH) {
+      state.viewYear = CURRENT_YEAR;
+      state.viewMonth = CURRENT_MONTH;
+      document.getElementById('cal-month-title').innerText = `${CURRENT_YEAR}년 ${CURRENT_MONTH}월`;
+      document.getElementById('cal-prelaunch-banner').style.display = 'none';
+      const currentMonthHistory = state.expenseHistory.filter(e => e.year === CURRENT_YEAR && e.month === CURRENT_MONTH);
+      state.currentSpent = currentMonthHistory.reduce((sum, e) => sum + e.amount, 0);
+    }
+
+    renderCalendar();
+    openExpenseSheet(TODAY, CURRENT_YEAR, CURRENT_MONTH);
+  }
+
+  function openExpenseSheet(day = TODAY, y = CURRENT_YEAR, m = CURRENT_MONTH) {
+    if (isPreLaunchMonth(y, m)) {
+      alert('이 달은 잼플을 시작하기 전 달이에요! 🌰');
+      return;
+    }
+    if (isFutureDate(y, m, day)) {
+      alert('미래 날짜에는 지출을 입력할 수 없어요! 🐿');
+      return;
+    }
+
+    selectedYearForExpense = y;
+    selectedMonthForExpense = m;
+    selectedDayForExpense = day;
+    
+    const isToday = (day === TODAY && m === CURRENT_MONTH && y === CURRENT_YEAR);
+    document.getElementById('sheet-target-date-label').innerText = isToday ? '오늘' : `${m}월 ${day}일`;
+    document.getElementById('sheet-amount').value = '';
+    document.getElementById('receipt-preview-box').style.display = 'none';
+    document.getElementById('receipt-file-input').value = '';
+    document.getElementById('expense-sheet').classList.add('active');
+  }
+
+  function closeExpenseSheet(e) {
+    document.getElementById('expense-sheet').classList.remove('active');
+  }
+
+  function handleReceiptUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const previewBox = document.getElementById('receipt-preview-box');
+    const previewImg = document.getElementById('receipt-preview-img');
+    const statusText = document.getElementById('receipt-status-text');
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      previewImg.src = e.target.result;
+      previewBox.style.display = 'flex';
+      statusText.innerHTML = `<b>계산기 재무링이 영수증 분석 중... 🔍</b>`;
+
+      setTimeout(() => {
+        const samples = [
+          { amt: 12500, catIndex: 0, name: '식비 (점심식사)' },
+          { amt: 5800,  catIndex: 1, name: '카페/간식 (아메리카노)' },
+          { amt: 24300, catIndex: 2, name: '마트 (생필품 장보기)' },
+          { amt: 4500,  catIndex: 4, name: '교통 (택시/버스)' }
+        ];
+        const picked = samples[Math.floor(Math.random() * samples.length)];
+
+        document.getElementById('sheet-amount').value = toWon(picked.amt);
+
+        const chips = document.querySelectorAll('#sheet-cats .chip');
+        chips.forEach(c => c.classList.remove('selected'));
+        if (chips[picked.catIndex]) chips[picked.catIndex].classList.add('selected');
+
+        statusText.innerHTML = `<b style="color:var(--primary-dark);">영수증 인식 완료!</b> [${picked.name} ${toWon(picked.amt)}]`;
+      }, 1200);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function selectCat(el) {
+    document.querySelectorAll('#sheet-cats .chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function submitExpense() {
+    const amt = parseNumber(document.getElementById('sheet-amount').value);
+    if (amt <= 0) return alert('금액을 입력해주세요!');
+
+    const selectedCat = document.querySelector('#sheet-cats .chip.selected').innerText;
+    
+    if (selectedYearForExpense === state.viewYear && selectedMonthForExpense === state.viewMonth) {
+      state.currentSpent += amt;
+    }
+
+    state.expenseHistory.push({
+      id: Date.now(),
+      year: selectedYearForExpense,
+      month: selectedMonthForExpense,
+      day: selectedDayForExpense,
+      amount: amt,
+      category: selectedCat
+    });
+
+    const dayExpenses = state.expenseHistory.filter(e => e.year === selectedYearForExpense && e.month === selectedMonthForExpense && e.day === selectedDayForExpense);
+    const totalForDay = dayExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+    const baseDailyRecommend = Math.round((state.variableBudget / 30) / 1000) * 1000;
+    const type = totalForDay <= baseDailyRecommend ? 'GREEN' : 'YELLOW';
+    
+    const dateKey = `${selectedYearForExpense}-${selectedMonthForExpense}-${selectedDayForExpense}`;
+    state.dailyRecords[dateKey] = { amount: totalForDay, type: type };
+
+    updateWaterLevel();
+    updateGoalProgressBoard();
+    renderCalendar();
+    closeExpenseSheet();
+  }
+
+  function renderFixedItems() {
+    const container = document.getElementById('fixed-items-list');
+    container.innerHTML = '';
+
+    let total = 0;
+    state.fixedList.forEach((item) => {
+      total += item.amount;
+      
+      let itemIcon = 'my_icon_fixed_list.png';
+      if (item.name.includes('월세') || item.name.includes('집')) itemIcon = 'my_icon_rent.png';
+      else if (item.name.includes('통신') || item.name.includes('전화') || item.name.includes('폰')) itemIcon = 'my_icon_phone.png';
+      else if (item.name.includes('보험')) itemIcon = 'my_icon_insurance.png';
+
+      const el = document.createElement('div');
+      el.className = 'fixed-item';
+      el.innerHTML = `
+        <div class="fixed-item-left">
+          <img src="${itemIcon}" class="ui-input-icon" onerror="this.src='my_icon_fixed_list.png'" alt="${item.name}">
+          <span>📅 ${item.day}일</span>
+          <span>${item.name}</span>
+        </div>
+        <div class="fixed-item-right">
+          <span>${toWon(item.amount)}</span>
+          <button class="fixed-delete-btn" onclick="deleteFixedItem(${item.id})">✕</button>
+        </div>
+      `;
+      container.appendChild(el);
+    });
+
+    state.fixedExpenses = total;
+    document.getElementById('my-fixed-total-badge').innerText = `합계: ${toWon(total)}`;
+  }
+
+  function addFixedItem() {
+    const nameInput = document.getElementById('add-fixed-name');
+    const dayInput = document.getElementById('add-fixed-day');
+    const amtInput = document.getElementById('add-fixed-amt');
+
+    const name = nameInput.value.trim();
+    const day = parseNumber(dayInput.value);
+    const amount = parseNumber(amtInput.value);
+
+    if (!name) return alert('항목명을 입력해주세요 (예: 운동비)');
+    if (day < 1 || day > 31) return alert('출금일을 1~31일 사이로 입력해주세요');
+    if (amount <= 0) return alert('금액을 입력해주세요');
+
+    state.fixedList.push({
+      id: Date.now(),
+      name: name,
+      day: day,
+      amount: amount
+    });
+
+    nameInput.value = '';
+    dayInput.value = '';
+    amtInput.value = '';
+
+    renderFixedItems();
+  }
+
+  function deleteFixedItem(id) {
+    state.fixedList = state.fixedList.filter(item => item.id !== id);
+    renderFixedItems();
+  }
+
+  function updateReportScreen() {
+    const y = state.viewYear;
+    const m = state.viewMonth;
+    const currentMonthKey = `${y}-${m}`;
+    const isSettled = !!state.settledMonths[currentMonthKey];
+
+    document.getElementById('report-header-month').innerText = `${m}월 머니 리포트`;
+
+    const monthExpenses = state.expenseHistory.filter(e => e.year === y && e.month === m);
+    const totalSpent = monthExpenses.reduce((sum, item) => sum + item.amount, 0);
+
+    let noSpendCount = 0;
+    for (const [key, val] of Object.entries(state.dailyRecords)) {
+      if (key.startsWith(`${y}-${m}-`) && val.type === 'NO_SPEND') {
+        noSpendCount++;
+      }
+    }
+
+    const baseSavings = state.baseSavings;
+    const baseSurplus = Math.max(0, state.surplus);
+    const diff = state.variableBudget - totalSpent;
+    const finalSurplus = baseSurplus + diff;
+    const totalSaved = baseSavings + finalSurplus;
+
+    const badgeEl = document.getElementById('report-badge');
+    const commentEl = document.getElementById('report-ring-comment');
+    const ringAvatar = document.getElementById('report-ring-avatar');
+    const savedLabel = document.getElementById('report-total-saved-label');
+
+    if (isSettled) {
+      savedLabel.innerText = '이번 달 최종 확정 저축액 🏆';
+    } else {
+      savedLabel.innerText = '현재까지 지켜낸 총 저축액 (중간 점검)';
+    }
+
+    if (diff >= 0) {
+      badgeEl.innerText = isSettled ? '🌳 확정: 완벽한 예산 방어 성공!' : '🌿 이번 달 루틴 달리는 중';
+      badgeEl.style.background = '#E8F5E9';
+      badgeEl.style.color = '#2E7D32';
+      commentEl.innerHTML = isSettled 
+        ? `"대단해요! 생활비를 알뜰하게 남겨<br>목표 씨앗이 풍성하게 모였어요! 🌳"` 
+        : `"생활비를 든든히 지켜내고 있어요.<br>이 페이스대로 결산까지 달려봐요!"`;
+      commentEl.style.borderColor = 'var(--primary)';
+      commentEl.style.color = 'var(--primary-dark)';
+      ringAvatar.src = 'report_icon_defense.png';
+    } else if (Math.abs(diff) <= baseSurplus) {
+      badgeEl.innerText = isSettled ? '🛡️ 확정: 여유 씨앗으로 방어 완료' : '🛡️ 여유 씨앗으로 방패 방어 중';
+      badgeEl.style.background = '#FFF3E0';
+      badgeEl.style.color = '#E65100';
+      commentEl.innerHTML = `"생활비가 ${toWon(Math.abs(diff))} 초과되었지만,<br>여유 씨앗으로 막아내 선저축은 안전해요!"`;
+      commentEl.style.borderColor = '#FFB74D';
+      commentEl.style.color = '#E65100';
+      ringAvatar.src = 'report_icon_total.png';
+    } else {
+      badgeEl.innerText = '🚨 비상! 여유 씨앗 초과 침범';
+      badgeEl.style.background = '#FFEBEE';
+      badgeEl.style.color = '#C62828';
+      commentEl.innerHTML = `"초과 지출이 여유자금을 ${toWon(Math.abs(finalSurplus))} 넘어섰어요.<br>비상금 지출을 점검해야 해요!"`;
+      commentEl.style.borderColor = '#E53935';
+      commentEl.style.color = '#C62828';
+      ringAvatar.src = 'RING2.png';
+    }
+
+    document.getElementById('report-total-saved-won').innerText = toWon(totalSaved);
+    document.getElementById('report-base-savings').innerText = toWon(baseSavings);
+    document.getElementById('report-surplus-savings').innerText = toWon(finalSurplus);
+
+    const targetAmt = state.targetGoalAmount || 3000000;
+    const currentSaved = state.currentSaved || 0;
+    const progressPercent = Math.min(100, Math.round((currentSaved / targetAmt) * 100));
+
+    document.getElementById('report-goal-name').innerText = state.targetGoalName;
+    document.getElementById('report-goal-progress-percent').innerText = `${progressPercent}% 달성`;
+    document.getElementById('report-goal-progress-bar').style.width = `${progressPercent}%`;
+    document.getElementById('report-current-saved').innerText = toWon(currentSaved);
+    document.getElementById('report-target-amt').innerText = toWon(targetAmt);
+
+    const monthlyPace = baseSavings + Math.max(0, finalSurplus);
+    const monthsLeft = monthlyPace > 0 ? Math.ceil(Math.max(0, targetAmt - currentSaved) / monthlyPace) : 12;
+    document.getElementById('report-pace-text').innerHTML = `✨ 지금 속도라면 <b>약 ${monthsLeft}개월</b> 뒤 목표를 달성할 수 있어요!`;
+
+    const spentPercent = state.variableBudget > 0 ? Math.round((totalSpent / state.variableBudget) * 100) : 0;
+    document.getElementById('report-spent-ratio').innerText = `예산 대비 ${spentPercent}% 사용`;
+    document.getElementById('report-variable-budget').innerText = toWon(state.variableBudget);
+    document.getElementById('report-variable-spent').innerText = toWon(totalSpent);
+
+    const catMap = {};
+    monthExpenses.forEach(exp => {
+      catMap[exp.category] = (catMap[exp.category] || 0) + exp.amount;
+    });
+
+    const topCatsContainer = document.getElementById('report-top-categories');
+    topCatsContainer.innerHTML = '';
+
+    const sortedCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+    if (sortedCats.length === 0) {
+      topCatsContainer.innerHTML = '<div style="text-align:center; color:var(--text-sub); font-size:12px; padding:15px 0;">등록된 지출 내역이 없습니다.</div>';
+    } else {
+      sortedCats.forEach(([cat, amt]) => {
+        const catPercent = totalSpent > 0 ? Math.round((amt / totalSpent) * 100) : 0;
+        const row = document.createElement('div');
+        row.innerHTML = `
+          <div class="report-cat-row">
+            <span><b>${cat}</b> (${catPercent}%)</span>
+            <span style="font-weight:bold; color:var(--text-main);">${toWon(amt)}</span>
+          </div>
+          <div class="report-cat-bar-bg">
+            <div class="report-cat-bar-fill" style="width: ${catPercent}%;"></div>
+          </div>
+        `;
+        topCatsContainer.appendChild(row);
+      });
+    }
+
+    const dailyRecommend = Math.round((state.variableBudget / 30) / 1000) * 1000;
+    const noSpendSavedTotal = noSpendCount * dailyRecommend;
+    document.getElementById('report-no-spend-days').innerText = `총 ${noSpendCount}일 성공`;
+    document.getElementById('report-no-spend-desc').innerHTML = `
+      이번 달 무지출 실천으로 약 <b style="color:var(--primary);">${toWon(noSpendSavedTotal)}</b>의 생활비 씨앗을 추가로 방어했어요! 🌰
+    `;
+  }
+
+  function switchTab(tabName, el) {
+    if (!el) {
+      const targetNav = document.querySelector(`.nav-item img[data-name="${tabName}"]`);
+      if (targetNav) el = targetNav.parentElement;
+    }
+
+    document.querySelectorAll('.nav-item').forEach(b => {
+      b.classList.remove('active');
+      const img = b.querySelector('.nav-icon');
+      if (img) {
+        const name = img.getAttribute('data-name');
+        img.src = `nav_${name}_off.png`;
+      }
+    });
+
+    if (el) {
+      el.classList.add('active');
+      const activeImg = el.querySelector('.nav-icon');
+      if (activeImg) {
+        const name = activeImg.getAttribute('data-name');
+        activeImg.src = `nav_${name}_on.png`;
+      }
+    }
+
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const targetScreen = document.getElementById(`screen-${tabName}`);
+    if (targetScreen) targetScreen.classList.add('active');
+
+    if (tabName === 'report') {
+      updateReportScreen();
+    } else if (tabName === 'my') {
+      document.getElementById('my-payday').value = state.payday + '일';
+      document.getElementById('my-income').value = toWon(state.income);
+      document.getElementById('my-base-savings').value = toWon(state.baseSavings);
+      document.getElementById('my-variable').value = toWon(state.variableBudget);
+      document.getElementById('my-toggle-fixed').checked = state.showFixedInCal;
+      document.getElementById('my-goal-name').value = state.targetGoalName;
+      document.getElementById('my-goal-amt').value = toWon(state.targetGoalAmount);
+      renderFixedItems();
+    }
+  }
+
+  function saveMySettings() {
+    state.payday = parseNumber(document.getElementById('my-payday').value) || 25;
+    state.income = parseNumber(document.getElementById('my-income').value);
+    state.baseSavings = parseNumber(document.getElementById('my-base-savings').value);
+    state.variableBudget = parseNumber(document.getElementById('my-variable').value);
+    state.showFixedInCal = document.getElementById('my-toggle-fixed').checked;
+    state.targetGoalName = document.getElementById('my-goal-name').value || '목표 목적';
+    state.targetGoalAmount = parseNumber(document.getElementById('my-goal-amt').value) || 3000000;
+
+    state.surplus = state.income - (state.fixedExpenses + state.baseSavings + state.variableBudget);
+
+    document.getElementById('target-budget-label').innerText = toWon(state.variableBudget);
+    document.getElementById('badge-reward-text').innerText = state.targetGoalName;
+    
+    updateGoalProgressBoard();
+    checkSettlementDay();
+    updateWaterLevel();
+    renderCalendar();
+
+    alert('✅ 도토리 정원 및 목표 설정이 성공적으로 갱신되었습니다!');
+    
+    const homeBtn = document.querySelectorAll('.nav-item')[0];
+    switchTab('home', homeBtn);
+  }
+
+  /* ─── 초기 로딩 및 진단 모듈 복귀 통합 처리 ─── */
+  window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetTab = urlParams.get('tab') || window.location.hash.replace('#', '');
+    const splashScreen = document.getElementById('splash-screen');
+    
+    if (targetTab) {
+      // 1. 진단 모듈 등에서 특정 탭으로 넘어온 경우: 스플래시 없이 즉시 화면 노출
+      if (splashScreen) splashScreen.style.display = 'none';
+
+      const welcomeScreen = document.getElementById('screen-welcome');
+      const onboardingScreen = document.getElementById('screen-onboarding');
+      const bottomNav = document.getElementById('bottom-nav');
+      
+      if (welcomeScreen) welcomeScreen.classList.remove('active');
+      if (onboardingScreen) onboardingScreen.classList.remove('active');
+      if (bottomNav) bottomNav.style.display = 'flex';
+
+      if (typeof renderCalendar === 'function') renderCalendar();
+      if (typeof updateWaterLevel === 'function') updateWaterLevel();
+      if (typeof updateGoalProgressBoard === 'function') updateGoalProgressBoard();
+      if (typeof checkSettlementDay === 'function') checkSettlementDay();
+
+      const targetNavBtn = document.querySelector(`.nav-item img[data-name="${targetTab}"]`);
+      if (targetNavBtn) {
+        switchTab(targetTab, targetNavBtn.parentElement);
+      } else {
+        const defaultHomeBtn = document.querySelectorAll('.nav-item')[0];
+        switchTab('home', defaultHomeBtn);
+      }
+    } else {
+      // 2. 일반 첫 접속: 1.3초간 C안 스플래시 연출 후 부드럽게 인트로 화면으로 전환
+      setTimeout(() => {
+        if (splashScreen) {
+          splashScreen.classList.add('fade-out');
+        }
+      }, 1300);
+    }
+  });
+</script>
+
+</body>
+</html>

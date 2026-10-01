@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>스마트 재무진단 - 잼플 (Jample)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #FF8A3D;
+      --primary-dark: #E67220;
+      --brown: #8B5A2B;
+      --cream: #FFF8E8;
+      --border-color: #EFE6D8;
+    }
+    body {
+      background-color: #E2E8F0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+    .app-frame {
+      width: 100%;
+      max-width: 400px;
+      height: 840px;
+      background-color: #FFFFFF;
+      border-radius: 36px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .floating-anim {
+      animation: floating 3s ease-in-out infinite;
+    }
+    @keyframes floating {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    .nav-bar { 
+      background: #FFF; 
+      border-top: 1px solid var(--border-color); 
+      display: flex; 
+      justify-content: space-around; 
+      padding: 8px 0 10px 0;
+      flex-shrink: 0;
+    }
+    .nav-item { 
+      border: none; 
+      background: none; 
+      flex: 1; 
+      cursor: pointer; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 4px; 
+    }
+    .nav-icon { 
+      width: 28px; 
+      height: 28px; 
+      object-fit: contain; 
+    }
+    .nav-label { 
+      font-size: 11px; 
+      color: #9E9E9E; 
+      font-weight: 600; 
+    }
+    .nav-item.active .nav-label { 
+      color: var(--primary); 
+      font-weight: bold; 
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-frame">
+    
+    <div class="content-area">
+      <!-- 상단 헤더 -->
+      <header class="flex justify-between items-center mb-3 border-b border-[#EFE6D8] pb-3 flex-shrink-0">
+        <div class="flex items-center">
+          <img src="logo.png" class="h-6 object-contain" alt="Jample">
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-[#8B5A2B] bg-[#FFF8E8] px-2.5 py-1 rounded-full border border-[#F5E5C9]">
+            재무건강 진단
+          </span>
+          <div id="badge-step" class="hidden text-xs font-extrabold text-[#E67220] bg-[#FFF8E8] border border-[#F5E5C9] px-2.5 py-1 rounded-full">
+            <span id="txt-curr-step">1</span> / 5
+          </div>
+        </div>
+      </header>
+
+      <!-- SCREEN 0: 인트로 화면 -->
+      <div id="screen-step-0" class="flex-1 flex flex-col justify-between py-2">
+        <div class="space-y-4">
+          <div class="text-center pt-2">
+            <div class="w-20 h-20 mx-auto rounded-full bg-[#FFF8E8] border-2 border-[#FF8A3D] flex items-center justify-center mb-3 shadow-sm floating-anim p-2">
+              <img src="RING2.png" class="w-16 h-16 object-contain" alt="배움 재무링" onerror="this.src='RING1.png'">
+            </div>
+            <span class="inline-block text-[11px] font-extrabold text-[#E67220] bg-[#FFF8E8] border border-[#F5E5C9] px-3 py-0.5 rounded-full mb-1.5">
+              1분 가계 건강검진
+            </span>
+            <h1 class="text-xl font-black text-slate-900 leading-snug">
+              내 돈은 지금 건강할까?<br>
+              <span class="text-[#FF8A3D]">스마트 가계 처방전</span>
+            </h1>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+              또래 표준 기준과 내 재정 데이터를 비교하고<br>객관적인 맞춤 개선 가이드를 확인해보세요!
+            </p>
+          </div>
+
+          <div class="bg-[#FDFBF7] border border-[#EFE6D8] rounded-2xl p-4 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-[#8B5A2B]">연령대를 선택해주세요</span>
+              <span class="text-[10.5px] font-semibold text-[#E67220] bg-[#FFF8E8] px-2 py-0.5 rounded-full border border-[#F5E5C9]">
+                연령별 권장 기준 적용
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-2" id="age-selector-container"></div>
+          </div>
+        </div>
+
+        <button onclick="goToStep(1)" class="w-full py-3.5 bg-[#FF8A3D] hover:bg-[#E67220] text-white rounded-2xl text-sm font-extrabold shadow-md transition-all flex items-center justify-center gap-1.5 mt-4">
+          <span>진단 시작하기</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+      </div>
+
+      <!-- SCREEN 1 ~ 5: 단계별 입력 화면 -->
+      <div id="screen-input-steps" class="hidden flex-1 flex flex-col justify-between py-1">
+        <div>
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-4 border border-slate-200/50">
+            <div id="bar-step-progress" class="bg-[#FF8A3D] h-full transition-all duration-300 rounded-full" style="width: 20%;"></div>
+          </div>
+
+          <div id="prank-warning" class="hidden mb-3 p-2.5 bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm">
+            <span>🚨</span>
+            <span>장난치면 안 돼요! 실제 금액을 입력해 주세요 😊</span>
+          </div>
+
+          <!-- Step 1: 소득 및 지출 -->
+          <div id="step-content-1" class="step-content space-y-3">
+            <h2 class="text-lg font-black text-slate-900 leading-snug">매달 소득과 지출은 얼마인가요?</h2>
+            <p class="text-xs text-slate-500">실제 통장에 들어오는 세후 실수령액 기준입니다.</p>
+            <div class="space-y-3 pt-2">
+              <div>
+                <label class="text-xs font-bold text-slate-700 block mb-1">1. 월 실수령 소득</label>
+                <div class="relative flex items-center">
+                  <input type="text" id="inp-income" inputmode="numeric" placeholder="0" class="w-full p-3.5 pr-14 border border-slate-200 rounded-xl text-right text-base font-bold focus:outline-none focus:border-[#FF8A3D] bg-slate-50/50" oninput="handleAmountInput(this, 'monthlyNetIncome')">
+                  <span class="absolute right-4 text-xs font-bold text-slate-400">만 원</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-700 block mb-1">2. 한 달 총지출 (고정비 + 생활비)</label>
+                <div class="relative flex items-center">
+                  <input type="text" id="inp-expense" inputmode="numeric" placeholder="0" class="w-full p-3.5 pr-14 border border-slate-200 rounded-xl text-right text-base font-bold focus:outline-none focus:border-[#FF8A3D] bg-slate-50/50" oninput="handleAmountInput(this, 'monthlyTotalExpense')">
+                  <span class="absolute right-4 text-xs font-bold text-slate-400">만 원</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">월세, 공과금, 식비, 카드값 등 모든 소비 합계입니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: 저축액 -->
+          <div id="step-content-2" class="step-content hidden space-y-3">
+            <h2 class="text-lg font-black text-slate-900 leading-snug">미래를 위해 저축하는 돈은 얼마인가요?</h2>
+            <p class="text-xs text-slate-500">정기적금, 청약, 주식/ETF 적립식 투자 합계입니다.</p>
+            <div class="pt-2">
+              <label class="text-xs font-bold text-slate-700 block mb-1">월 총 저축·투자액</label>
+              <div class="relative flex items-center">
+                <input type="text" id="inp-savings" inputmode="numeric" placeholder="0" class="w-full p-3.5 pr-14 border border-slate-200 rounded-xl text-right text-base font-bold focus:outline-none focus:border-[#FF8A3D] bg-slate-50/50" oninput="handleAmountInput(this, 'monthlySavings')">
+                <span class="absolute right-4 text-xs font-bold text-slate-400">만 원</span>
+              </div>
+              <div id="step2-drawing-box" class="hidden mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-[11px] text-blue-900 leading-relaxed">
+                <b>💡 금융자산 인출 및 이동 상태 안내</b><br>
+                월 지출과 저축의 합이 소득보다 큽니다. 부족한 차액은 기존 모아둔 예금을 헐어 쓰거나 이동시키는 상태로 인식되어 진단에 반영됩니다.
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: 비상금 및 총자산 -->
+          <div id="step-content-3" class="step-content hidden space-y-3">
+            <h2 class="text-lg font-black text-slate-900 leading-snug">비상금과 보유 자산 현황을 알려주세요</h2>
+            <div class="space-y-3 pt-1">
+              <div>
+                <label class="text-xs font-bold text-slate-700 block mb-1">즉시 현금화 가능한 비상금</label>
+                <div class="relative flex items-center">
+                  <input type="text" id="inp-emergency" inputmode="numeric" placeholder="0" class="w-full p-3.5 pr-14 border border-slate-200 rounded-xl text-right text-base font-bold focus:outline-none focus:border-[#FF8A3D] bg-slate-50/50" oninput="handleAmountInput(this, 'emergencyFund')">
+                  <span class="absolute right-4 text-xs font-bold text-slate-400">만 원</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">CMA, 파킹통장, 입출금 통장의 순수 여유자금입니다.</p>
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-700 block mb-1">총 금융자산 (예·적금 + 주식 + 펀드)</label>
+                <div class="relative flex items-center">
+                  <input type="text" id="inp-finassets" inputmode="numeric" placeholder="0" class="w-full p-3.5 pr-14 border border-slate-200 rounded-xl text-right text-base font-bold focus:outline-none focus:border-[#FF8A3D] bg-slate-50/50" oninput="handleAmountInput(this, 'financialAssets')">
+                  <span class="absolute right-4 text-xs font-bold text-slate-400">만 원</span>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-700 block mb-1">부동산 / 전·월세 보증금</label>
+                <div class="relative flex items-center">
+                  <input type="text" id="inp-realestate" inputmode="numeric" placeholder="0" class="w-full p-3.5 pr-14 border border-slate-200 rounded-xl text-right text-base font-bold focus:outline-none focus:border-[#FF8A3D] bg-slate-50/50" oninput="handleAmountInput(this, 'realEstateAssets')">
+                  <span class="absolute right-4 text-xs font-bold text-slate-400">만 원</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: 대출 원리금 및 보험료 -->
+          <div id="step-content-4" class="step-content hidden space-y-3">
+            <h2 class="text-lg font-black text-slate-900 leading-snug">대출과 보험료 지출을 체크합니다</h2>
+            <div class="space-y-3 pt-1">
+              <div>
+                <label class="text-xs font-bold text-slate-700 block mb-1">월 대출 원리금 상환액</label>
+                <div class="relative flex items-center">
+                  <input type="text" id="inp-debt" inputmode="numeric" placeholder="0" class="w-full p-3.5 pr-14 border border-slate-200 rounded-xl text-right text-base font-bold focus:outline-none focus:border-[#FF8A3D] bg-slate-50/50" oninput="handleAmountInput(this, 'monthlyDebtRepayment')">
+                  <span class="absolute right-4 text-xs font-bold text-slate-400">만 원</span>
+                </div>
+                <p class="text-[11px] text-[#E67220] font-semibold mt-1 bg-[#FFF8E8] p-2 rounded-xl border border-[#F5E5C9]">
+                  ℹ️ 월 대출상환액은 [원금 + 이자] 합산 기준입니다.
+                </p>
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-700 block mb-1">월 보장성 보험료</label>
+                <div class="relative flex items-center">
+                  <input type="text" id="inp-insurance" inputmode="numeric" placeholder="0" class="w-full p-3.5 pr-14 border border-slate-200 rounded-xl text-right text-base font-bold focus:outline-none focus:border-[#FF8A3D] bg-slate-50/50" oninput="handleAmountInput(this, 'monthlyInsurancePremium')">
+                  <span class="absolute right-4 text-xs font-bold text-slate-400">만 원</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">실손의료비, 암보험 등 순수 보장성 보험료 기준입니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5: 투자성향 -->
+          <div id="step-content-5" class="step-content hidden space-y-3">
+            <h2 class="text-lg font-black text-slate-900 leading-snug">투자 위험 감내 수준은 어떤가요?</h2>
+            <div class="space-y-2 pt-1" id="investor-type-container"></div>
+          </div>
+        </div>
+
+        <!-- 하단 액션 버튼 -->
+        <div class="flex gap-2 pt-3 border-t border-slate-100 flex-shrink-0">
+          <button onclick="prevStep()" class="w-1/3 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-all">
+            이전
+          </button>
+          <button id="btn-next-step" onclick="nextStep()" class="w-2/3 py-3.5 bg-[#FF8A3D] hover:bg-[#E67220] text-white font-extrabold text-xs rounded-xl shadow-md transition-all">
+            다음 단계로 &gt;
+          </button>
+        </div>
+      </div>
+
+      <!-- SCREEN 6: 결과 리포트 화면 -->
+      <div id="screen-report" class="hidden flex-1 flex flex-col py-1 space-y-3.5">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Financial Health Report</span>
+            <span id="rep-health-badge" class="px-2.5 py-0.5 text-[11px] font-extrabold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              매우 양호 🟢
+            </span>
+          </div>
+          <h2 class="text-lg font-black text-slate-900 mb-1.5">재무건강 진단 결과</h2>
+          <div class="p-3 bg-[#FDFBF7] rounded-xl text-xs font-medium leading-relaxed text-[#8B5A2B] border border-[#EFE6D8]" id="rep-summary-text">
+            "진단 결과 요약"
+          </div>
+        </div>
+
+        <div class="space-y-3" id="rep-items-container"></div>
+
+        <!-- 정다운미래 맞춤 솔루션 브릿지 카드 -->
+        <div class="w-full rounded-2xl overflow-hidden shadow-sm border border-[#FF8A3D]/30" style="background: linear-gradient(145deg, #FFF8E8 0%, #FFFFFF 100%);">
+          <div class="p-4 text-center">
+            <span class="inline-block text-[10px] font-extrabold bg-[#FF8A3D] text-white px-2.5 py-0.5 rounded-full mb-1.5 tracking-wider">
+              FINANCIAL PARTNER · 정다운미래
+            </span>
+            <h3 class="text-sm font-black text-slate-900 leading-snug mb-1">
+              "정다운미래는 돈의 흐름을 설계하고<br>습관을 만들고 실행을 함께 합니다."
+            </h3>
+            <p class="text-slate-500 text-[11px] leading-relaxed">
+              친절하고 이성적인 관점으로 당신의 재무적 자유와<br>객관적인 현금흐름 솔루션을 1:1로 함께 설계합니다.
+            </p>
+          </div>
+
+          <div class="p-3 bg-[#FDFBF7] border-t border-[#EFE6D8] flex flex-col gap-2">
+            <!-- 네이버 폼 1:1 상담신청 링크 -->
+            <a href="https://naver.me/xM52kK1W" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="w-full py-3 px-3 bg-[#FF8A3D] hover:bg-[#E67220] text-white font-extrabold text-xs rounded-xl transition-all flex items-center justify-center shadow-sm">
+              <span>1:1 맞춤 재무코칭 신청하기</span>
+            </a>
+            
+            <!-- 정다운미래 아임웹 홈페이지 링크 -->
+            <a href="https://jeongdaunfuture.imweb.me" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="w-full py-2.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold text-[11px] rounded-xl transition-all flex items-center justify-center">
+              <span>정다운미래 홈페이지 구경하기</span>
+            </a>
+          </div>
+        </div>
+
+        <button onclick="restartDiagnosis()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-all flex items-center justify-center">
+          <span>다시 진단하기</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- 하단 내비게이션 바 -->
+    <nav class="nav-bar">
+      <button class="nav-item" onclick="navToAppTab('home')">
+        <img src="nav_home_off.png" class="nav-icon" alt="홈">
+        <span class="nav-label">홈</span>
+      </button>
+      <button class="nav-item" onclick="navToAppTab('report')">
+        <img src="nav_report_off.png" class="nav-icon" alt="리포트">
+        <span class="nav-label">리포트</span>
+      </button>
+      <button class="nav-item active" onclick="navToAppTab('care')">
+        <img src="nav_care_on.png" class="nav-icon" alt="재무케어">
+        <span class="nav-label">재무케어</span>
+      </button>
+      <button class="nav-item" onclick="navToAppTab('my')">
+        <img src="nav_my_off.png" class="nav-icon" alt="마이">
+        <span class="nav-label">마이</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <script>
+    const AGE_BENCHMARKS = {
+      '20s': { label: '20대 (사회초년생)', emergencyMonths: 2, savingsRate: 0.50, financialAssetRate: 0.95, debtRateMax: 0.30, recommendedInvestorType: '적극투자형' },
+      '30s': { label: '30대 (신혼·자산형성기)', emergencyMonths: 3, savingsRate: 0.30, financialAssetRate: 0.10, debtRateMax: 0.30, recommendedInvestorType: '적극투자형' },
+      '40s': { label: '40대 (가계확장기)', emergencyMonths: 4, savingsRate: 0.20, financialAssetRate: 0.30, debtRateMax: 0.25, recommendedInvestorType: '위험중립형' },
+      '50s': { label: '50대 (은퇴준비기)', emergencyMonths: 5, savingsRate: 0.10, financialAssetRate: 0.45, debtRateMax: 0.30, recommendedInvestorType: '위험중립형' },
+      '65plus': { label: '65세 이상 (은퇴생활기)', emergencyMonths: 6, savingsRate: 0.05, financialAssetRate: 0.60, debtRateMax: 0.00, recommendedInvestorType: '안정형' },
+    };
+
+    let currentStep = 0;
+    const formData = {
+      ageGroup: '40s',
+      monthlyNetIncome: 0,
+      monthlyTotalExpense: 0,
+      monthlySavings: 0,
+      emergencyFund: 0,
+      financialAssets: 0,
+      realEstateAssets: 0,
+      monthlyDebtRepayment: 0,
+      monthlyInsurancePremium: 0,
+      investorType: '위험중립형'
+    };
+
+    function formatWonUnit(amountInWon) {
+      const man = Math.round(amountInWon / 10000);
+      if (man >= 10000) {
+        const eok = Math.floor(man / 10000);
+        const remMan = man % 10000;
+        return remMan > 0 ? `${eok}억 ${remMan.toLocaleString()}만 원` : `${eok}억 원`;
+      }
+      return `${man.toLocaleString()}만 원`;
+    }
+
+    function renderAgeButtons() {
+      const container = document.getElementById('age-selector-container');
+      container.innerHTML = '';
+      Object.keys(AGE_BENCHMARKS).forEach(key => {
+        const btn = document.createElement('button');
+        const isSelected = formData.ageGroup === key;
+        btn.className = `py-2.5 px-2 rounded-xl text-xs font-bold border transition-all text-center ${
+          isSelected 
+            ? 'border-[#FF8A3D] bg-[#FFF8E8] text-[#E67220] ring-1 ring-[#FF8A3D]' 
+            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+        }`;
+        btn.innerText = AGE_BENCHMARKS[key].label;
+        btn.onclick = () => {
+          formData.ageGroup = key;
+          renderAgeButtons();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderInvestorTypes() {
+      const container = document.getElementById('investor-type-container');
+      container.innerHTML = '';
+      const list = [
+        { type: '안정형', desc: '원금 손실을 최소화하고 원금 보존을 최우선시합니다.' },
+        { type: '위험중립형', desc: '예·적금 이상의 수익을 위해 일정 수준의 변동성을 감수합니다.' },
+        { type: '적극투자형', desc: '장기 고수익을 위해 일시적인 자산 하락을 감내할 수 있습니다.' }
+      ];
+      list.forEach(item => {
+        const isSelected = formData.investorType === item.type;
+        const btn = document.createElement('button');
+        btn.className = `w-full p-3.5 rounded-xl text-left border transition-all ${
+          isSelected 
+            ? 'border-[#FF8A3D] bg-[#FFF8E8] text-slate-900 font-bold ring-1 ring-[#FF8A3D]' 
+            : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+        }`;
+        btn.innerHTML = `
+          <div class="text-xs font-bold ${isSelected ? 'text-[#E67220]' : 'text-slate-800'}">${item.type}</div>
+          <div class="text-[11px] text-slate-500 font-normal mt-0.5">${item.desc}</div>
+        `;
+        btn.onclick = () => {
+          formData.investorType = item.type;
+          renderInvestorTypes();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function handleAmountInput(el, key) {
+      const cleanNum = el.value.replace(/[^0-9]/g, '');
+      const num = parseInt(cleanNum, 10) || 0;
+      formData[key] = num * 10000;
+      el.value = num === 0 ? '' : num.toLocaleString();
+
+      checkPrankWarning();
+
+      if (key === 'monthlySavings' || key === 'monthlyTotalExpense' || key === 'monthlyNetIncome') {
+        const isDrawing = (formData.monthlyTotalExpense + formData.monthlySavings) > formData.monthlyNetIncome;
+        const box = document.getElementById('step2-drawing-box');
+        if (box) box.style.display = isDrawing ? 'block' : 'none';
+      }
+    }
+
+    function checkPrankWarning() {
+      const values = [
+        formData.monthlyNetIncome, formData.monthlyTotalExpense, formData.monthlySavings,
+        formData.emergencyFund, formData.financialAssets, formData.realEstateAssets,
+        formData.monthlyDebtRepayment, formData.monthlyInsurancePremium
+      ];
+      let detected = false;
+      for (let i = 0; i <= values.length - 3; i++) {
+        if (values[i] > 0 && values[i] === values[i + 1] && values[i + 1] === values[i + 2]) {
+          detected = true;
+          break;
+        }
+      }
+      document.getElementById('prank-warning').style.display = detected ? 'flex' : 'none';
+      return detected;
+    }
+
+    function goToStep(step) {
+      currentStep = step;
+      document.getElementById('screen-step-0').classList.add('hidden');
+      document.getElementById('screen-report').classList.add('hidden');
+      document.getElementById('screen-input-steps').classList.remove('hidden');
+      document.getElementById('badge-step').classList.remove('hidden');
+
+      document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`step-content-${step}`).classList.remove('hidden');
+      document.getElementById('txt-curr-step').textContent = step;
+      document.getElementById('bar-step-progress').style.width = `${(step / 5) * 100}%`;
+
+      document.getElementById('btn-next-step').innerText = step === 5 ? '재무건강 진단하기 📊' : '다음 단계로 >';
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        goToStep(currentStep - 1);
+      } else {
+        currentStep = 0;
+        document.getElementById('screen-input-steps').classList.add('hidden');
+        document.getElementById('badge-step').classList.add('hidden');
+        document.getElementById('screen-step-0').classList.remove('hidden');
+      }
+    }
+
+    function nextStep() {
+      if (checkPrankWarning()) return;
+      if (currentStep < 5) {
+        goToStep(currentStep + 1);
+      } else {
+        runDiagnosisAndShowReport();
+      }
+    }
+
+    function runDiagnosisAndShowReport() {
+      const benchmark = AGE_BENCHMARKS[formData.ageGroup];
+      const items = [];
+      const redItems = [];
+
+      const hasNoIncome = formData.monthlyNetIncome === 0;
+      const totalOutflow = formData.monthlyTotalExpense + formData.monthlySavings;
+      const isDrawingAssets = totalOutflow > formData.monthlyNetIncome;
+
+      const baseMonthlyExpense = formData.monthlyTotalExpense > 0 
+        ? formData.monthlyTotalExpense 
+        : (formData.monthlyNetIncome > 0 ? formData.monthlyNetIncome : 0);
+
+      let emergencyMonths = 0;
+      if (baseMonthlyExpense > 0) {
+        emergencyMonths = Number((formData.emergencyFund / baseMonthlyExpense).toFixed(1));
+      } else {
+        emergencyMonths = formData.emergencyFund >= 10000000 ? 12 : 0;
+      }
+
+      const maxEmergencyLimit = Math.max(benchmark.emergencyMonths * 1.5, 6);
+      let emStatus = 'GREEN';
+      let emEval = '충분한 비상 안전망을 확보하고 있습니다.';
+      let emSol = null;
+      let emSolDetail = null;
+
+      if (formData.emergencyFund === 0) {
+        emStatus = 'RED';
+        emEval = '비상자금 버퍼 부족 (적절한 자산운용 필요)';
+        emSol = '여유자금 기준 마련 및 파킹통장 분리';
+        emSolDetail = '최소 3~6개월 치 필수 생활비는 입출금이 자유로운 CMA나 파킹통장에 비상금으로 분리 보관하세요.';
+        redItems.push('비상자금 버퍼를 우선 마련해야 하며');
+      } else if (emergencyMonths < benchmark.emergencyMonths) {
+        emStatus = 'RED';
+        emEval = '비상자금 버퍼 부족 (권장 개월 수 미달)';
+        emSol = '여유자금 기준 마련 및 파킹통장 분리';
+        emSolDetail = '최소 3~6개월 치 필수 생활비는 파킹통장 등에 안전하게 유지해 비상 시 투자 자산을 깨지 않도록 방어하세요.';
+        redItems.push('비상자금 버퍼를 우선 마련해야 하며');
+      } else if (emergencyMonths > maxEmergencyLimit) {
+        emStatus = 'YELLOW';
+        emEval = '비상자금이 과도하여 유휴 자금으로 머물고 있음 (투자 전환 권장)';
+        emSol = '잠자는 여유자금을 굴리는 자산배분 Plan';
+        emSolDetail = '적정 기준을 초과한 현금성 자산은 인플레이션으로 실질 가치가 하락합니다. 초과 자금은 배당 자산이나 적립식 ETF로 분산 운용하세요.';
+        redItems.push('과도한 유동성 자금을 투자 자산으로 굴려야 하며');
+      }
+
+      items.push({
+        title: '비상예비자금',
+        status: emStatus,
+        currText: `${emergencyMonths}개월 치 (${formatWonUnit(formData.emergencyFund)})`,
+        guideText: `${benchmark.emergencyMonths}개월 치 권장 (최대 ${maxEmergencyLimit}개월 이내 적정)`,
+        evalText: emEval,
+        solTitle: emSol,
+        solDetail: emSolDetail
+      });
+
+      let savingsRate = 0;
+      let isSavOk = false;
+      let savEval = '';
+      let savSol = null;
+      let savSolDetail = null;
+
+      if (hasNoIncome) {
+        isSavOk = false;
+        redItems.push('정기 소득 부재에 따른 자산 고갈 속도를 점검해야 하며');
+        savEval = '정기소득 부재 (보유 금융자산을 헐어 생활비를 충당하는 자산 소진기)';
+        savSol = '노후 현금흐름 및 안전한 자산인출률(4% 룰) 설계';
+        savSolDetail = '소득이 없는 기간에는 보유 금융자산이 고갈되지 않도록 연간 인출률을 4% 이내로 제어하고 현금흐름을 재정비해야 합니다.';
+      } else {
+        savingsRate = Number(((formData.monthlySavings / formData.monthlyNetIncome) * 100).toFixed(1));
+        if (isDrawingAssets) {
+          isSavOk = false;
+          redItems.push('소득 대비 지출·저축이 많아 기존 자산을 헐어 쓰는 구조이며');
+          savEval = `저축비율 ${savingsRate}% (월 소득을 초과하여 기존 금융자산을 소진 중)`;
+          savSol = '지속 가능한 가계수지 균형 및 현금흐름 리모델링';
+          savSolDetail = '소득 범위 내에서 저축과 지출이 완결되도록 고정비 다이어트와 예산 균형을 다시 잡으세요.';
+        } else if (savingsRate >= (benchmark.savingsRate * 100)) {
+          isSavOk = true;
+          savEval = '정기소득 내에서 우수한 저축 체력을 유지 중입니다.';
+        } else {
+          isSavOk = false;
+          redItems.push('저축비율이 낮고');
+          savEval = '목적에 맞는 저축 Plan으로 시작 필요';
+          savSol = '행복한 삶을 위한 목적자금 바구니 만들기';
+          savSolDetail = '막연히 아끼는 저축이 아닌 삶의 목적자금을 구체화하세요. 뚜렷한 목표가 생기면 일상 소비가 자연스럽게 통제됩니다.';
+        }
+      }
+      items.push({
+        title: '저축비율',
+        status: isSavOk ? 'GREEN' : 'RED',
+        currText: hasNoIncome ? `0% (소득 없음, 월 ${formatWonUnit(formData.monthlySavings)} 저축)` : `${savingsRate}% (월 ${formatWonUnit(formData.monthlySavings)})`,
+        guideText: hasNoIncome ? '자산 인출 속도 점검 필요' : `총소득의 ${(benchmark.savingsRate * 100)}% 이상 권장`,
+        evalText: savEval,
+        solTitle: savSol,
+        solDetail: savSolDetail
+      });
+
+      const totalAssets = formData.financialAssets + formData.realEstateAssets;
+      const finRate = totalAssets > 0 ? Number(((formData.financialAssets / totalAssets) * 100).toFixed(1)) : 0;
+      const isFinOk = finRate >= (benchmark.financialAssetRate * 100);
+      if (!isFinOk) redItems.push('금융자산 비중을 확대해야 하며');
+      items.push({
+        title: '금융자산비중',
+        status: isFinOk ? 'GREEN' : 'RED',
+        currText: `${finRate}% (${formatWonUnit(formData.financialAssets)})`,
+        guideText: `총자산의 ${(benchmark.financialAssetRate * 100)}% 이상 권장`,
+        evalText: isFinOk ? '유동성과 자산 비중이 균형 상태입니다.' : '금융자산 확대 Plan 필요',
+        solTitle: isFinOk ? null : '적립식 펀드/ETF 시작가이드',
+        solDetail: isFinOk ? null : '부동산 등 실물자산에 쏠리면 급전 필요 시 유동성 위험에 빠집니다. 매달 일정액을 우량 지수형 ETF나 펀드에 적립해 금융자산 파이를 키워야 합니다.'
+      });
+
+      let debtRate = 0;
+      let isDebtOk = true;
+      if (hasNoIncome) {
+        isDebtOk = formData.monthlyDebtRepayment === 0;
+        if (!isDebtOk) redItems.push('소득 부재 중 부채 원리금 상환 부담이 크며');
+      } else {
+        debtRate = Number(((formData.monthlyDebtRepayment / formData.monthlyNetIncome) * 100).toFixed(1));
+        isDebtOk = formData.monthlyDebtRepayment === 0 || debtRate <= (benchmark.debtRateMax * 100);
+        if (!isDebtOk) redItems.push('부채 상환액 부담을 줄여야 하며');
+      }
+      items.push({
+        title: '총부채상환',
+        status: isDebtOk ? 'GREEN' : 'RED',
+        currText: hasNoIncome ? `월 ${formatWonUnit(formData.monthlyDebtRepayment)} (소득 부재)` : `${debtRate}% (월 ${formatWonUnit(formData.monthlyDebtRepayment)})`,
+        guideText: hasNoIncome ? '부채 0원 권장' : `총소득의 ${(benchmark.debtRateMax * 100)}% 이하 권장`,
+        evalText: isDebtOk ? '대출 상환 부담이 안정 범위 내에 있습니다.' : '대출상환플랜으로 관리 필요',
+        solTitle: isDebtOk ? null : '월 원리금 부담 줄이기 및 상환 계획',
+        solDetail: isDebtOk ? null : '고금리 대출부터 우선 상환하거나, 대환대출 조정을 통해 월 상환액 부담을 먼저 완화하세요.'
+      });
+
+      let insRate = 0;
+      let insStatus = 'GREEN';
+      let insEval = '보험료는 적정 범위입니다.';
+      let insSol = null;
+      let insSolDetail = null;
+
+      if (hasNoIncome) {
+        if (formData.monthlyInsurancePremium > 0) {
+          insStatus = 'YELLOW';
+          insEval = '소득 부재 상태에서 고정 보험료 지출 지속';
+          insSol = '필수 보험 유지 및 군살 빼기';
+          insSolDetail = '불필요한 적립보험료나 중복 특약을 감액 완납 처리하여 실손 등 필수 보장만 최소 비용으로 유지하세요.';
+        } else {
+          insStatus = 'RED';
+          insEval = '보장자산 부재 (기본 의료비 안전망 점검 필요)';
+          insSol = '필수 실손의료비 점검 가이드';
+          insSolDetail = '의료비 보장이 없으면 질병·사고 시 모아둔 금융자산이 급격히 소진됩니다. 최소한의 실손보험을 확보하세요.';
+          redItems.push('기본 의료 안전망을 점검해야 하며');
+        }
+      } else {
+        insRate = Number(((formData.monthlyInsurancePremium / formData.monthlyNetIncome) * 100).toFixed(1));
+        if (insRate < 7.0) {
+          insStatus = 'RED';
+          insEval = '보장자산 취약 위험 (필수 안전망 점검 필요)';
+          insSol = '실손 및 3대 진단비 점검 체크리스트';
+          insSolDetail = '소득 대비 보험료가 지나치게 낮으면 3대 질병 진단비가 부족할 위험이 큽니다. 핵심 보장 공백을 메우세요.';
+          redItems.push('부족한 보장 안전망을 보강해야 하며');
+        } else if (insRate > 10.0) {
+          insStatus = 'RED';
+          insEval = '보험료 과다 지출 상태 (가계 부담 가중)';
+          insSol = '중복 특약 다이어트 가이드';
+          insSolDetail = '보험료가 소득의 10%를 넘으면 중도 해지 위험이 큽니다. 중복 가입된 특약과 적립보험료를 다이어트하세요.';
+          redItems.push('과도한 보험료 지출을 다이어트해야 하며');
+        }
+      }
+      items.push({
+        title: '보장성보험료비율',
+        status: insStatus,
+        currText: hasNoIncome ? `월 ${formatWonUnit(formData.monthlyInsurancePremium)}` : `${insRate}% (월 ${formatWonUnit(formData.monthlyInsurancePremium)})`,
+        guideText: '총소득의 8% ~ 10% 이내 적정',
+        evalText: insEval,
+        solTitle: insSol,
+        solDetail: insSolDetail
+      });
+
+      const isTypeMatch = formData.investorType === benchmark.recommendedInvestorType;
+      let invEval = '';
+      let invSol = null;
+      let invSolDetail = null;
+
+      if (isTypeMatch) {
+        invEval = `현재 연령대(${benchmark.label})에 적합한 균형 잡힌 자산배분 플랜을 유지하고 있습니다.`;
+      } else {
+        redItems.push('연령대에 맞는 투자성향 재정립이 필요하며');
+        invEval = `현재 연령대의 권장 성향인 '${benchmark.recommendedInvestorType}'과(와) 차이가 있습니다.`;
+        invSol = '생애주기 맞춤 자산배분 투자원칙서 작성하기';
+        invSolDetail = '연령대별 생애주기에 맞춰 감내해야 할 적정 위험 수준을 정립하고 원칙 투자를 시작하세요.';
+      }
+      items.push({
+        title: '투자성향 & 운용방향',
+        status: isTypeMatch ? 'GREEN' : 'RED',
+        currText: `내 선택: ${formData.investorType}`,
+        guideText: `권장: ${benchmark.recommendedInvestorType}`,
+        evalText: invEval,
+        solTitle: invSol,
+        solDetail: invSolDetail
+      });
+
+      renderReportScreen(items, redItems);
+    }
+
+    function renderReportScreen(items, redItems) {
+      document.getElementById('screen-input-steps').classList.add('hidden');
+      document.getElementById('badge-step').classList.add('hidden');
+      document.getElementById('screen-report').classList.remove('hidden');
+
+      const badge = document.getElementById('rep-health-badge');
+      if (redItems.length === 0) {
+        badge.className = 'px-2.5 py-0.5 text-[11px] font-extrabold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200';
+        badge.innerText = '매우 양호 🟢';
+      } else if (redItems.length <= 2) {
+        badge.className = 'px-2.5 py-0.5 text-[11px] font-extrabold rounded-full bg-amber-50 text-amber-700 border border-amber-200';
+        badge.innerText = '주의 필요 🟡';
+      } else {
+        badge.className = 'px-2.5 py-0.5 text-[11px] font-extrabold rounded-full bg-rose-50 text-rose-700 border border-rose-200';
+        badge.innerText = '위험 경고 🔴';
+      }
+
+      const summaryText = redItems.length === 0
+        ? '현재 가계 재무구조가 매우 건전합니다. 목적자금 Plan을 꾸준히 이어가세요.'
+        : `${redItems.join(' ')} 목적에 맞게 저축Plan 진행하면 될 것으로 사료됩니다.`;
+      document.getElementById('rep-summary-text').innerText = `"${summaryText}"`;
+
+      const container = document.getElementById('rep-items-container');
+      container.innerHTML = '';
+
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'bg-[#FDFBF7] p-3.5 rounded-2xl border border-[#EFE6D8] space-y-2';
+
+        const statusBadge = item.status === 'GREEN' 
+          ? '<span class="text-[10.5px] px-2 py-0.5 font-bold rounded-full bg-emerald-100 text-emerald-800">정상 🟢</span>'
+          : item.status === 'YELLOW'
+            ? '<span class="text-[10.5px] px-2 py-0.5 font-bold rounded-full bg-amber-100 text-amber-800">활용필요 🟡</span>'
+            : '<span class="text-[10.5px] px-2 py-0.5 font-bold rounded-full bg-rose-100 text-rose-800">점검필요 🔴</span>';
+
+        let solHtml = '';
+        if (item.solTitle) {
+          solHtml = `
+            <div class="mt-2 text-xs bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-amber-950">
+              <div class="font-extrabold text-amber-900 mb-0.5">[해결책] ${item.solTitle}</div>
+              <p class="text-[11px] text-amber-800 leading-relaxed">${item.solDetail}</p>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-xs text-[#8B5A2B]">${item.title}</span>
+            ${statusBadge}
+          </div>
+          <div class="bg-white p-2.5 rounded-xl border border-slate-100 text-xs space-y-1">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400">내 현황</span>
+              <span class="font-bold text-slate-800">${item.currText}</span>
+            </div>
+            <div class="flex justify-between items-center border-t border-slate-100 pt-1">
+              <span class="text-slate-400">가이드라인</span>
+              <span class="text-slate-600 font-medium">${item.guideText}</span>
+            </div>
+          </div>
+          <div class="text-[11px] text-slate-600 leading-relaxed px-0.5">
+            <span class="text-slate-400 font-semibold">분석:</span> ${item.evalText}
+          </div>
+          ${solHtml}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function restartDiagnosis() {
+      goToStep(1);
+    }
+
+    function navToAppTab(tabName) {
+      window.location.href = `index.html?tab=${tabName}`;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAgeButtons();
+      renderInvestorTypes();
+    });
+  </script>
+</body>
+</html>

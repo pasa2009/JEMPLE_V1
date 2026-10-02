@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>스마트 재무진단 - 잼플 (Jample)</title>
+  <title>가계부 셀프 진단 - 잼플 (Jample)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -90,14 +90,17 @@
   <div class="app-frame">
     
     <div class="content-area">
-      <!-- 상단 헤더 -->
+      <!-- 상단 헤더: 뒤로가기 & 로고, 우측 [가계부 셀프 진단 배지] -->
       <header class="flex justify-between items-center mb-3 border-b border-[#EFE6D8] pb-3 flex-shrink-0">
-        <div class="flex items-center">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="navToAppTab('care')" class="text-slate-400 hover:text-slate-600 text-sm font-bold pr-1">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
           <img src="logo.png" class="h-6 object-contain" alt="Jample">
         </div>
         <div class="flex items-center gap-2">
           <span class="text-xs font-bold text-[#8B5A2B] bg-[#FFF8E8] px-2.5 py-1 rounded-full border border-[#F5E5C9]">
-            재무건강 진단
+            가계부 셀프 진단
           </span>
           <div id="badge-step" class="hidden text-xs font-extrabold text-[#E67220] bg-[#FFF8E8] border border-[#F5E5C9] px-2.5 py-1 rounded-full">
             <span id="txt-curr-step">1</span> / 5
@@ -113,11 +116,11 @@
               <img src="RING2.png" class="w-16 h-16 object-contain" alt="배움 재무링" onerror="this.src='RING1.png'">
             </div>
             <span class="inline-block text-[11px] font-extrabold text-[#E67220] bg-[#FFF8E8] border border-[#F5E5C9] px-3 py-0.5 rounded-full mb-1.5">
-              1분 가계 건강검진
+              1분 가계 밸런스 체크
             </span>
             <h1 class="text-xl font-black text-slate-900 leading-snug">
-              내 돈은 지금 건강할까?<br>
-              <span class="text-[#FF8A3D]">스마트 가계 처방전</span>
+              내 돈의 흐름은 균형 잡혀 있을까?<br>
+              <span class="text-[#FF8A3D]">가계 밸런스 처방전</span>
             </h1>
             <p class="text-xs text-slate-500 mt-1 leading-relaxed">
               또래 표준 기준과 내 재정 데이터를 비교하고<br>객관적인 맞춤 개선 가이드를 확인해보세요!
@@ -274,7 +277,7 @@
               매우 양호 🟢
             </span>
           </div>
-          <h2 class="text-lg font-black text-slate-900 mb-1.5">재무건강 진단 결과</h2>
+          <h2 class="text-lg font-black text-slate-900 mb-1.5">가계부 밸런스 진단 결과</h2>
           <div class="p-3 bg-[#FDFBF7] rounded-xl text-xs font-medium leading-relaxed text-[#8B5A2B] border border-[#EFE6D8]" id="rep-summary-text">
             "진단 결과 요약"
           </div>
@@ -282,37 +285,21 @@
 
         <div class="space-y-3" id="rep-items-container"></div>
 
-        <!-- 정다운미래 맞춤 솔루션 브릿지 카드 -->
-        <div class="w-full rounded-2xl overflow-hidden shadow-sm border border-[#FF8A3D]/30" style="background: linear-gradient(145deg, #FFF8E8 0%, #FFFFFF 100%);">
-          <div class="p-4 text-center">
-            <span class="inline-block text-[10px] font-extrabold bg-[#FF8A3D] text-white px-2.5 py-0.5 rounded-full mb-1.5 tracking-wider">
-              FINANCIAL PARTNER · 정다운미래
-            </span>
-            <h3 class="text-sm font-black text-slate-900 leading-snug mb-1">
-              "정다운미래는 돈의 흐름을 설계하고<br>습관을 만들고 실행을 함께 합니다."
-            </h3>
-            <p class="text-slate-500 text-[11px] leading-relaxed">
-              친절하고 이성적인 관점으로 당신의 재무적 자유와<br>객관적인 현금흐름 솔루션을 1:1로 함께 설계합니다.
-            </p>
-          </div>
-
-          <div class="p-3 bg-[#FDFBF7] border-t border-[#EFE6D8] flex flex-col gap-2">
-            <!-- 네이버 폼 1:1 상담신청 링크 -->
-            <a href="https://naver.me/xM52kK1W" 
-               target="_blank" 
-               rel="noopener noreferrer" 
-               class="w-full py-3 px-3 bg-[#FF8A3D] hover:bg-[#E67220] text-white font-extrabold text-xs rounded-xl transition-all flex items-center justify-center shadow-sm">
-              <span>1:1 맞춤 재무코칭 신청하기</span>
-            </a>
-            
-            <!-- 정다운미래 아임웹 홈페이지 링크 -->
-            <a href="https://jeongdaunfuture.imweb.me" 
-               target="_blank" 
-               rel="noopener noreferrer" 
-               class="w-full py-2.5 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold text-[11px] rounded-xl transition-all flex items-center justify-center">
-              <span>정다운미래 홈페이지 구경하기</span>
-            </a>
-          </div>
+        <!-- [B안] 은은하고 세련된 1줄 서포트 텍스트 배너 -->
+        <div class="pt-1">
+          <a href="https://naver.me/xM52kK1W" target="_blank" rel="noopener noreferrer"
+             class="block bg-[#FFFDF9] hover:bg-[#FFF8E8] border border-[#F5E5C9] rounded-xl px-3.5 py-3 transition-colors shadow-2xs">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-sm">🌱</span>
+                <div>
+                  <span class="text-xs font-bold text-[#8B5A2B]">전문가의 1:1 맞춤 가계 밸런스 점검이 필요하신가요?</span>
+                  <p class="text-[10px] text-slate-400 mt-0.5">정다운미래 전문가 코칭 안내 보기</p>
+                </div>
+              </div>
+              <span class="text-xs font-bold text-[#FF8A3D] ml-2">❯</span>
+            </div>
+          </a>
         </div>
 
         <button onclick="restartDiagnosis()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-all flex items-center justify-center">
@@ -322,7 +309,7 @@
 
     </div>
 
-    <!-- 하단 내비게이션 바 -->
+    <!-- 하단 내비게이션 바 (세 번째 탭: '재무링가든' 적용) -->
     <nav class="nav-bar">
       <button class="nav-item" onclick="navToAppTab('home')">
         <img src="nav_home_off.png" class="nav-icon" alt="홈">
@@ -333,8 +320,8 @@
         <span class="nav-label">리포트</span>
       </button>
       <button class="nav-item active" onclick="navToAppTab('care')">
-        <img src="nav_care_on.png" class="nav-icon" alt="재무케어">
-        <span class="nav-label">재무케어</span>
+        <img src="nav_care_on.png" class="nav-icon" alt="재무링가든">
+        <span class="nav-label">재무링가든</span>
       </button>
       <button class="nav-item" onclick="navToAppTab('my')">
         <img src="nav_my_off.png" class="nav-icon" alt="마이">
@@ -469,7 +456,7 @@
       document.getElementById('txt-curr-step').textContent = step;
       document.getElementById('bar-step-progress').style.width = `${(step / 5) * 100}%`;
 
-      document.getElementById('btn-next-step').innerText = step === 5 ? '재무건강 진단하기 📊' : '다음 단계로 >';
+      document.getElementById('btn-next-step').innerText = step === 5 ? '가계 밸런스 확인하기 📊' : '다음 단계로 >';
     }
 
     function prevStep() {

@@ -33,7 +33,7 @@
       position: relative;
     }
 
-    /* ─── C안 브랜드 스플래시 화면 스타일 ─── */
+    /* ─── 1.3초 브랜드 스플래시 화면 스타일 ─── */
     #splash-screen {
       position: absolute;
       inset: 0;
@@ -43,7 +43,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      transition: opacity 0.45s ease-out, visibility 0.45s;
+      transition: opacity 0.5s ease-out, visibility 0.5s;
     }
     #splash-screen.fade-out {
       opacity: 0;
@@ -93,39 +93,72 @@
       0% { opacity: 0; transform: translateY(6px); }
       100% { opacity: 1; transform: translateY(0); }
     }
-    /* ─────────────────────────────────────── */
 
     .screen { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 20px; }
     .screen.active { display: flex; }
 
     /* 통일된 상단 헤더 스타일 */
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-shrink: 0; }
     .brand-logo-img { height: 26px; object-fit: contain; display: block; }
     .header-left { display: flex; align-items: center; gap: 8px; }
     .header-sub-title { font-size: 13.5px; font-weight: bold; color: var(--brown); }
     
     .card { background: var(--card-bg); border-radius: 16px; padding: 16px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(139,90,43,0.06); border: 1px solid var(--border-color); }
 
+    /* ─── 인트로 캐릭터 인터랙션 모션 스타일 ─── */
     .welcome-container {
       flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px 10px;
     }
     .welcome-mascot-box {
-      width: 140px; height: 140px; background: var(--cream); border-radius: 50%;
+      width: 145px; height: 145px; background: var(--cream); border-radius: 50%;
       display: flex; justify-content: center; align-items: center; overflow: hidden;
-      margin-bottom: 16px; border: 3px solid var(--primary); box-shadow: 0 8px 16px rgba(255,138,61,0.2);
-      animation: float 2.5s ease-in-out infinite;
+      margin-bottom: 20px; border: 3.5px solid var(--primary);
+      position: relative;
+      animation: float-pulse 3s ease-in-out infinite;
+    }
+    @keyframes float-pulse {
+      0%, 100% { 
+        transform: translateY(0) scale(1);
+        box-shadow: 0 8px 18px rgba(255,138,61,0.22);
+      }
+      50% { 
+        transform: translateY(-9px) scale(1.02);
+        box-shadow: 0 16px 26px rgba(255,138,61,0.32);
+      }
     }
     .welcome-mascot-img {
-      width: 110px; height: 110px; object-fit: contain;
+      width: 114px; height: 114px; object-fit: contain;
+      transform-origin: bottom center;
+      animation: mascot-wiggle 3s ease-in-out infinite;
     }
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
+    @keyframes mascot-wiggle {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      20% { transform: rotate(-3.5deg) scale(1.03); }
+      40% { transform: rotate(3deg) scale(1.02); }
+      60% { transform: rotate(-1.5deg) scale(1.01); }
+      80% { transform: rotate(1deg) scale(1); }
     }
     .welcome-title { font-size: 22px; font-weight: bold; color: var(--text-main); margin-bottom: 12px; line-height: 1.35; }
     .welcome-sub { font-size: 13.5px; color: var(--text-sub); line-height: 1.6; margin-bottom: 30px; }
-    .feature-tag-list { display: flex; gap: 8px; margin-bottom: 36px; }
-    .feature-tag { background: var(--cream); color: var(--brown); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1px solid #F5E5C9; }
+    .feature-tag-list { display: flex; gap: 8px; margin-bottom: 34px; }
+    .feature-tag { 
+      background: var(--cream); color: var(--brown); font-size: 12px; font-weight: bold; 
+      padding: 6px 12px; border-radius: 20px; border: 1px solid #F5E5C9;
+      animation: tag-bounce 3s ease-in-out infinite;
+    }
+    .feature-tag:nth-child(2) { animation-delay: 0.2s; }
+    .feature-tag:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes tag-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    .btn-intro-action {
+      animation: btn-pulse 2.2s infinite;
+    }
+    @keyframes btn-pulse {
+      0%, 100% { box-shadow: 0 4px 12px rgba(255,138,61,0.25); }
+      50% { box-shadow: 0 6px 20px rgba(255,138,61,0.48); }
+    }
 
     /* 온보딩 상단 배너 */
     .onboarding-ring-banner {
@@ -311,7 +344,7 @@
 
 <div class="app-frame">
 
-  <!-- ================= [C안] 1.3초 브랜드 스플래시 화면 ================= -->
+  <!-- ================= [1.3초 브랜드 스플래시 화면] ================= -->
   <div id="splash-screen">
     <img src="logo.png" class="splash-logo" alt="Jample">
     <div class="splash-mascot-box">
@@ -341,7 +374,7 @@
         <span class="feature-tag">#쉬운돈루틴</span>
       </div>
 
-      <button class="btn-main" onclick="startOnboarding()">
+      <button class="btn-main btn-intro-action" onclick="startOnboarding()">
         <img src="my_icon_setting.png" class="ui-btn-icon" alt="정원 만들기">
         <span>1분 만에 도토리 정원 만들기</span>
       </button>
@@ -663,74 +696,136 @@
     </div>
   </div>
 
-  <!-- ================= 4. [탭 3] 재무케어 화면 (5대 모듈 정식 연동) ================= -->
-  <div id="screen-care" class="screen">
-    <div class="header">
+  <!-- ================= 4. [탭 3] 재무링 가든 화면 ================= -->
+  <div id="screen-care" class="screen" style="padding: 16px 18px 24px 18px;">
+    
+    <!-- 1. 상단 브랜드 헤더 -->
+    <div class="header" style="margin-bottom: 14px;">
       <div class="header-left">
         <img src="logo.png" class="brand-logo-img" alt="Jample">
-        <span class="header-sub-title">재무케어 진단소</span>
+        <span class="header-sub-title" style="color: var(--brown); font-size: 14px;">재무링 가든</span>
+      </div>
+      <span style="font-size: 11px; color: var(--primary-dark); background: var(--cream); border: 1.5px solid #F5E5C9; padding: 3px 10px; border-radius: 20px; font-weight: 700;">
+        스마트 셀프 체크 🌱
+      </span>
+    </div>
+
+    <!-- 2. 재무링 말풍선 웰컴 배너 -->
+    <div style="background: linear-gradient(135deg, #FFF9ED 0%, #FFFFFF 100%); border: 1.5px solid var(--border-color); border-radius: 20px; padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 12px rgba(139,90,43,0.04);">
+      <div style="width: 48px; height: 48px; background: #FFF; border-radius: 50%; border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(255,138,61,0.15);">
+        <img src="RING2.png" style="width: 38px; height: 38px; object-fit: contain;" alt="배움 재무링" onerror="this.src='RING1.png'">
+      </div>
+      <div>
+        <div style="font-size: 13px; font-weight: 800; color: var(--text-main); margin-bottom: 2px;">
+          "궁금한 곳을 톡 누르면 바로 확인해드려요!"
+        </div>
+        <div style="font-size: 11.5px; color: var(--text-sub); line-height: 1.35;">
+          3분 만에 내 돈의 흐름과 숨은 성향을 짚어보세요.
+        </div>
       </div>
     </div>
 
-    <!-- 1. 재무 MBTI 진단 -->
-    <div class="card" style="border-left:5px solid var(--primary); cursor:pointer;" onclick="location.href='care_mbti.html'">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <img src="RING2.png" style="width:26px; height:26px; object-fit:contain;" alt="진단" onerror="this.src='RING1.png'">
-          <h4 style="color:var(--text-main); font-size:15px; font-weight:bold;">재무 MBTI 진단</h4>
+    <!-- 3. 2열 큐브 카드 그리드 -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+      
+      <!-- 카드 1: 금융 MBTI -->
+      <div onclick="location.href='care_mbti.html'" 
+           style="background: #FFF; border-radius: 20px; padding: 14px 12px; border: 1.5px solid #FFE4CC; box-shadow: 0 4px 10px rgba(255,138,61,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; transition: transform 0.15s ease;"
+           onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="width: 38px; height: 38px; background: #FFF5EC; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <img src="RING2.png" style="width: 30px; height: 30px; object-fit: contain;" alt="MBTI" onerror="this.src='RING1.png'">
+          </div>
+          <span style="font-size: 10px; font-weight: 700; color: #E67220; background: #FFF5EC; padding: 2px 6px; border-radius: 8px;">성향</span>
         </div>
-        <span style="font-size:11px; font-weight:bold; color:var(--primary-dark); background:var(--cream); border:1px solid #F5E5C9; padding:2px 8px; border-radius:12px;">성향 분석</span>
+        <div style="margin-top: 10px;">
+          <div style="font-size: 13.5px; font-weight: 800; color: #1E293B;">재무 MBTI 테스트</div>
+          <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.3;">내 소비·투자 캐릭터 찾기</div>
+        </div>
       </div>
-      <p style="font-size:12px; color:var(--text-sub); line-height:1.4;">배움 재무링과 함께 돈 관리 성향과 내 금융 캐릭터를 찾아보세요.</p>
+
+      <!-- 카드 2: 가계 밸런스 -->
+      <div onclick="location.href='care_diagnosis.html'" 
+           style="background: #FFF; border-radius: 20px; padding: 14px 12px; border: 1.5px solid #D1FAE5; box-shadow: 0 4px 10px rgba(16,185,129,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; transition: transform 0.15s ease;"
+           onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="width: 38px; height: 38px; background: #ECFDF5; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <img src="report_icon_defense.png" style="width: 26px; height: 26px; object-fit: contain;" alt="가계">
+          </div>
+          <span style="font-size: 10px; font-weight: 700; color: #059669; background: #ECFDF5; padding: 2px 6px; border-radius: 8px;">가계부</span>
+        </div>
+        <div style="margin-top: 10px;">
+          <div style="font-size: 13.5px; font-weight: 800; color: #1E293B;">가계부 셀프 진단</div>
+          <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.3;">또래 기준 지출·저축 점검</div>
+        </div>
+      </div>
+
+      <!-- 카드 3: 목돈 바구니 -->
+      <div onclick="location.href='care_basket.html'" 
+           style="background: #FFF; border-radius: 20px; padding: 14px 12px; border: 1.5px solid #DBEAFE; box-shadow: 0 4px 10px rgba(37,99,235,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; transition: transform 0.15s ease;"
+           onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="width: 38px; height: 38px; background: #EFF6FF; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <img src="report_icon_wish.png" style="width: 26px; height: 26px; object-fit: contain;" alt="목돈">
+          </div>
+          <span style="font-size: 10px; font-weight: 700; color: #2563EB; background: #EFF6FF; padding: 2px 6px; border-radius: 8px;">목돈 플랜</span>
+        </div>
+        <div style="margin-top: 10px;">
+          <div style="font-size: 13.5px; font-weight: 800; color: #1E293B;">목적자금 맞춤 설계</div>
+          <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.3;">필요 수익률 & 추천 계좌</div>
+        </div>
+      </div>
+
+      <!-- 카드 4: 투자 배분 -->
+      <div onclick="location.href='care_invest.html'" 
+           style="background: #FFF; border-radius: 20px; padding: 14px 12px; border: 1.5px solid #EFE6D8; box-shadow: 0 4px 10px rgba(139,90,43,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; transition: transform 0.15s ease;"
+           onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="width: 38px; height: 38px; background: #FDFBF7; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <img src="report_icon_expense.png" style="width: 26px; height: 26px; object-fit: contain;" alt="투자">
+          </div>
+          <span style="font-size: 10px; font-weight: 700; color: #8B5A2B; background: #FDFBF7; padding: 2px 6px; border-radius: 8px;">투자 점검</span>
+        </div>
+        <div style="margin-top: 10px;">
+          <div style="font-size: 13.5px; font-weight: 800; color: #1E293B;">내 투자자산 점검</div>
+          <div style="font-size: 11px; color: #64748B; margin-top: 2px; line-height: 1.3;">펀드·ETF 비율 & 하락장 대비</div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- 2. 스마트 재무건강 진단 -->
-    <div class="card" style="border-left:5px solid #10B981; cursor:pointer;" onclick="location.href='care_diagnosis.html'">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <img src="report_icon_defense.png" style="width:26px; height:26px; object-fit:contain;" alt="가계진단">
-          <h4 style="color:var(--text-main); font-size:15px; font-weight:bold;">스마트 재무건강 진단</h4>
+    <!-- 카드 5: 대출 점검 -->
+    <div onclick="location.href='care_debt.html'" 
+         style="background: #FFF; border-radius: 20px; padding: 14px 16px; border: 1.5px solid #FEE2E2; box-shadow: 0 4px 10px rgba(239,68,68,0.05); cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; transition: transform 0.15s ease;"
+         onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 40px; height: 40px; background: #FEF2F2; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <img src="my_icon_insurance.png" style="width: 26px; height: 26px; object-fit: contain;" alt="대출">
         </div>
-        <span style="font-size:11px; font-weight:bold; color:#047857; background:#ECFDF5; border:1px solid #A7F3D0; padding:2px 8px; border-radius:12px;">가계 검진</span>
+        <div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 13.5px; font-weight: 800; color: #1E293B;">대출 점검</span>
+            <span style="font-size: 10px; font-weight: 700; color: #DC2626; background: #FEF2F2; padding: 1.5px 6px; border-radius: 6px;">부채 관리</span>
+          </div>
+          <div style="font-size: 11px; color: #64748B; margin-top: 2px;">소득 대비 이자 부담과 안전도 체크</div>
+        </div>
       </div>
-      <p style="font-size:12px; color:var(--text-sub); line-height:1.4;">또래 권장 표준치와 비교해 보는 1분 가계 현금흐름 처방전</p>
+      <span style="color: #CBD5E1; font-size: 14px; font-weight: bold;">❯</span>
     </div>
 
-    <!-- 3. 목적자금 바구니 설계법 -->
-    <div class="card" style="border-left:5px solid #1976D2; cursor:pointer;" onclick="location.href='care_basket.html'">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <img src="report_icon_wish.png" style="width:26px; height:26px; object-fit:contain;" alt="목적자금">
-          <h4 style="color:var(--text-main); font-size:15px; font-weight:bold;">목적자금 바구니 설계법</h4>
-        </div>
-        <span style="font-size:11px; font-weight:bold; color:#1D4ED8; background:#EFF6FF; border:1px solid #BFDBFE; padding:2px 8px; border-radius:12px;">목돈 플랜</span>
+    <!-- 4. 정다운미래 홈페이지 브릿지 미니 배너 -->
+    <div style="background: linear-gradient(135deg, #FF8A3D 0%, #E67220 100%); border-radius: 20px; padding: 14px 16px; color: #FFF; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 6px 16px rgba(230,114,32,0.2);">
+      <div>
+        <div style="font-size: 10px; font-weight: 800; color: #FFE4CC; letter-spacing: 0.3px;">FINANCIAL PARTNER</div>
+        <div style="font-size: 13px; font-weight: 800; margin-top: 2px;">정다운미래의 이야기를 만나보세요</div>
+        <div style="font-size: 11px; color: rgba(255,255,255,0.85); margin-top: 1px;">돈의 흐름을 설계하는 공식 홈페이지</div>
       </div>
-      <p style="font-size:12px; color:var(--text-sub); line-height:1.4;">300만 원 이상 목돈을 가장 안전하고 똑똑하게 모으는 비결</p>
+      <a href="https://jeongdaunfuture.imweb.me" target="_blank" rel="noopener noreferrer" 
+         style="background: #FFF; color: #E67220; font-size: 11.5px; font-weight: 800; padding: 8px 12px; border-radius: 12px; text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.1); white-space: nowrap;">
+        구경하기
+      </a>
     </div>
 
-    <!-- 4. 투자 포트폴리오 건강검진 -->
-    <div class="card" style="border-left:5px solid var(--brown); cursor:pointer;" onclick="location.href='care_invest.html'">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <img src="report_icon_expense.png" style="width:26px; height:26px; object-fit:contain;" alt="투자진단">
-          <h4 style="color:var(--text-main); font-size:15px; font-weight:bold;">투자 포트폴리오 건강검진</h4>
-        </div>
-        <span style="font-size:11px; font-weight:bold; color:var(--brown); background:var(--cream); border:1px solid #F5E5C9; padding:2px 8px; border-radius:12px;">자산 배분</span>
-      </div>
-      <p style="font-size:12px; color:var(--text-sub); line-height:1.4;">유형·지역·산업별 자산 배분과 하락장 방어 버퍼 점검</p>
-    </div>
-
-    <!-- 5. 대출 스마트 관리 -->
-    <div class="card" style="border-left:5px solid #E91E63; cursor:pointer;" onclick="location.href='care_debt.html'">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <img src="my_icon_insurance.png" style="width:26px; height:26px; object-fit:contain;" alt="대출">
-          <h4 style="color:var(--text-main); font-size:15px; font-weight:bold;">대출 스마트 관리</h4>
-        </div>
-        <span style="font-size:11px; font-weight:bold; color:#BE123C; background:#FFF1F2; border:1px solid #FECDD3; padding:2px 8px; border-radius:12px;">부채 상환</span>
-      </div>
-      <p style="font-size:12px; color:var(--text-sub); line-height:1.4;">위험관리 방패로 소득 대비 금리 부담과 상환 순서를 점검합니다.</p>
-    </div>
   </div>
 
   <!-- ================= 5. [탭 4] 마이(MY) 화면 ================= -->
@@ -845,7 +940,7 @@
     </button>
   </div>
 
-  <!-- ================= 하단 4대 탭 ================= -->
+  <!-- ================= 하단 4대 탭 (세 번째 버튼: '재무링가든' 적용) ================= -->
   <div class="nav-bar" id="bottom-nav" style="display:none;">
     <button class="nav-item active" onclick="switchTab('home', this)">
       <img src="nav_home_on.png" class="nav-icon" data-name="home" alt="홈">
@@ -856,8 +951,8 @@
       <span class="nav-label">리포트</span>
     </button>
     <button class="nav-item" onclick="switchTab('care', this)">
-      <img src="nav_care_off.png" class="nav-icon" data-name="care" alt="재무케어">
-      <span class="nav-label">재무케어</span>
+      <img src="nav_care_off.png" class="nav-icon" data-name="care" alt="재무링가든">
+      <span class="nav-label">재무링가든</span>
     </button>
     <button class="nav-item" onclick="switchTab('my', this)">
       <img src="nav_my_off.png" class="nav-icon" data-name="my" alt="마이">
@@ -1773,7 +1868,7 @@
       commentEl.style.color = 'var(--primary-dark)';
       ringAvatar.src = 'report_icon_defense.png';
     } else if (Math.abs(diff) <= baseSurplus) {
-      badgeEl.innerText = isSettled ? '🛡️ 확정: 여유 씨앗으로 방어 완료' : '🛡️ 여유 씨앗으로 방패 방어 중';
+      badgeEl.innerText = isSettled ? '🛡 확정: 여유 씨앗으로 방어 완료' : '🛡️ 여유 씨앗으로 방패 방어 중';
       badgeEl.style.background = '#FFF3E0';
       badgeEl.style.color = '#E65100';
       commentEl.innerHTML = `"생활비가 ${toWon(Math.abs(diff))} 초과되었지만,<br>여유 씨앗으로 막아내 선저축은 안전해요!"`;
@@ -1851,6 +1946,9 @@
   }
 
   function switchTab(tabName, el) {
+    // 'garden'과 'care' 별칭 상호 호환 처리
+    if (tabName === 'garden') tabName = 'care';
+
     if (!el) {
       const targetNav = document.querySelector(`.nav-item img[data-name="${tabName}"]`);
       if (targetNav) el = targetNav.parentElement;
@@ -1920,11 +2018,13 @@
   /* ─── 초기 로딩 및 진단 모듈 복귀 통합 처리 ─── */
   window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const targetTab = urlParams.get('tab') || window.location.hash.replace('#', '');
+    let targetTab = urlParams.get('tab');
+    if (targetTab === 'garden') targetTab = 'care';
+    
     const splashScreen = document.getElementById('splash-screen');
     
     if (targetTab) {
-      // 1. 진단 모듈 등에서 특정 탭으로 넘어온 경우: 스플래시 없이 즉시 화면 노출
+      // 1. 외부 진단 화면에서 특정 탭으로 넘어온 경우: 스플래시 없이 즉시 해당 탭 노출
       if (splashScreen) splashScreen.style.display = 'none';
 
       const welcomeScreen = document.getElementById('screen-welcome');
@@ -1948,7 +2048,7 @@
         switchTab('home', defaultHomeBtn);
       }
     } else {
-      // 2. 일반 첫 접속: 1.3초간 C안 스플래시 연출 후 부드럽게 인트로 화면으로 전환
+      // 2. 일반 첫 접속: 1.3초 동안 스플래시 화면 노출 후 부드럽게 웰컴 화면으로 전환
       setTimeout(() => {
         if (splashScreen) {
           splashScreen.classList.add('fade-out');

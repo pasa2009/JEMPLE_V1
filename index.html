@@ -2,8 +2,17 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>잼플 (Jample) - 재무링과 함께하는 돈 루틴</title>
+  
+  <!-- PWA 설정 메타태그 및 매니페스트 연결 -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FF8A3D">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="잼플">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
   <style>
     :root {
       --primary: #FF8A3D;        /* 메인 오렌지 */
@@ -934,13 +943,34 @@
       </div>
     </div>
 
-    <button class="btn-main" onclick="saveMySettings()">
+    <button class="btn-main" onclick="saveMySettings()" style="margin-bottom:14px;">
       <img src="report_icon_defense.png" class="ui-btn-icon" alt="저장">
       <span>설정 저장 및 정원 갱신</span>
     </button>
+
+    <!-- 4. 로컬 데이터 백업 및 복원 안내 카드 (PWA & 데이터 보호) -->
+    <div class="card" style="background: #FDFBF7; border: 1.5px dashed var(--border-color); padding: 14px; margin-bottom: 24px;">
+      <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+        <span style="font-size:14px;">🔒</span>
+        <span style="font-size:12.5px; font-weight:bold; color:var(--brown);">내 기기 데이터 보관 및 백업</span>
+      </div>
+      <p style="font-size:11px; color:var(--text-sub); line-height:1.45; margin-bottom:12px;">
+        입력하신 모든 정보는 외부 서버가 아닌 <b>현재 기기(브라우저)</b>에 안전하게 자동 저장됩니다.<br>
+        캐시 삭제에 대비하거나 다른 기기로 옮기시려면 백업 파일을 다운로드해 보관해 주세요.
+      </p>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-secondary" style="flex:1; padding:9px 6px; font-size:12px;" onclick="exportDataBackup()">
+          <span>💾 데이터 백업</span>
+        </button>
+        <label class="btn-secondary" style="flex:1; padding:9px 6px; font-size:12px; cursor:pointer; text-align:center; display:flex; align-items:center; justify-content:center;">
+          <span>📂 백업 불러오기</span>
+          <input type="file" id="import-backup-file" accept=".json" style="display:none;" onchange="importDataBackup(event)">
+        </label>
+      </div>
+    </div>
   </div>
 
-  <!-- ================= 하단 4대 탭 (세 번째 버튼: '재무링가든' 적용) ================= -->
+  <!-- ================= 하단 4대 탭 ================= -->
   <div class="nav-bar" id="bottom-nav" style="display:none;">
     <button class="nav-item active" onclick="switchTab('home', this)">
       <img src="nav_home_on.png" class="nav-icon" data-name="home" alt="홈">
@@ -1033,6 +1063,7 @@
 </div>
 
 <script>
+  const STORAGE_KEY = 'jample_app_data_v1';
   const now = new Date();
   const CURRENT_YEAR = now.getFullYear();
   const CURRENT_MONTH = now.getMonth() + 1;
@@ -1076,7 +1107,8 @@
     5: { name: '꿈 재무링', file: 'RING5.png' }
   };
 
-  const state = {
+  const defaultState = {
+    isUserOnboarded: false,
     startYear: 2026,
     startMonth: 9,
     payday: 25,
@@ -1109,6 +1141,67 @@
     viewYear: CURRENT_YEAR,
     viewMonth: CURRENT_MONTH
   };
+
+  let state = { ...defaultState };
+
+  /* 로컬 스토리지 자동 저장 및 로드 로직 */
+  function saveStateToLocalStorage() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch(e) {
+      console.error('LocalStorage 저장 실패:', e);
+    }
+  }
+
+  function loadStateFromLocalStorage() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        state = { ...defaultState, ...JSON.parse(saved) };
+        return true;
+      }
+    } catch(e) {
+      console.error('LocalStorage 로드 실패:', e);
+    }
+    return false;
+  }
+
+  /* 데이터 백업 (JSON 다운로드) */
+  function exportDataBackup() {
+    saveStateToLocalStorage();
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+    const downloadAnchor = document.createElement('a');
+    const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `잼플_데이터백업_${dateStr}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  /* 데이터 복원 (JSON 파일 업로드) */
+  function importDataBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        if (importedData && typeof importedData.income !== 'undefined') {
+          state = { ...defaultState, ...importedData };
+          saveStateToLocalStorage();
+          alert('✅ 백업 데이터가 성공적으로 복원되었습니다!');
+          window.location.reload();
+        } else {
+          alert('올바른 잼플 백업 파일이 아닙니다.');
+        }
+      } catch(err) {
+        alert('파일을 읽는 중 오류가 발생했습니다.');
+      }
+    };
+    reader.readAsText(file);
+  }
 
   let selectedYearForExpense = CURRENT_YEAR;
   let selectedMonthForExpense = CURRENT_MONTH;
@@ -1276,6 +1369,9 @@
   }
 
   function finishOnboarding() {
+    state.isUserOnboarded = true;
+    saveStateToLocalStorage();
+
     document.getElementById('screen-onboarding').classList.remove('active');
     document.getElementById('screen-home').classList.add('active');
     document.getElementById('bottom-nav').style.display = 'flex';
@@ -1383,6 +1479,7 @@
 
     state.currentSaved += monthSeed;
     state.settledMonths[currentMonthKey] = true;
+    saveStateToLocalStorage();
 
     if (monthSeed > 0) {
       alert(`🌳 [${state.viewMonth}월 결산 완료!]\n\n이번 달 알뜰하게 남긴 생활비와 여유자금 총 ${toWon(monthSeed)}이(가) [${state.targetGoalName}] 목표로 무사히 이동했어요!\n(※ 떼어둔 선저축 금액은 제외되었습니다)\n\n새로운 달력으로 이동합니다!`);
@@ -1559,6 +1656,7 @@
     
     const dailySaved = Math.round((state.variableBudget / 30) / 1000) * 1000;
     state.currentSaved += dailySaved;
+    saveStateToLocalStorage();
     
     updateGoalProgressBoard();
     renderCalendar();
@@ -1633,6 +1731,7 @@
       };
     }
 
+    saveStateToLocalStorage();
     updateWaterLevel();
     updateGoalProgressBoard();
     renderCalendar();
@@ -1751,6 +1850,7 @@
     const dateKey = `${selectedYearForExpense}-${selectedMonthForExpense}-${selectedDayForExpense}`;
     state.dailyRecords[dateKey] = { amount: totalForDay, type: type };
 
+    saveStateToLocalStorage();
     updateWaterLevel();
     updateGoalProgressBoard();
     renderCalendar();
@@ -1814,11 +1914,13 @@
     dayInput.value = '';
     amtInput.value = '';
 
+    saveStateToLocalStorage();
     renderFixedItems();
   }
 
   function deleteFixedItem(id) {
     state.fixedList = state.fixedList.filter(item => item.id !== id);
+    saveStateToLocalStorage();
     renderFixedItems();
   }
 
@@ -1946,7 +2048,6 @@
   }
 
   function switchTab(tabName, el) {
-    // 'garden'과 'care' 별칭 상호 호환 처리
     if (tabName === 'garden') tabName = 'care';
 
     if (!el) {
@@ -2001,6 +2102,8 @@
 
     state.surplus = state.income - (state.fixedExpenses + state.baseSavings + state.variableBudget);
 
+    saveStateToLocalStorage();
+
     document.getElementById('target-budget-label').innerText = toWon(state.variableBudget);
     document.getElementById('badge-reward-text').innerText = state.targetGoalName;
     
@@ -2015,40 +2118,63 @@
     switchTab('home', homeBtn);
   }
 
-  /* ─── 초기 로딩 및 진단 모듈 복귀 통합 처리 ─── */
+  /* ─── 초기 로딩 및 PWA 서비스 워커 등록 처리 ─── */
   window.addEventListener('DOMContentLoaded', () => {
+    // 1. PWA 서비스워커 등록
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(() => console.log('Jample Service Worker Registered'))
+        .catch((err) => console.log('Service Worker Registration Failed:', err));
+    }
+
+    // 2. 로컬 스토리지 데이터 불러오기
+    const hasSavedData = loadStateFromLocalStorage();
+
     const urlParams = new URLSearchParams(window.location.search);
     let targetTab = urlParams.get('tab');
     if (targetTab === 'garden') targetTab = 'care';
     
     const splashScreen = document.getElementById('splash-screen');
-    
-    if (targetTab) {
-      // 1. 외부 진단 화면에서 특정 탭으로 넘어온 경우: 스플래시 없이 즉시 해당 탭 노출
-      if (splashScreen) splashScreen.style.display = 'none';
+    const welcomeScreen = document.getElementById('screen-welcome');
+    const onboardingScreen = document.getElementById('screen-onboarding');
+    const bottomNav = document.getElementById('bottom-nav');
 
-      const welcomeScreen = document.getElementById('screen-welcome');
-      const onboardingScreen = document.getElementById('screen-onboarding');
-      const bottomNav = document.getElementById('bottom-nav');
-      
+    // 3-1. 외부 진단 모듈(care_*.html)에서 탭으로 넘어온 경우
+    if (targetTab) {
+      if (splashScreen) splashScreen.style.display = 'none';
       if (welcomeScreen) welcomeScreen.classList.remove('active');
       if (onboardingScreen) onboardingScreen.classList.remove('active');
       if (bottomNav) bottomNav.style.display = 'flex';
 
-      if (typeof renderCalendar === 'function') renderCalendar();
-      if (typeof updateWaterLevel === 'function') updateWaterLevel();
-      if (typeof updateGoalProgressBoard === 'function') updateGoalProgressBoard();
-      if (typeof checkSettlementDay === 'function') checkSettlementDay();
+      renderCalendar();
+      updateWaterLevel();
+      updateGoalProgressBoard();
+      checkSettlementDay();
 
       const targetNavBtn = document.querySelector(`.nav-item img[data-name="${targetTab}"]`);
-      if (targetNavBtn) {
-        switchTab(targetTab, targetNavBtn.parentElement);
-      } else {
-        const defaultHomeBtn = document.querySelectorAll('.nav-item')[0];
-        switchTab('home', defaultHomeBtn);
-      }
+      if (targetNavBtn) switchTab(targetTab, targetNavBtn.parentElement);
+      else switchTab('home', document.querySelectorAll('.nav-item')[0]);
+      return;
+    }
+
+    // 3-2. 기존에 온보딩을 완료한 사용자인 경우 (스플래시 후 바로 홈으로 이동)
+    if (hasSavedData && state.isUserOnboarded) {
+      setTimeout(() => {
+        if (splashScreen) splashScreen.classList.add('fade-out');
+        if (welcomeScreen) welcomeScreen.classList.remove('active');
+        if (bottomNav) bottomNav.style.display = 'flex';
+
+        document.getElementById('badge-reward-text').innerText = state.targetGoalName;
+        document.getElementById('target-budget-label').innerText = toWon(state.variableBudget);
+
+        renderCalendar();
+        updateWaterLevel();
+        updateGoalProgressBoard();
+        checkSettlementDay();
+        switchTab('home', document.querySelectorAll('.nav-item')[0]);
+      }, 1300);
     } else {
-      // 2. 일반 첫 접속: 1.3초 동안 스플래시 화면 노출 후 부드럽게 웰컴 화면으로 전환
+      // 3-3. 최초 방문 사용자 (1.3초 스플래시 후 웰컴 인트로 화면 노출)
       setTimeout(() => {
         if (splashScreen) {
           splashScreen.classList.add('fade-out');

@@ -199,9 +199,10 @@
 
     /* 캘린더 영역 */
     .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+    .cal-grid { display: grid; width: 100%; min-width: 0; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
     .cal-day-label { font-size: 11px; color: var(--text-sub); margin-bottom: 4px; }
     .cal-cell {
+      min-width: 0; overflow: hidden;
       background: #F8F9FA; border-radius: 8px; padding: 5px 2px; min-height: 48px; font-size: 11px;
       display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; border: 1px solid transparent;
       transition: background 0.15s, border-color 0.15s;
@@ -213,7 +214,7 @@
     .cal-cell.pre-launch-day { opacity: 0.4; background: #F1F3F5 !important; cursor: not-allowed; }
     .cal-day-text { width: 100%; text-align: right; display: block; font-size: 10.5px; padding-right: 2px; }
     .stamp-dot { font-size: 12px; text-align: center; }
-    .fixed-pin { font-size: 8.5px; background: #FFEBEE; color: #C62828; padding: 1px 2px; border-radius: 3px; margin-top: 1px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .fixed-pin { display: block; width: 100%; min-width: 0; font-size: 8.5px; background: #FFEBEE; color: #C62828; padding: 1px 2px; border-radius: 3px; margin-top: 1px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 
     .cal-banner-prelaunch {
       background: #ECEFF1; color: #546E7A; font-size: 11px; text-align: center; padding: 6px; border-radius: 8px; margin-bottom: 8px; font-weight: 600;
@@ -347,6 +348,26 @@
       padding: 8px 10px; background: #F1F8E9; border-radius: 10px; border: 1px solid #C8E6C9;
     }
     .receipt-preview-img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; }
+
+/* 월간 결산 전용 화면 */
+.settlement-overlay{display:none;position:absolute;inset:0;z-index:450;background:rgba(20,25,30,.58);align-items:flex-end;justify-content:center}
+.settlement-overlay.active{display:flex}
+.settlement-panel{background:#fff;width:100%;max-height:91%;overflow-y:auto;border-radius:24px 24px 0 0;padding:20px 20px 26px;color:var(--text-main)}
+.settlement-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.settlement-close{background:none;border:0;font-size:22px;cursor:pointer;padding:6px}
+.settlement-line{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:7px 0;border-bottom:1px solid #f2f2f2}
+.settlement-value{font-weight:700;white-space:nowrap}
+.settlement-highlight{background:var(--cream);padding:13px;border-radius:14px;margin:12px 0}
+.settlement-note{font-size:12px;color:var(--text-sub);line-height:1.6;margin:10px 0}
+.settlement-warning{background:#fff3e0;color:#92400e;border-radius:10px;padding:10px;font-size:12px;line-height:1.55;margin:10px 0}
+.settlement-actions{display:flex;gap:8px;margin-top:14px}
+
+  /* 결산 후 재무링 선택형 코칭 */
+  .coaching-overlay{display:none;position:absolute;inset:0;z-index:550;background:rgba(20,25,30,.58);align-items:flex-end}
+  .coaching-overlay.active{display:flex}
+  .coaching-panel{width:100%;max-height:88%;overflow-y:auto;background:#fff;border-radius:24px 24px 0 0;padding:22px 20px 26px}
+  .coaching-item{padding:13px;margin:10px 0;background:#FFF8E8;border-radius:12px;font-size:13px;line-height:1.65}
+  .coaching-metric{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:7px 0;border-bottom:1px solid #f1f3f5}
   </style>
 </head>
 <body>
@@ -400,7 +421,7 @@
         <div class="ring-banner-text"><b>씨앗 재무링:</b><br>"한 달 동안 정원에 심을 수 있는 소중한 씨앗(수입)을 알려주세요!"</div>
       </div>
       <div class="step-title">월급날과 총 수입 입력</div>
-      <div class="step-sub">월급날을 기준으로 매달 달력이 리셋돼요.</div>
+      <div class="step-sub">월급날을 기준으로 다음 월급날까지 사용할 돈을 계획해요. 수입은 실제로 들어오는 한 달 금액을 입력해주세요.</div>
       
       <div class="input-group">
         <label class="ui-label-with-icon">
@@ -426,7 +447,7 @@
         <div class="ring-banner-text"><b>배움 재무링:</b><br>"숨만 쉬어도 나가는 고정지출을 먼저 떼어두어야 마음이 편해요!"</div>
       </div>
       <div class="step-title">고정지출 합계 등록</div>
-      <div class="step-sub">월세, 공과금, 대출이자, 보험료, 구독료 등</div>
+      <div class="step-sub">매달 꼭 나가는 돈을 먼저 챙겨요. 월세·공과금·대출 상환액·보험료·구독료 등을 합해 입력해주세요.</div>
       
       <div class="input-group">
         <label class="ui-label-with-icon">
@@ -452,7 +473,7 @@
         <div class="ring-banner-text"><b>실천 재무링 (선저축 원칙):</b><br>"쓰고 남은 돈이 아니라, '먼저 저축할 돈'을 떼어두는 것이 핵심이에요!"</div>
       </div>
       <div class="step-title">매달 꼭 떼어두는 저축·투자</div>
-      <div class="step-sub">청약, 정기적금, 연금펀드, 투자 등 고정 저축액</div>
+      <div class="step-sub">쓸 돈보다 모을 돈을 먼저 정해요. 적금·청약·연금·투자에 매달 넣는 금액을 입력해주세요.</div>
       
       <div class="input-group">
         <label class="ui-label-with-icon">
@@ -471,7 +492,7 @@
         <div class="ring-banner-text"><b>성장 재무링:</b><br>"이번 달 쓸 생활비를 정해주시면 하루 예산으로 쪼개서 지켜드릴게요!"</div>
       </div>
       <div class="step-title">한 달 생활비 목표 예산</div>
-      <div class="step-sub">식비, 카페, 장보기, 쇼핑 등에 쓸 순수 변동지출</div>
+      <div class="step-sub">식비·카페·장보기 등에 쓸 한 달 생활비를 정해요. 처음에는 다음 월급날까지 남은 날짜 비율만큼 자동 배정하고, 이후 기록한 지출을 차감해요.</div>
       
       <div class="input-group">
         <label class="ui-label-with-icon">
@@ -490,6 +511,8 @@
         <span>도토리 정원이 완성되었어요!</span>
       </div>
       
+      <div class="step-sub">생활비를 관리하며 모을 여유자금으로, 나에게 주고 싶은 선물과 목표 금액을 정해요.</div>
+
       <div class="card" style="background:#FFF; padding:14px; margin-bottom:12px; font-size:13.5px; line-height:1.6;">
         수입 <b><span id="pie-income-val">3,000,000원</span></b> 중<br>
         • 고정비: <span id="pie-fixed-val">700,000원</span><br>
@@ -549,11 +572,17 @@
         <div class="goal-bar-fill" id="home-goal-progress-bar" style="width: 27%;"></div>
       </div>
       <div class="goal-metric-row">
-        <span>모은 돈: <b id="home-current-saved-val" style="color:var(--primary);">800,000원</b></span>
+        <span>목표용으로 모아둔 돈: <b id="home-current-saved-val" style="color:var(--primary);">800,000원</b></span>
         <span>목표 <span id="home-target-goal-val">3,000,000원</span> (<b id="home-goal-percent">27%</b>)</span>
       </div>
     </div>
 
+    <div class="card" style="font-size:13px; line-height:1.6;">
+      이번 기간 모을 예정인 돈: <b id="planned-goal-money">0원</b>
+      <button id="btn-gift-purchase" class="btn-main" style="display:none; margin-top:12px;" onclick="recordGiftPurchase()">🎁 선물 구매 완료 기록하기</button>
+      <div id="gift-history" style="margin-top:10px;"></div>
+    </div>
+    <div id="payday-immediate-home-note" class="card" style="display:none;background:#fff8e8;font-size:12px;line-height:1.6;color:#70451e"></div>
     <!-- 잼플 달력 -->
     <div class="card">
       <div class="cal-header">
@@ -592,6 +621,9 @@
       </button>
     </div>
 
+    <!-- 급여일 전환기간 계산 검증: 개발 모드 전용 -->
+    <div id="payday-budget-debug" class="card" style="display:none;background:#FFF9ED;border:1px dashed #E6BC88;font-size:12px;line-height:1.65"></div>
+
     <!-- 결산 버튼 -->
     <button id="btn-monthly-settlement" class="btn-main" style="display:none; background:#43A047; box-shadow: 0 4px 10px rgba(67,160,71,0.25); margin-bottom:12px;" onclick="executeMonthlySettlement()">
       <img src="report_icon_defense.png" class="ui-btn-icon" alt="결산">
@@ -606,13 +638,28 @@
       </button>
       <button class="btn-main" style="flex:1.2;" onclick="openTodayExpenseSheet()">
         <img src="my_icon_add.png" class="ui-btn-icon" alt="지출기록">
-        <span>지출 기록하기</span>
+        <span>수입·지출 기록하기</span>
       </button>
     </div>
   </div>
 
   <!-- ================= 3. [탭 2] 리포트 화면 ================= -->
   <div id="screen-report" class="screen">
+
+    <div id="settlement-coaching-history" class="card" style="display:none">
+      <div class="report-card-title">🌱 재무링 결산 코칭</div>
+      <p style="font-size:12px;color:var(--text-sub);margin-bottom:10px">지난 결산의 조정 권고를 다시 확인할 수 있어요.</p>
+      <button type="button" class="btn-secondary">결산 코칭 다시 보기</button>
+    </div>
+    <div id="late-settlement-list" class="card" style="display:none"></div>
+    <!-- 조기 결산 이후 추가 거래: 확정 당시 결산과 별도 보관 -->
+    <div class="card" id="post-settlement-card" style="display:none;margin-bottom:16px">
+      <div class="report-card-title">📋 조기 결산 후 추가 거래</div>
+      <div id="post-settlement-detail" style="font-size:12px;line-height:1.7"></div>
+      <button type="button" class="btn-secondary" id="post-settlement-review-btn" onclick="acknowledgePostSettlement()" style="margin-top:10px">추가 거래 확인 완료</button>
+    </div>
+
+    <div id="payday-immediate-report-note" class="card" style="display:none;background:#fff8e8;font-size:12px;line-height:1.6;color:#70451e"></div>
     <div class="header">
       <div class="header-left">
         <img src="logo.png" class="brand-logo-img" alt="Jample">
@@ -626,8 +673,8 @@
       
       <img id="report-ring-avatar" src="report_icon_total.png" style="width:80px; height:80px; object-fit:contain; margin:4px auto 8px auto; display:block;" alt="저축 아이콘">
       
-      <div style="font-size:13px; color:var(--text-sub); margin-bottom:4px;" id="report-total-saved-label">현재까지 지켜낸 총 저축액 (중간 점검)</div>
-      <div style="font-size:24px; font-weight:bold; color:var(--primary-dark); margin-bottom:10px;" id="report-total-saved-won">1,300,000원</div>
+      <div id="report-total-saved-label" style="display:none">현재 모아둔 돈과 예상 여유자금 합계</div>
+      <div id="report-total-saved-won" style="display:none">1,300,000원</div>
       
       <div class="speech-bubble" id="report-ring-comment">
         "생활비를 든든히 지켜내고 있어요.<br>이 페이스대로 결산까지 달려봐요!"
@@ -635,14 +682,18 @@
 
       <div class="report-stat-grid">
         <div class="report-stat-box">
-          <img src="report_icon_base.png" class="report-stat-box-icon" alt="선저축 완료">
+          <img src="report_icon_base.png" class="report-stat-box-icon" alt="현재 모아둔 돈">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">현재 모아둔 돈</div>
           <div style="font-size:15px; font-weight:bold; color:#2E7D32; margin-top:2px;" id="report-base-savings">500,000원</div>
         </div>
         <div class="report-stat-box">
-          <img src="report_icon_surplus.png" class="report-stat-box-icon" alt="남은 여유 씨앗">
+          <img src="report_icon_surplus.png" class="report-stat-box-icon" alt="이번 기간 예상 여유자금">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">이번 기간 예상 여유자금</div>
           <div style="font-size:15px; font-weight:bold; color:var(--primary); margin-top:2px;" id="report-surplus-savings">800,000원</div>
         </div>
       </div>
+      <div id="payday-report-debug" style="display:none;background:#FFF9ED;border-radius:10px;padding:10px;margin-top:8px;font-size:12px;line-height:1.6"></div>
+      <p id="report-surplus-formula" style="display:none">예상 여유자금 계산 내역</p>
     </div>
 
     <!-- 2. 목표 달성 로드맵 카드 -->
@@ -659,7 +710,7 @@
         <div class="goal-bar-fill" id="report-goal-progress-bar" style="width:27%;"></div>
       </div>
       <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-sub); margin-bottom:10px;">
-        <span>누적 모은 돈: <b id="report-current-saved">800,000원</b></span>
+        <span>목표용으로 모아둔 돈: <b id="report-current-saved">800,000원</b></span>
         <span>목표: <span id="report-target-amt">3,000,000원</span></span>
       </div>
       <div style="background:var(--cream); padding:8px 10px; border-radius:10px; font-size:11.5px; color:var(--brown); border:1px solid #F5E5C9;" id="report-pace-text">
@@ -738,7 +789,7 @@
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
       
       <!-- 카드 1: 금융 MBTI -->
-      <div onclick="location.href='care_mbti.html'" 
+      <div onclick="location.href='care_mbti.html'+(location.search.includes('demo=1')?'?demo=1':'')" 
            style="background: #FFF; border-radius: 20px; padding: 14px 12px; border: 1.5px solid #FFE4CC; box-shadow: 0 4px 10px rgba(255,138,61,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; transition: transform 0.15s ease;"
            onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -754,7 +805,7 @@
       </div>
 
       <!-- 카드 2: 가계 밸런스 -->
-      <div onclick="location.href='care_diagnosis.html'" 
+      <div onclick="location.href='care_diagnosis.html'+(location.search.includes('demo=1')?'?demo=1':'')" 
            style="background: #FFF; border-radius: 20px; padding: 14px 12px; border: 1.5px solid #D1FAE5; box-shadow: 0 4px 10px rgba(16,185,129,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; transition: transform 0.15s ease;"
            onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -770,7 +821,7 @@
       </div>
 
       <!-- 카드 3: 목돈 바구니 -->
-      <div onclick="location.href='care_basket.html'" 
+      <div onclick="location.href='care_basket.html'+(location.search.includes('demo=1')?'?demo=1':'')" 
            style="background: #FFF; border-radius: 20px; padding: 14px 12px; border: 1.5px solid #DBEAFE; box-shadow: 0 4px 10px rgba(37,99,235,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; transition: transform 0.15s ease;"
            onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -786,7 +837,7 @@
       </div>
 
       <!-- 카드 4: 투자 배분 -->
-      <div onclick="location.href='care_invest.html'" 
+      <div onclick="location.href='care_invest.html'+(location.search.includes('demo=1')?'?demo=1':'')" 
            style="background: #FFF; border-radius: 20px; padding: 14px 12px; border: 1.5px solid #EFE6D8; box-shadow: 0 4px 10px rgba(139,90,43,0.06); cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; transition: transform 0.15s ease;"
            onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -804,7 +855,7 @@
     </div>
 
     <!-- 카드 5: 대출 점검 -->
-    <div onclick="location.href='care_debt.html'" 
+    <div onclick="location.href='care_debt.html'+(location.search.includes('demo=1')?'?demo=1':'')" 
          style="background: #FFF; border-radius: 20px; padding: 14px 16px; border: 1.5px solid #FEE2E2; box-shadow: 0 4px 10px rgba(239,68,68,0.05); cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; transition: transform 0.15s ease;"
          onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
       <div style="display: flex; align-items: center; gap: 12px;">
@@ -859,6 +910,7 @@
           <span>월급 기준일</span>
         </label>
         <input type="text" id="my-payday" class="input-text" oninput="formatDayInput(this)">
+        <p id="payday-change-hint" style="font-size:11px;color:#8B5A2B;margin-top:6px">급여일 변경은 다음 관리기간부터 적용됩니다.</p>
       </div>
 
       <div class="input-group">
@@ -925,6 +977,12 @@
       </div>
     </div>
 
+    <div class="card">
+      <label class="ui-label-with-icon">목표용으로 실제 모아둔 돈</label>
+      <input id="my-actual-saved" type="text" class="input-text" oninput="formatCurrencyInput(this)">
+      <p style="font-size:12px;color:var(--text-sub);margin-top:8px;line-height:1.6">목표용 통장 잔액을 확인해 입력하세요. 기본 저축·투자는 별도로 관리하며, 무지출 기록으로 이 금액이 늘어나지 않습니다.</p>
+      <p id="legacy-money-note" style="font-size:12px;color:#B45309;margin-top:8px"></p>
+    </div>
     <!-- 3. 목표 목적 & 달성 금액 카드 -->
     <div class="card">
       <div class="input-group">
@@ -947,6 +1005,33 @@
       <img src="report_icon_defense.png" class="ui-btn-icon" alt="저장">
       <span>설정 저장 및 정원 갱신</span>
     </button>
+
+
+  <!-- 재무링 도토리 리워드: 확인된 기준만 적용 -->
+  <div class="card" id="ring-reward-card" style="margin-top:12px">
+    <div class="ui-card-title">🌰 재무링 성장 · 도토리</div>
+    <div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:8px">
+      <span>누적 도토리 <b id="ring-earned">0알</b></span><span>보유 도토리 <b id="ring-available">0알</b></span>
+    </div>
+    <div id="ring-stage-row" style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px">
+      <img id="ring-stage-icon" src="RING1.png" alt="재무링 단계" style="width:24px;height:24px;object-fit:contain">
+      <div><b id="ring-stage-label">씨앗 재무링</b> · 목표 달성 <b id="ring-goal-count">0회</b></div>
+    </div>
+    <div id="ring-next-stage" style="display:none;font-size:12px;line-height:1.5;color:#6c757d"></div>
+    <div id="ring-coupon-status" style="font-size:12px;line-height:1.6;margin-top:9px"></div>
+    <div id="ring-coupon-wallet" style="font-size:12px;line-height:1.65;margin-top:9px"></div>
+    <div id="ring-growth-demo" style="display:none;border:1px dashed #e3c9a8;border-radius:12px;padding:10px;margin-top:12px;background:#fffaf2">
+      <b style="font-size:12px">개발용</b>
+      <p style="font-size:11px;color:#6c757d;margin:5px 0 8px"></p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button type="button" class="btn-secondary" style="width:auto;padding:7px;font-size:11px" onclick="demoRewardAcorns()">도토리 +1,000알</button>
+        <button type="button" class="btn-secondary" style="width:auto;padding:7px;font-size:11px" onclick="demoRewardGoal()">목표 달성 +1회</button>
+      </div>
+    </div>
+    <button type="button" class="btn-secondary" style="margin-top:10px;font-size:12px" onclick="showRewardHistory()">도토리 지급 내역 보기</button>
+    <div id="ring-reward-history" style="display:none;font-size:11px;line-height:1.8;margin-top:8px;max-height:145px;overflow:auto"></div>
+    <p style="font-size:11px;color:#6c757d;margin-top:8px">도토리는 실물 자금과 별도로 관리되는 활동 보상입니다.</p>
+  </div>
 
     <!-- 4. 로컬 데이터 백업 및 복원 안내 카드 (PWA & 데이터 보호) -->
     <div class="card" style="background: #FDFBF7; border: 1.5px dashed var(--border-color); padding: 14px; margin-bottom: 24px;">
@@ -1009,15 +1094,20 @@
     <div class="sheet-content" onclick="event.stopPropagation()">
       <div style="font-size:16px; font-weight:bold; margin-bottom:12px; color:var(--brown); display:flex; align-items:center; gap:8px;">
         <img src="my_icon_add.png" class="ui-input-icon" alt="등록">
-        <span><span id="sheet-target-date-label">오늘</span> 쓴 생활비 등록</span>
+        <span><span id="sheet-target-date-label">오늘</span> 수입·지출 기록</span>
       </div>
 
+      <div class="chip-group" style="margin-bottom:12px;">
+        <button type="button" id="record-expense-btn" class="chip selected" onclick="setRecordType('expense')">지출</button>
+        <button type="button" id="record-income-btn" class="chip" onclick="setRecordType('income')">수입</button>
+      </div>
+      <div id="income-record-note" style="display:none; font-size:12px; color:var(--text-sub); margin-bottom:12px;">실제로 받은 수입을 기록해요. 처음 설정한 월수입과 중복되지 않도록 생활비 예산과 모은 돈에는 자동으로 더하지 않아요.</div>
       <label class="receipt-scan-banner" for="receipt-file-input">
         <div style="display:flex; align-items:center; gap:8px;">
           <img src="report_icon_expense.png" style="width:28px; height:28px; object-fit:contain;" alt="영수증">
           <div>
-            <b style="font-size:12.5px; color:var(--brown);">영수증 사진으로 자동 입력</b><br>
-            <span style="font-size:11px; color:var(--text-sub);">사진을 찍거나 올리면 금액을 읽어와요!</span>
+            <b style="font-size:12.5px; color:var(--brown);">영수증 사진 보며 직접 입력</b><br>
+            <span style="font-size:11px; color:var(--text-sub);">사진을 보며 금액과 분류를 직접 입력해주세요.</span>
           </div>
         </div>
         <span style="font-size:12px; font-weight:bold; color:var(--primary); background:#FFF; padding:4px 8px; border-radius:8px; border:1px solid var(--border-color);">사진 첨부</span>
@@ -1034,7 +1124,7 @@
       <div class="input-group">
         <label class="ui-label-with-icon">
           <img src="report_icon_expense.png" class="ui-input-icon" alt="지출 금액">
-          <span>지출 금액</span>
+          <span id="record-amount-label">지출 금액</span>
         </label>
         <input type="text" id="sheet-amount" class="input-text" placeholder="15,000원" autofocus oninput="formatCurrencyInput(this)">
       </div>
@@ -1060,10 +1150,53 @@
     </div>
   </div>
 
+
+
+  <!-- 결산 확정 후 코칭: 매월 별도 설정 강제 없음 -->
+  <div id="settlement-coaching-overlay" class="coaching-overlay" role="dialog" aria-modal="true" aria-labelledby="coaching-title">
+    <div class="coaching-panel">
+      <div class="settlement-top"><b id="coaching-title" style="font-size:17px;color:var(--brown)">🌱 재무링 결산 코칭</b><button type="button" class="settlement-close" onclick="closeSettlementCoaching()" aria-label="닫기">×</button></div>
+      <div id="coaching-metrics"></div>
+      <div id="coaching-messages"></div>
+      <p class="settlement-note">재무링의 제안은 자동 변경되지 않아요. 필요할 때만 마이 탭에서 계획을 조정해주세요. 조기 결산 뒤 거래는 별도로 관리됩니다.</p>
+      <div class="settlement-actions"><button type="button" class="btn-secondary" onclick="closeSettlementCoaching()">결산 완료</button><button type="button" class="btn-main" onclick="openMyFromCoaching()">마이 탭에서 조정하기</button></div>
+    </div>
+  </div>
+  <!-- 월간 결산 전용 바텀시트: 결산 전 기록 확인과 실제 이체금액 확정 -->
+  <div class="settlement-overlay" id="settlement-overlay" onclick="if(event.target===this)closeSettlementSheet()">
+    <section class="settlement-panel" role="dialog" aria-modal="true" aria-labelledby="settlement-title">
+      <div class="settlement-top"><b id="settlement-title" style="font-size:17px;color:var(--brown)">이번 급여기간 결산</b><button class="settlement-close" type="button" aria-label="결산 닫기" onclick="closeSettlementSheet()">×</button></div>
+      <div id="settlement-summary"></div>
+      <div id="settlement-income-check" class="settlement-highlight" style="display:none">
+        <b style="font-size:14px">이번 기간 수입 확인</b>
+        <div class="settlement-line"><span>마이 설정 수입</span><strong id="income-plan-display">0원</strong></div>
+        <div class="settlement-line"><span>달력 실제 수입 합계</span><strong id="income-actual-display">0원</strong></div>
+        <div id="income-record-list" class="settlement-note"></div>
+        <div id="income-choice-area" style="display:none;font-size:12px;line-height:1.7">
+          <label style="display:block;margin:8px 0"><input type="radio" name="settlement-income-source" value="recorded" checked onchange="refreshSettlementIncomeChoice()"> 달력 기록 수입 사용</label>
+          <label style="display:block;margin:8px 0"><input type="radio" name="settlement-income-source" value="planned" onchange="refreshSettlementIncomeChoice()"> 마이 설정 수입 사용</label>
+        </div>
+        <p id="income-check-guidance" class="settlement-note"></p>
+        <label style="display:flex;gap:8px;font-size:12px;align-items:center;margin:10px 0"><input id="income-all-confirmed" type="checkbox" onchange="refreshSettlementIncomeChoice()"> 이번 기간 전체 수입을 확인했습니다.</label>
+        <div class="settlement-line"><strong>결산 적용 수입</strong><strong id="income-applied-display">0원</strong></div>
+      </div>
+      <div id="settlement-guidance" class="settlement-note"></div>
+      <div id="settlement-input-area" style="display:none">
+        <label class="ui-label-with-icon" for="settlement-transfer-input">실제로 목표 통장으로 이체한 금액</label>
+        <input type="text" inputmode="numeric" class="input-text" id="settlement-transfer-input" placeholder="0원" oninput="formatCurrencyInput(this)" value="0원" />
+        <div class="settlement-note">앱에서 실제 계좌이체를 실행하지 않습니다. 직접 이체한 금액만 입력하세요. 0원 결산도 가능합니다.</div>
+        <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.5;margin-top:10px"><input type="checkbox" id="settlement-confirm-check" style="margin-top:2px;accent-color:var(--primary)"/> <span>수입·지출 기록을 확인했으며, 입력한 금액이 실제 이체한 금액임을 확인합니다.</span></label>
+      </div>
+      <div class="settlement-actions"><button class="btn-secondary" onclick="closeSettlementSheet()">닫기</button><button class="btn-main" id="settlement-confirm-btn" onclick="confirmSettlementSheet()">결산 확정</button></div>
+    </section>
+  </div>
+
 </div>
 
 <script>
-  const STORAGE_KEY = 'jample_app_data_v1';
+  // 개발 전용 격리 모드: ?demo=1 에서만 테스트 데이터를 사용합니다.
+  const DEMO_MODE = new URLSearchParams(location.search).get('demo') === '1';
+  const STORAGE_KEY = DEMO_MODE ? 'jample_demo_data_v2' : 'jample_app_data_v1';
   const now = new Date();
   const CURRENT_YEAR = now.getFullYear();
   const CURRENT_MONTH = now.getMonth() + 1;
@@ -1188,7 +1321,7 @@
     reader.onload = function(e) {
       try {
         const importedData = JSON.parse(e.target.result);
-        if (importedData && typeof importedData.income !== 'undefined') {
+        if (isValidBackup(importedData)) {
           state = { ...defaultState, ...importedData };
           saveStateToLocalStorage();
           alert('✅ 백업 데이터가 성공적으로 복원되었습니다!');
@@ -1227,7 +1360,8 @@
     state.variableBudget = parseNumber(document.getElementById('input-variable').value);
     
     state.surplus = state.income - (state.fixedExpenses + state.baseSavings + state.variableBudget);
-    state.currentSaved = Math.max(0, state.surplus);
+    state.currentSaved = 0;
+    state.fixedList = state.fixedExpenses > 0 ? [{ id: Date.now(), name: '고정지출 합계 (세부 항목으로 교체 가능)', day: state.payday, amount: state.fixedExpenses }] : [];
 
     document.getElementById('pie-income-val').innerText = toWon(state.income);
     document.getElementById('pie-fixed-val').innerText = toWon(state.fixedExpenses);
@@ -1336,9 +1470,9 @@
 
   function calculateTargetMonths(el) {
     if (el) state.targetGoalAmount = parseNumber(el.value);
-    const monthlyTotalSeed = state.baseSavings + Math.max(0, state.surplus);
-    const months = monthlyTotalSeed > 0 ? Math.ceil(state.targetGoalAmount / monthlyTotalSeed) : 12;
-    document.getElementById('expected-months-badge').innerText = `약 ${months}개월 소요 예상`;
+    const monthlyTotalSeed = Math.max(0, state.surplus);
+    const months = monthlyTotalSeed > 0 ? Math.ceil(state.targetGoalAmount / monthlyTotalSeed) : null;
+    document.getElementById('expected-months-badge').innerText = months === null ? '여유자금 확보 후 달성기간을 계산해요' : `약 ${months}개월 소요 예상 (선저축 제외)`;
   }
 
   function checkSettlementDay() {
@@ -1369,6 +1503,13 @@
   }
 
   function finishOnboarding() {
+    if (state.targetGoalAmount <= 0) return alert("목표금액을 1원 이상 입력해주세요.");
+    state.startYear = CURRENT_YEAR; state.startMonth = CURRENT_MONTH;
+    state.expenseHistory = []; state.dailyRecords = {}; state.settledMonths = {};
+    state.currentSaved = 0; state.periodBudgets = {}; state.legacyMoneyReview = false; state.giftHistory = []; state.incomeHistory = [];
+    initializeBudgetV2();
+    const firstPeriod = getViewPeriod();
+    state.periodBudgets[firstPeriod.key] = prorateFirstBudget(firstPeriod.budget, firstPeriod);
     state.isUserOnboarded = true;
     saveStateToLocalStorage();
 
@@ -1409,12 +1550,12 @@
 
     document.getElementById('home-ring-avatar').src = stage.file;
 
-    const remainVariable = state.variableBudget - state.currentSpent;
+    const remainVariable = getViewPeriod().budget.variableBudget - state.currentSpent;
     const remainGoalAmt = Math.max(0, targetAmt - current);
     const msgEl = document.getElementById('ring-message');
     
     if (remainVariable < 0) {
-      msgEl.innerText = `"이번 달 생활비를 초과했어요. 모아둘 여유 씨앗에서 조금 꺼내 쓸게요! 😥"`;
+      msgEl.innerText = `"이번 달 생활비를 초과했어요. 이번 기간 모을 예정인 금액이 줄어들어요. 😥"`;
       msgEl.style.color = '#D32F2F';
     } else if (remainVariable > 0 && remainVariable < state.variableBudget * 0.1) {
       msgEl.innerText = `"앗! 생활비가 거의 바닥났어요! 남은 기간은 무지출에 도전해볼까요? 💦"`;
@@ -1605,7 +1746,9 @@
 
   function updateWaterLevel() {
     const isPreLaunch = isPreLaunchMonth(state.viewYear, state.viewMonth);
-    const remain = state.variableBudget - state.currentSpent;
+    syncViewSpent();
+    const periodBudgetValue = getViewPeriod().budget.variableBudget;
+    const remain = periodBudgetValue - state.currentSpent;
     const gaugeFill = document.getElementById('gauge-fill');
     const remainText = document.getElementById('remain-variable-text');
     const recommendLabel = document.getElementById('daily-recommend-label');
@@ -1628,23 +1771,26 @@
       recommendLabel.innerText = `하루 약 0원 권장 (짠테크 모드 켬!)`;
       recommendLabel.style.color = '#D32F2F';
     } else {
-      remainText.innerText = `남은 돈: ${toWon(remain)}`;
+      remainText.innerText = `남은 생활비 예산: ${toWon(remain)}`;
       remainText.style.color = '#1976D2';
       
-      const fillPercent = Math.min(100, (remain / state.variableBudget) * 100);
+      const fillPercent = Math.min(100, (periodBudgetValue > 0 ? remain / (getViewPeriod().budget.fullVariableBudget ?? periodBudgetValue) : 0) * 100);
       gaugeFill.style.width = `${fillPercent}%`;
       gaugeFill.style.background = '#42A5F5';
 
-      const daysLeft = 30;
-      const baseDailyRecommend = Math.round((state.variableBudget / daysLeft) / 1000) * 1000;
-      let rawDailyRecommend = Math.round((remain / daysLeft) / 1000) * 1000;
+      const period = getViewPeriod();
+      const daysLeft = remainingDays(period);
+      const periodBudget = period.budget.variableBudget;
+      const baseDailyRecommend = Math.floor((periodBudget / (period.budget.allocationDays || periodLength(period))) / 1000) * 1000;
+      let rawDailyRecommend = daysLeft > 0 ? Math.floor((remain / daysLeft) / 1000) * 1000 : 0;
       const capLimit = Math.round((baseDailyRecommend * 1.5) / 1000) * 1000;
 
       recommendLabel.style.color = '#1976D2';
+      if (daysLeft === 0) { recommendLabel.innerText = '이 예산기간이 종료되었어요. 결산을 확인해주세요.'; return; }
       if (rawDailyRecommend > capLimit) {
-        recommendLabel.innerText = `하루 약 ${toWon(capLimit)} 권장 (최대 1.5배 상한)`;
+        recommendLabel.innerText = `남은 ${daysLeft}일 · 하루 ${toWon(capLimit)} 권장 (상한 적용)`;
       } else {
-        recommendLabel.innerText = `하루 약 ${toWon(rawDailyRecommend)} 권장`;
+        recommendLabel.innerText = `남은 ${daysLeft}일 · 하루 ${toWon(rawDailyRecommend)} 권장`;
       }
     }
   }
@@ -1677,7 +1823,7 @@
     const container = document.getElementById('history-list-container');
     container.innerHTML = '';
 
-    const currentMonthHistory = state.expenseHistory.filter(e => e.year === state.viewYear && e.month === state.viewMonth);
+    const currentMonthHistory = expensesInPeriod(getViewPeriod());
 
     if (currentMonthHistory.length === 0) {
       const msg = isPreLaunchMonth(state.viewYear, state.viewMonth) ? '잼플 이용 전 달이므로 내역이 없습니다.' : '아직 등록된 지출 내역이 없어요.';
@@ -1693,7 +1839,7 @@
       el.innerHTML = `
         <div class="fixed-item-left">
           <span style="font-size:11px; background:#F8F9FA; padding:3px 6px; border-radius:6px; color:var(--text-sub);">📅 ${exp.month}/${exp.day}</span>
-          <span style="color:var(--text-main); font-weight:600;">${exp.category}</span>
+          <span style="color:var(--text-main); font-weight:600;">${escapeHtml(exp.category)}</span>
         </div>
         <div class="fixed-item-right">
           <span style="font-weight:bold; color:var(--primary-dark);">${toWon(exp.amount)}</span>
@@ -1775,6 +1921,7 @@
     document.getElementById('sheet-amount').value = '';
     document.getElementById('receipt-preview-box').style.display = 'none';
     document.getElementById('receipt-file-input').value = '';
+    setRecordType('expense');
     document.getElementById('expense-sheet').classList.add('active');
   }
 
@@ -1782,40 +1929,7 @@
     document.getElementById('expense-sheet').classList.remove('active');
   }
 
-  function handleReceiptUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const previewBox = document.getElementById('receipt-preview-box');
-    const previewImg = document.getElementById('receipt-preview-img');
-    const statusText = document.getElementById('receipt-status-text');
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      previewImg.src = e.target.result;
-      previewBox.style.display = 'flex';
-      statusText.innerHTML = `<b>계산기 재무링이 영수증 분석 중... 🔍</b>`;
-
-      setTimeout(() => {
-        const samples = [
-          { amt: 12500, catIndex: 0, name: '식비 (점심식사)' },
-          { amt: 5800,  catIndex: 1, name: '카페/간식 (아메리카노)' },
-          { amt: 24300, catIndex: 2, name: '마트 (생필품 장보기)' },
-          { amt: 4500,  catIndex: 4, name: '교통 (택시/버스)' }
-        ];
-        const picked = samples[Math.floor(Math.random() * samples.length)];
-
-        document.getElementById('sheet-amount').value = toWon(picked.amt);
-
-        const chips = document.querySelectorAll('#sheet-cats .chip');
-        chips.forEach(c => c.classList.remove('selected'));
-        if (chips[picked.catIndex]) chips[picked.catIndex].classList.add('selected');
-
-        statusText.innerHTML = `<b style="color:var(--primary-dark);">영수증 인식 완료!</b> [${picked.name} ${toWon(picked.amt)}]`;
-      }, 1200);
-    };
-    reader.readAsDataURL(file);
-  }
+  function handleReceiptUpload(event) { /* 아래 v2 영수증 미리보기 구현 사용 */ }
 
   function selectCat(el) {
     document.querySelectorAll('#sheet-cats .chip').forEach(c => c.classList.remove('selected'));
@@ -1874,9 +1988,9 @@
       el.className = 'fixed-item';
       el.innerHTML = `
         <div class="fixed-item-left">
-          <img src="${itemIcon}" class="ui-input-icon" onerror="this.src='my_icon_fixed_list.png'" alt="${item.name}">
+          <img src="${itemIcon}" class="ui-input-icon" onerror="this.src='my_icon_fixed_list.png'" alt="${escapeHtml(item.name)}">
           <span>📅 ${item.day}일</span>
-          <span>${item.name}</span>
+          <span>${escapeHtml(item.name)}</span>
         </div>
         <div class="fixed-item-right">
           <span>${toWon(item.amount)}</span>
@@ -1927,26 +2041,37 @@
   function updateReportScreen() {
     const y = state.viewYear;
     const m = state.viewMonth;
-    const currentMonthKey = `${y}-${m}`;
+    const period = getViewPeriod();
+    const budget = period.budget;
+    const currentMonthKey = period.key;
     const isSettled = !!state.settledMonths[currentMonthKey];
 
-    document.getElementById('report-header-month').innerText = `${m}월 머니 리포트`;
+    document.getElementById('report-header-month').innerText = `${formatPeriod(period)} 머니 리포트`;
 
-    const monthExpenses = state.expenseHistory.filter(e => e.year === y && e.month === m);
+    // 확정 결산은 당시 보관한 스냅샷을 사용합니다.
+    // 미결산 기간은 현재 마이 설정이 반영된 periodBudgets를 사용합니다.
+    const closedSnapshot = isSettled ? state.settlementSnapshots?.[currentMonthKey] : null;
+    const displayBudget = closedSnapshot?.budget || budget;
+    const monthExpenses = closedSnapshot?.expenseRecords || expensesInPeriod(period);
     const totalSpent = monthExpenses.reduce((sum, item) => sum + item.amount, 0);
 
     let noSpendCount = 0;
     for (const [key, val] of Object.entries(state.dailyRecords)) {
-      if (key.startsWith(`${y}-${m}-`) && val.type === 'NO_SPEND') {
+      if (dateInPeriod(key, period) && val.type === 'NO_SPEND') {
         noSpendCount++;
       }
     }
 
-    const baseSavings = state.baseSavings;
-    const baseSurplus = Math.max(0, state.surplus);
-    const diff = state.variableBudget - totalSpent;
-    const finalSurplus = baseSurplus + diff;
-    const totalSaved = baseSavings + finalSurplus;
+    // 진행 중인 예산기간: 마이 설정의 해당 기간 예산으로 직접 재계산.
+    // 확정 결산: 당시 스냅샷/기간 예산을 이용해 과거 금액을 보존.
+    const baseSavings = displayBudget.baseSavings;
+    const diff = displayBudget.variableBudget - totalSpent;
+    const finalSurplus = closedSnapshot && Number.isFinite(closedSnapshot.forecast)
+      ? closedSnapshot.forecast
+      : displayBudget.income - displayBudget.fixedExpenses - baseSavings - totalSpent;
+    const baseSurplus = displayBudget.surplus;
+    // 실제 모은 돈과 예상 여유자금은 별도로 표시합니다. 완료 기간은 합산 중복을 피합니다.
+    const totalSaved = isSettled ? state.currentSaved : state.currentSaved + finalSurplus;
 
     const badgeEl = document.getElementById('report-badge');
     const commentEl = document.getElementById('report-ring-comment');
@@ -1954,9 +2079,9 @@
     const savedLabel = document.getElementById('report-total-saved-label');
 
     if (isSettled) {
-      savedLabel.innerText = '이번 달 최종 확정 저축액 🏆';
+      savedLabel.innerText = '현재 목표 통장에 실제 모아둔 돈';
     } else {
-      savedLabel.innerText = '현재까지 지켜낸 총 저축액 (중간 점검)';
+      savedLabel.innerText = '현재 모아둔 돈 + 이번 기간 예상 여유자금 (추정)';
     }
 
     if (diff >= 0) {
@@ -1988,8 +2113,15 @@
     }
 
     document.getElementById('report-total-saved-won').innerText = toWon(totalSaved);
-    document.getElementById('report-base-savings').innerText = toWon(baseSavings);
+    document.getElementById('report-base-savings').innerText = toWon(state.currentSaved);
     document.getElementById('report-surplus-savings').innerText = toWon(finalSurplus);
+    // 확인 가능한 수식: 수입 - 고정지출 - 선저축 - 기록된 생활비
+    const surplusDetail = document.getElementById('report-surplus-formula');
+    if (surplusDetail) {
+      surplusDetail.textContent = isSettled
+        ? '결산 당시 계산상 여유자금 (저장된 과거 기록 기준)'
+        : `수입 ${toWon(displayBudget.income)} − 고정지출 ${toWon(displayBudget.fixedExpenses)} − 선저축 ${toWon(baseSavings)} − 생활비 지출 ${toWon(totalSpent)} = ${toWon(finalSurplus)}`;
+    }
 
     const targetAmt = state.targetGoalAmount || 3000000;
     const currentSaved = state.currentSaved || 0;
@@ -2001,13 +2133,13 @@
     document.getElementById('report-current-saved').innerText = toWon(currentSaved);
     document.getElementById('report-target-amt').innerText = toWon(targetAmt);
 
-    const monthlyPace = baseSavings + Math.max(0, finalSurplus);
-    const monthsLeft = monthlyPace > 0 ? Math.ceil(Math.max(0, targetAmt - currentSaved) / monthlyPace) : 12;
-    document.getElementById('report-pace-text').innerHTML = `✨ 지금 속도라면 <b>약 ${monthsLeft}개월</b> 뒤 목표를 달성할 수 있어요!`;
+    const monthlyPace = Math.max(0, displayBudget.surplus);
+    const monthsLeft = monthlyPace > 0 ? Math.ceil(Math.max(0, targetAmt - currentSaved) / monthlyPace) : null;
+    document.getElementById('report-pace-text').textContent = currentSaved >= targetAmt ? '목표를 달성했어요!' : monthsLeft === null ? '여유자금 확보 후 예상기간을 계산해요.' : `예정 여유자금 기준 약 ${monthsLeft}개월 예상 (선저축·투자수익 제외)`;
 
-    const spentPercent = state.variableBudget > 0 ? Math.round((totalSpent / state.variableBudget) * 100) : 0;
+    const spentPercent = displayBudget.variableBudget > 0 ? Math.round((totalSpent / displayBudget.variableBudget) * 100) : 0;
     document.getElementById('report-spent-ratio').innerText = `예산 대비 ${spentPercent}% 사용`;
-    document.getElementById('report-variable-budget').innerText = toWon(state.variableBudget);
+    document.getElementById('report-variable-budget').innerText = toWon(displayBudget.variableBudget);
     document.getElementById('report-variable-spent').innerText = toWon(totalSpent);
 
     const catMap = {};
@@ -2028,7 +2160,7 @@
         const row = document.createElement('div');
         row.innerHTML = `
           <div class="report-cat-row">
-            <span><b>${cat}</b> (${catPercent}%)</span>
+            <span><b>${escapeHtml(cat)}</b> (${catPercent}%)</span>
             <span style="font-weight:bold; color:var(--text-main);">${toWon(amt)}</span>
           </div>
           <div class="report-cat-bar-bg">
@@ -2039,11 +2171,12 @@
       });
     }
 
-    const dailyRecommend = Math.round((state.variableBudget / 30) / 1000) * 1000;
+    const dailyRecommend = Math.floor((displayBudget.variableBudget / (displayBudget.allocationDays || periodLength(period))) / 1000) * 1000;
     const noSpendSavedTotal = noSpendCount * dailyRecommend;
+    const balanceMessage = noSpendBalanceMessage(noSpendCount);
     document.getElementById('report-no-spend-days').innerText = `총 ${noSpendCount}일 성공`;
     document.getElementById('report-no-spend-desc').innerHTML = `
-      이번 달 무지출 실천으로 약 <b style="color:var(--primary);">${toWon(noSpendSavedTotal)}</b>의 생활비 씨앗을 추가로 방어했어요! 🌰
+      이번 기간 무지출 실천으로 약 <b style="color:var(--primary);">${toWon(noSpendSavedTotal)}</b>의 하루 예산을 쓰지 않았어요. 추정치이며 목표금액에 추가되지 않습니다. 🌰<br><span style="display:block; margin-top:8px; color:var(--brown);">${escapeHtml(balanceMessage)}</span>
     `;
   }
 
@@ -2118,6 +2251,1809 @@
     switchTab('home', homeBtn);
   }
 
+  /* v2: 실제 목표금액과 행동 기록 분리, 급여주기별 예산 및 결산 보존 */
+  function isValidBackup(data) {
+    if(!data || typeof data!=='object' || Array.isArray(data))return false;
+    const keys=['income','fixedExpenses','baseSavings','variableBudget','currentSaved','targetGoalAmount'];
+    if(!keys.every(k=>typeof data[k]==='number' && Number.isFinite(data[k]) && data[k]>=0))return false;
+    if(!Number.isInteger(data.payday)||data.payday<1||data.payday>31)return false;
+    if(!Array.isArray(data.fixedList)||!Array.isArray(data.expenseHistory))return false;
+    if(!data.fixedList.every(e=>typeof e.name==='string' && Number.isFinite(e.amount) && e.amount>=0 && Number.isInteger(e.day) && e.day>=1 && e.day<=31))return false;
+    if(!data.expenseHistory.every(e=>Number.isFinite(e.amount)&&e.amount>0 && Number.isInteger(e.year)&&Number.isInteger(e.month)&&e.month>=1&&e.month<=12&&Number.isInteger(e.day)&&e.day>=1&&e.day<=new Date(e.year,e.month,0).getDate() && typeof e.category==='string'))return false;
+    if(!data.dailyRecords || typeof data.dailyRecords!=='object' || Array.isArray(data.dailyRecords))return false;
+    if(!data.settledMonths || typeof data.settledMonths!=='object' || Array.isArray(data.settledMonths))return false;
+    if(data.incomeHistory && (!Array.isArray(data.incomeHistory) || !data.incomeHistory.every(e=>e && Number.isSafeInteger(e.amount) && e.amount>0 && Number.isInteger(e.year) && Number.isInteger(e.month) && e.month>=1 && e.month<=12 && Number.isInteger(e.day) && e.day>=1 && e.day<=new Date(e.year,e.month,0).getDate() && typeof e.category==='string')))return false;
+    if(data.giftHistory && (!Array.isArray(data.giftHistory) || !data.giftHistory.every(g=>g && typeof g.date==='string' && typeof g.name==='string' && Number.isSafeInteger(g.amount) && g.amount>0)))return false;
+    if(data.periodBudgets && !Object.values(data.periodBudgets).every(b=>b && ['income','fixedExpenses','baseSavings','variableBudget','surplus','payday'].every(k=>Number.isFinite(b[k])) && b.payday>=1 && b.payday<=31))return false;
+    return true;
+  }
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function localDateKey(d) { return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+  function paydayDate(y, m, payday) {
+    return new Date(y, m-1, Math.min(Math.max(1, payday), new Date(y,m,0).getDate()));
+  }
+  function budgetSnapshot() {
+    return { income:state.income, fixedExpenses:state.fixedExpenses, baseSavings:state.baseSavings,
+      variableBudget:state.variableBudget, surplus:state.income-state.fixedExpenses-state.baseSavings-state.variableBudget,
+      payday:Math.min(31,Math.max(1,state.payday || 25)) };
+  }
+  function activePeriod(date=new Date()) {
+    let y=date.getFullYear(), m=date.getMonth()+1;
+    if (date < paydayDate(y,m,state.payday)) { m--; if(m===0){m=12;y--;} }
+    return {y,m};
+  }
+  function getPeriod(y,m) {
+    const key=`${y}-${m}`;
+    const budget=state.periodBudgets[key] || budgetSnapshot();
+    return {key,y,m,budget,start:paydayDate(y,m,budget.payday),end:paydayDate(y,m+1,budget.payday)};
+  }
+  function getViewPeriod() { return getPeriod(state.viewYear,state.viewMonth); }
+  function dateInPeriod(key,p) {
+    const [y,m,d]=key.split('-').map(Number); const date=new Date(y,m-1,d);
+    return date>=p.start && date<p.end;
+  }
+  function expensesInPeriod(p) { return state.expenseHistory.filter(e=>dateInPeriod(`${e.year}-${e.month}-${e.day}`,p)); }
+  function periodLength(p) { return Math.round((Date.UTC(p.end.getFullYear(),p.end.getMonth(),p.end.getDate())-Date.UTC(p.start.getFullYear(),p.start.getMonth(),p.start.getDate()))/86400000); }
+  function remainingDays(p) {
+    const today=new Date(); today.setHours(0,0,0,0);
+    if(today>=p.end)return 0;
+    const from=today<p.start?p.start:today;
+    return Math.max(0,Math.round((Date.UTC(p.end.getFullYear(),p.end.getMonth(),p.end.getDate())-Date.UTC(from.getFullYear(),from.getMonth(),from.getDate()))/86400000));
+  }
+  function prorateFirstBudget(budget, period, startedOn=localDateKey(new Date())) {
+    const [y,m,d]=startedOn.split('-').map(Number);
+    const start=new Date(y,m-1,d);
+    const days=Math.max(0,Math.min(periodLength(period),Math.round((Date.UTC(period.end.getFullYear(),period.end.getMonth(),period.end.getDate())-Date.UTC(y,m-1,d))/86400000)));
+    const ratio=days/periodLength(period);
+    return {...budget, fullVariableBudget:budget.variableBudget,
+      variableBudget:Math.round(budget.variableBudget*ratio),
+      surplus:Math.round(budget.surplus*ratio), allocationDays:days, startedOn};
+  }
+  function formatPeriod(p) { const last=new Date(p.end);last.setDate(last.getDate()-1);return `${p.start.getMonth()+1}/${p.start.getDate()}~${last.getMonth()+1}/${last.getDate()}`; }
+  function syncViewSpent() {
+    const p=getViewPeriod(); state.currentSpent=expensesInPeriod(p).reduce((sum,e)=>sum+e.amount,0);
+    document.getElementById('target-budget-label').textContent=toWon(p.budget.variableBudget);
+  }
+  function initializeBudgetV2() {
+    const legacy=state.schemaVersion!==2 && state.isUserOnboarded;
+    state.periodBudgets=state.periodBudgets || {};
+    state.settlementAmounts=state.settlementAmounts || {};
+    state.giftHistory=state.giftHistory || [];
+    state.incomeHistory=state.incomeHistory || [];
+    if(legacy) {
+      // 구버전 월 결산과 급여주기 결산을 구분하고, 기존 잔액은 사용자 확인까지 보존합니다.
+      state.legacySettledMonths={...state.settledMonths}; state.settledMonths={};
+      state.legacyMoneyReview=true;
+      const total=state.fixedList.reduce((sum,item)=>sum+item.amount,0);
+      if(total!==state.fixedExpenses)state.fixedList=state.fixedExpenses>0?[{id:Date.now(),name:'고정지출 합계 (세부 항목으로 교체 가능)',day:state.payday,amount:state.fixedExpenses}]:[];
+    }
+    if(!state.isUserOnboarded){state.currentSaved=0;state.expenseHistory=[];state.dailyRecords={};}
+    state.schemaVersion=2;
+    state.surplus=state.income-state.fixedExpenses-state.baseSavings-state.variableBudget;
+    const a=activePeriod(); const key=`${a.y}-${a.m}`;
+    if(!state.periodBudgets[key])state.periodBudgets[key]=budgetSnapshot();
+    state.viewYear=a.y;state.viewMonth=a.m;
+    if(!state.isUserOnboarded){state.startYear=a.y;state.startMonth=a.m;}
+    state.noSpendDays=Object.values(state.dailyRecords).filter(r=>r.type==='NO_SPEND').length;
+    syncViewSpent();saveStateToLocalStorage();
+  }
+  // Upgrade: keep forecast separate from verified goal-account balance.
+  function settlementIncome(p) {
+    const records = incomesInPeriod(p);
+    return records.length ? records.reduce((sum, r) => sum + r.amount, 0) : p.budget.income;
+  }
+  function settlementPreview(p) {
+    const actualIncome = (settlementSelectedKey === p.key && settlementIncomeChoice && !state.settledMonths?.[p.key])
+      ? (settlementIncomeChoice === 'recorded' ? incomesInPeriod(p).reduce((sum,r)=>sum+r.amount,0) : p.budget.income)
+      : settlementIncome(p);
+    const spent = expensesInPeriod(p).reduce((sum, r) => sum + r.amount, 0);
+    const variablePerformance = p.budget.variableBudget - spent;
+    const plannedSurplus = actualIncome - p.budget.fixedExpenses - p.budget.baseSavings - p.budget.variableBudget;
+    return {actualIncome, spent, variablePerformance, plannedSurplus, forecast:plannedSurplus + variablePerformance,
+      recordedIncomeCount:incomesInPeriod(p).length};
+  }
+  function settlementWindow(p, date=new Date()) {
+    const d=new Date(date.getFullYear(),date.getMonth(),date.getDate());
+    const due=new Date(p.end); // settlement closes the preceding pay-cycle
+    const from=new Date(due);from.setDate(from.getDate()-3);
+    const until=new Date(due);until.setDate(until.getDate()+3);
+    return {preview:d>=from&&d<due, final:d>=due&&d<=until, late:d>until};
+  }
+  function checkSettlementDay() {
+    const p=getViewPeriod(), btn=document.getElementById('btn-monthly-settlement');
+    const windowState=settlementWindow(p);
+    if(!state.periodBudgets[p.key] || state.settledMonths[p.key] || (!windowState.preview&&!windowState.final)) {
+      btn.style.display='none';return;
+    }
+    btn.style.display='flex';
+    btn.querySelector('span').textContent=windowState.preview ? `${formatPeriod(p)} 결산 미리보기` : `${formatPeriod(p)} 최종 결산`;
+  }
+  function settlementExplanation(p) {
+    const r=settlementPreview(p);
+    const budget=p.budget.variableBudget;
+    const difference=budget-r.spent;
+    const warn=budget===0 ? r.spent>0 : Math.abs(difference)*5>=budget;
+    return `${formatPeriod(p)} 결산 점검\n\n수입: ${toWon(r.actualIncome)} (${r.recordedIncomeCount ? '실제 수입 기록 합계' : '실제 기록 없음 · 기본 수입'})\n고정지출: ${toWon(p.budget.fixedExpenses)}\n선저축: ${toWon(p.budget.baseSavings)}\n생활비 예산: ${toWon(budget)}\n실제 생활비: ${toWon(r.spent)}\n생활비 차액: ${toWon(difference)}${difference<0?' 초과':' 절약'}\n계산상 여유: ${toWon(r.forecast)}\n\n${warn?'⚠ 생활비 차이가 커서 예산 적정성을 재검토해주세요.\n':''}${r.recordedIncomeCount?'⚠ 실제 수입을 일부만 기록했다면 확인 후 결산하세요.\n':''}현재 생활비 예산이 적정한가요? (예산은 자동 변경되지 않습니다.)\n※ 실제 모아둔 돈은 자동 증가하지 않습니다.`;
+  }
+  function executeMonthlySettlement() {
+    const p=getViewPeriod(), key=p.key;
+    if(!state.periodBudgets[key])return alert('해당 기간의 저장된 예산이 없습니다.');
+    if(state.settledMonths[key])return alert('이미 결산한 기간입니다.');
+    const w=settlementWindow(p);
+    if(w.preview){alert(settlementExplanation(p)+'\n\n지금은 미리보기 기간이며 최종 결산은 기준일부터 가능합니다.');return;}
+    if(!w.final && !w.late)return alert('결산 시작 3일 전부터 미리보기가 가능합니다.');
+    if(state.legacyMoneyReview)return alert('마이에서 실제 모아둔 돈을 먼저 확인해주세요.');
+    if(!confirm(settlementExplanation(p)+'\n\n이 기간의 결산을 확정할까요?'))return;
+    const r=settlementPreview(p);
+    const transferredText=prompt('실제 목표 통장으로 옮긴 금액을 입력해주세요. 이 앱은 실제 이체를 실행하지 않습니다.', '0');
+    if(transferredText===null)return;
+    const sanitized=transferredText.replace(/[,\s원]/g,'');
+    if(!/^\d+$/.test(sanitized)||!Number.isSafeInteger(Number(sanitized)))return alert('0원 이상의 정수로 입력해주세요.');
+    const amount=Number(sanitized);
+    if(!confirm(`실제 이체한 ${toWon(amount)}을 목표 잔액에 반영하고 이 기간을 확정할까요?`))return;
+    // One saved state write; do not award acorns or change the budget here.
+    const previous=JSON.stringify(state);
+    state.settlementSnapshots=state.settlementSnapshots||{};
+    state.settlementSnapshots[key]={periodId:key,confirmedAt:new Date().toISOString(),
+      budget:{...p.budget},incomeRecords:JSON.parse(JSON.stringify(incomesInPeriod(p))),
+      expenseRecords:JSON.parse(JSON.stringify(expensesInPeriod(p))),
+      ...r,transferredAmount:amount};
+    state.settledMonths[key]=true;
+    state.settlementAmounts[key]=amount;
+    state.currentSaved+=amount;
+    try {localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+    catch(e){state=JSON.parse(previous);alert('저장에 실패하여 결산을 취소했습니다. 저장공간을 확인해주세요.');return;}
+    updateGoalProgressBoard();checkSettlementDay();updateReportScreen();
+    alert('결산이 저장되었습니다. 실제 이체 확인액만 모아둔 돈에 반영했습니다.');
+  }
+  function renderGoalMoneyDetails() {
+    const p=getViewPeriod();
+    const spent=expensesInPeriod(p).reduce((sum,e)=>sum+e.amount,0);
+    document.getElementById('planned-goal-money').textContent=state.settledMonths[p.key] ? '결산 완료' : toWon(Math.max(0,p.budget.surplus+p.budget.variableBudget-spent));
+    document.getElementById('btn-gift-purchase').style.display=state.currentSaved>=state.targetGoalAmount && state.targetGoalAmount>0 ? 'block' : 'none';
+    document.getElementById('gift-history').innerHTML=(state.giftHistory || []).slice().reverse().map(g=>`<div>🎁 ${escapeHtml(g.date)} · ${escapeHtml(g.name)} 목표 달성 · 선물 ${toWon(g.amount)}</div>`).join('');
+  }
+  function recordGiftPurchase() {
+    if(state.currentSaved<state.targetGoalAmount || state.targetGoalAmount<=0)return alert('목표를 달성한 뒤 선물 구매를 기록해주세요.');
+    const value=prompt('목표용으로 모아둔 돈에서 실제 선물 구매에 사용한 금액을 입력해주세요.\n생활비 지출에는 같은 금액을 중복 기록하지 마세요.',String(state.targetGoalAmount));
+    if(value===null)return;
+    const normalized=value.replace(/[,\s원]/g,'');
+    const amount=Number(normalized);
+    if(!/^\d+$/.test(normalized)||!Number.isSafeInteger(amount)||amount<=0||amount>state.currentSaved)return alert('모아둔 돈 범위 안에서 실제 사용한 금액을 입력해주세요.');
+    if(!confirm(`${state.targetGoalName} 선물 구매에 ${toWon(amount)} 사용했나요?\n모아둔 돈에서 차감하고 목표 달성 기록을 남깁니다.`))return;
+    state.giftHistory=state.giftHistory || [];
+    state.giftHistory.push({id:Date.now(),date:localDateKey(new Date()),name:state.targetGoalName,goalAmount:state.targetGoalAmount,amount});
+    state.currentSaved-=amount;
+    saveStateToLocalStorage();updateGoalProgressBoard();updateReportScreen();
+    alert('선물 구매와 목표 달성을 기록했어요! 남은 돈은 다음 목표에도 사용할 수 있어요.');
+  }
+  const originalWaterLevel=updateWaterLevel;
+  updateWaterLevel=function(){originalWaterLevel();renderGoalMoneyDetails();};
+  const originalGoalBoard=updateGoalProgressBoard;
+  updateGoalProgressBoard=function(){originalGoalBoard();renderGoalMoneyDetails();};
+  // 해당 급여기간의 무지출 성공 일수만 계산합니다 (전체 누적 일수와 구분).
+  function noSpendCountInPeriod(period) {
+    return Object.entries(state.dailyRecords || {}).filter(([key, record]) =>
+      record && record.type === 'NO_SPEND' && dateInPeriod(key, period)
+    ).length;
+  }
+
+  function noSpendBalanceMessage(count) {
+    if (count >= 8) {
+      return '미래를 준비하는 만큼 오늘의 행복도 중요해요. 혹시 필요한 소비까지 참고 있지는 않나요? 돈은 행복한 삶을 위한 도구랍니다. 💛';
+    }
+    if (count >= 5) {
+      return '아끼는 습관도 멋지지만, 나를 위한 작은 행복도 소중해요. 계획한 예산 안에서 즐거운 소비도 해보세요! ☕';
+    }
+    return '오늘도 계획적인 소비를 실천했네요! 작은 습관이 미래의 여유를 만들어요. 🌱';
+  }
+
+  function actionNoSpend() {
+    const today = new Date();
+    const key = localDateKey(today);
+    const active = activePeriod(today);
+    const period = getPeriod(active.y, active.m);
+    if (state.settledMonths[period.key]) return alert('결산이 완료된 기간에는 기록을 추가할 수 없어요.');
+    if (state.dailyRecords[key]?.type === 'NO_SPEND') return alert('오늘 무지출은 이미 기록했어요.');
+    if (state.expenseHistory.some(e => `${e.year}-${e.month}-${e.day}` === key && e.amount > 0)) {
+      return alert('오늘 지출 기록이 있어 무지출로 등록할 수 없어요.');
+    }
+    state.dailyRecords[key] = {amount: 0, type: 'NO_SPEND'};
+    state.noSpendDays = Object.values(state.dailyRecords).filter(r => r.type === 'NO_SPEND').length;
+    const periodCount = noSpendCountInPeriod(period);
+    saveStateToLocalStorage();
+    renderCalendar();
+    updateGoalProgressBoard();
+    // 재무링 코칭은 5일째와 8일째에 강조하고, 다른 날은 짧게 칭찬합니다.
+    const message = (periodCount === 5 || periodCount === 8)
+      ? noSpendBalanceMessage(periodCount)
+      : '오늘 무지출을 기록했어요! 계획적인 돈 관리를 응원해요. 🌱';
+    alert(`${message}\n\n이번 급여기간 무지출 ${periodCount}일째입니다.\n아낀 금액은 추정치이며, 목표 통장 잔액에 자동으로 더해지지 않습니다.`);
+  }
+  const originalSubmitExpense=submitExpense;
+  submitExpense=function() {
+    if(recordType==='income')return submitIncome();
+    const key=`${selectedYearForExpense}-${selectedMonthForExpense}-${selectedDayForExpense}`;
+    if(Object.keys(state.settledMonths).some(k=>state.settledMonths[k] && dateInPeriod(key,getPeriod(...k.split('-').map(Number)))))return alert('결산 완료된 기간의 지출은 변경할 수 없어요.');
+    const expensePeriod=Object.values(state.periodBudgets).find(b=>b.startedOn && new Date(...key.split('-').map((v,i)=>i===1?Number(v)-1:Number(v))) < new Date(...b.startedOn.split('-').map((v,i)=>i===1?Number(v)-1:Number(v))));
+    if(expensePeriod)return alert('첫 기간은 시작일부터 날짜 비례로 배정했어요. 시작일 이전 지출은 입력하지 않아도 됩니다.');
+    originalSubmitExpense();
+    state.noSpendDays=Object.values(state.dailyRecords).filter(r=>r.type==='NO_SPEND').length;
+    syncViewSpent();saveStateToLocalStorage();checkSettlementDay();
+  };
+  const originalDeleteExpense=deleteExpense;
+  deleteExpense=function(id) {
+    const e=state.expenseHistory.find(e=>e.id===id);if(!e)return;
+    const key=`${e.year}-${e.month}-${e.day}`;
+    if(Object.keys(state.settledMonths).some(k=>state.settledMonths[k] && dateInPeriod(key,getPeriod(...k.split('-').map(Number)))))return alert('결산 완료된 기간의 지출은 삭제할 수 없어요.');
+    originalDeleteExpense(id);syncViewSpent();saveStateToLocalStorage();checkSettlementDay();
+  };
+  const originalChangeMonth=changeMonth;
+  changeMonth=function(offset) {
+    originalChangeMonth(offset);
+    const p=getViewPeriod();
+    
+    syncViewSpent();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();saveStateToLocalStorage();
+  };
+  openTodayExpenseSheet=function() {
+    const a=activePeriod();state.viewYear=a.y;state.viewMonth=a.m;
+    syncViewSpent();renderCalendar();updateWaterLevel();checkSettlementDay();
+    openExpenseSheet(new Date().getDate(),new Date().getFullYear(),new Date().getMonth()+1);
+  };
+  renderCalendar=function() {
+    const grid=document.getElementById('calendar-grid');grid.innerHTML='';
+    ['일','월','화','수','목','금','토'].forEach(label=>{const el=document.createElement('div');el.className='cal-day-label';el.textContent=label;grid.appendChild(el);});
+    const p=getViewPeriod();let first=new Date(p.start),end=new Date(p.end);
+    if(!state.isExpandedCal) {
+      const today=new Date();today.setHours(0,0,0,0);
+      let selected=new Date(selectedYearForExpense,selectedMonthForExpense-1,selectedDayForExpense);
+      if(selected<p.start || selected>=p.end)selected=today>=p.start&&today<p.end?today:p.start;
+      first=new Date(selected);first.setDate(first.getDate()-first.getDay());
+      end=new Date(first);end.setDate(end.getDate()+7);
+    } else {
+      for(let i=0;i<first.getDay();i++){const blank=document.createElement('div');blank.style.background='transparent';grid.appendChild(blank);}
+    }
+    for(let d=new Date(first);d<end;d.setDate(d.getDate()+1)) {
+      if(d<p.start || d>=p.end){const blank=document.createElement('div');grid.appendChild(blank);continue;}
+      const cell=createDayCell(d.getDate(),d.getFullYear(),d.getMonth()+1);
+      cell.querySelector('.cal-day-text').textContent=`${d.getMonth()+1}/${d.getDate()}`;
+      grid.appendChild(cell);
+    }
+    document.getElementById('cal-month-title').textContent=`${p.y}년 ${formatPeriod(p)}`;
+    document.getElementById('target-budget-label').textContent=`${p.budget.startedOn ? '첫 기간 배정 생활비' : '기간 생활비'} ${toWon(p.budget.variableBudget)}`;
+  };
+  let recordType='expense';
+  function setRecordType(type) {
+    recordType=type;
+    document.getElementById('record-expense-btn').classList.toggle('selected',type==='expense');
+    document.getElementById('record-income-btn').classList.toggle('selected',type==='income');
+    document.getElementById('record-amount-label').textContent=type==='income'?'수입 금액':'지출 금액';
+    document.getElementById('income-record-note').style.display=type==='income'?'block':'none';
+    document.querySelector('#expense-sheet .receipt-scan-banner').style.display=type==='income'?'none':'flex';
+    document.getElementById('receipt-preview-box').style.display='none';
+    const cats=type==='income'?['💼 급여','🏪 사업수입','🧑‍💻 부업','🎉 상여금','💰 기타수입']:['🍚 식비','☕ 카페/간식','🛒 마트','🛍️ 쇼핑','🚕 교통'];
+    const container=document.getElementById('sheet-cats');container.innerHTML='';
+    cats.forEach((name,i)=>{const el=document.createElement('div');el.className='chip'+(i===0?' selected':'');el.textContent=name;el.onclick=()=>selectCat(el);container.appendChild(el);});
+  }
+  function incomesInPeriod(p) {return (state.incomeHistory || []).filter(e=>dateInPeriod(`${e.year}-${e.month}-${e.day}`,p));}
+  function submitIncome() {
+    const amount=parseNumber(document.getElementById('sheet-amount').value);
+    if(!Number.isSafeInteger(amount)||amount<=0)return alert('수입 금액을 1원 이상의 정수로 입력해주세요.');
+    const category=document.querySelector('#sheet-cats .chip.selected').textContent;
+    state.incomeHistory=state.incomeHistory || [];
+    state.incomeHistory.push({id:Date.now()+Math.random(),year:selectedYearForExpense,month:selectedMonthForExpense,day:selectedDayForExpense,amount,category});
+    saveStateToLocalStorage();renderCalendar();closeExpenseSheet();
+    if(document.getElementById('history-sheet').classList.contains('active'))renderHistoryList();
+    alert('수입을 기록했어요. 생활비 예산과 목표 잔액은 자동으로 늘어나지 않아요.');
+  }
+  function deleteIncome(id) {
+    if(!confirm('이 수입 기록을 삭제할까요?'))return;
+    state.incomeHistory=(state.incomeHistory || []).filter(e=>e.id!==id);
+    saveStateToLocalStorage();renderHistoryList();renderCalendar();
+  }
+  const originalHistoryList=renderHistoryList;
+  renderHistoryList=function() { originalHistoryList(); };
+  const originalDayCell=createDayCell;
+  createDayCell=function(day,y,m) {
+    const cell=originalDayCell(day,y,m);
+    const total=(state.incomeHistory || []).filter(e=>e.year===y&&e.month===m&&e.day===day).reduce((sum,e)=>sum+e.amount,0);
+    if(total>0){const marker=document.createElement('div');marker.textContent=`+${toWon(total)}`;marker.style.cssText='font-size:10px;color:#2E7D32;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';marker.title=`기록한 수입 ${toWon(total)}`;cell.appendChild(marker);}
+    return cell;
+  };
+  const originalOpenHistory=openHistorySheet;
+  openHistorySheet=function(){originalOpenHistory();document.getElementById('history-sheet-title').textContent=`${formatPeriod(getViewPeriod())} 지출 내역`;};
+  const originalRenderFixed=renderFixedItems;
+  renderFixedItems=function(){originalRenderFixed();state.surplus=state.income-state.fixedExpenses-state.baseSavings-state.variableBudget;};
+  const originalAddFixed=addFixedItem,originalDeleteFixed=deleteFixedItem;
+  addFixedItem=function(){originalAddFixed();saveStateToLocalStorage();};
+  deleteFixedItem=function(id){originalDeleteFixed(id);saveStateToLocalStorage();};
+  function renderLateSettlements() {
+    const box=document.getElementById('late-settlement-list');
+    const due=Object.keys(state.periodBudgets||{}).filter(key=>!state.settledMonths[key])
+      .map(key=>{const [y,m]=key.split('-').map(Number);return getPeriod(y,m);})
+      .filter(p=>settlementWindow(p).late).sort((a,b)=>a.start-b.start);
+    box.style.display=due.length?'block':'none';
+    box.replaceChildren();
+    if(!due.length)return;
+    const title=document.createElement('strong');title.textContent='미결산 기간 정리';box.appendChild(title);
+    due.forEach(p=>{const b=document.createElement('button');b.className='btn-secondary';b.style.marginTop='8px';b.textContent=`${formatPeriod(p)} 지연 결산`;b.onclick=()=>{state.viewYear=p.y;state.viewMonth=p.m;executeMonthlySettlement();renderLateSettlements();};box.appendChild(b);});
+  }
+  const originalReportScreen=updateReportScreen;
+  updateReportScreen=function(){
+    originalReportScreen();
+    renderLateSettlements();
+    const p=getViewPeriod();
+    if(!state.periodBudgets[p.key])document.getElementById('report-total-saved-label').textContent='기간 예산 미보존: 현재 설정으로 계산한 참고치';
+  };
+  const originalSwitchTab=switchTab;
+  switchTab=function(name,el) {
+    // 리포트 탭은 현재 진행 중인 급여기간을 기본으로 보여줍니다.
+    // 과거 결산 데이터 자체는 변경하지 않습니다.
+    if(name === 'report') {
+      const active = activePeriod();
+      state.viewYear = active.y;
+      state.viewMonth = active.m;
+      syncViewSpent();
+    }
+    originalSwitchTab(name,el);
+    if(name==='my') {
+      document.getElementById('my-actual-saved').value=toWon(state.currentSaved);
+      document.getElementById('legacy-money-note').textContent=state.legacyMoneyReview?'이전 버전 목표금액에는 예정자금·무지출 보상이 포함될 수 있습니다. 실제 잔액으로 확인해주세요.':'';
+    }
+  };
+  // 마이 설정 저장: 현재 미결산 급여기간의 예산을 함께 갱신합니다.
+  // 이미 결산한 기간의 예산과 결산 스냅샷은 수정하지 않습니다.
+  saveMySettings=function() {
+    const input = id => document.getElementById(id);
+    const newPayday = parseNumber(input('my-payday').value);
+    const income = parseNumber(input('my-income').value);
+    const baseSavings = parseNumber(input('my-base-savings').value);
+    const variableBudget = parseNumber(input('my-variable').value);
+    const targetGoalAmount = parseNumber(input('my-goal-amt').value);
+    const currentSaved = parseNumber(input('my-actual-saved').value);
+    const fixedExpenses = state.fixedList.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    if (newPayday < 1 || newPayday > 31) return alert('월급 기준일은 1~31일로 입력해주세요.');
+    // 급여일 변경은 현재 기간을 보존하고 다음 기간부터 적용하도록 예약합니다.
+    const requestedPaydayChange = newPayday !== state.payday;
+    if (targetGoalAmount <= 0) return alert('목표금액을 1원 이상 입력해주세요.');
+    if (income < fixedExpenses + baseSavings + variableBudget) {
+      return alert('고정지출·저축·생활비 합계가 수입보다 큽니다. 예산을 조정해주세요.');
+    }
+    if (![income, baseSavings, variableBudget, targetGoalAmount, currentSaved, fixedExpenses].every(Number.isSafeInteger)) {
+      return alert('금액을 확인해주세요.');
+    }
+
+    const a = activePeriod();
+    const periodKey = `${a.y}-${a.m}`;
+    if (state.settledMonths[periodKey]) {
+      return alert('현재 급여기간은 이미 결산되었습니다. 완료된 기간의 예산은 수정할 수 없습니다.');
+    }
+
+    const previousState = JSON.stringify(state);
+    const previousBudget = state.periodBudgets?.[periodKey];
+    if (requestedPaydayChange) {
+      const currentPeriod = getPeriod(a.y, a.m);
+      const nextStart = new Date(currentPeriod.end);
+      const followingMonth = new Date(nextStart.getFullYear(), nextStart.getMonth() + 1, 1);
+      const nextEnd = paydayDate(followingMonth.getFullYear(), followingMonth.getMonth() + 1, newPayday);
+      state.pendingPayday = {day:newPayday, effectiveDate:localDateKey(nextStart),
+        transitionKey:`${nextStart.getFullYear()}-${nextStart.getMonth()+1}`,
+        transitionEnd:localDateKey(nextEnd)};
+    } else if (state.pendingPayday) {
+      // 현재 급여일로 되돌리면 아직 적용되지 않은 예약은 취소합니다.
+      delete state.pendingPayday;
+    }
+    state.income = income;
+    state.fixedExpenses = fixedExpenses;
+    state.baseSavings = baseSavings;
+    state.variableBudget = variableBudget;
+    state.surplus = income - fixedExpenses - baseSavings - variableBudget;
+    state.showFixedInCal = input('my-toggle-fixed').checked;
+    state.targetGoalName = input('my-goal-name').value.trim() || '목표 목적';
+    state.targetGoalAmount = targetGoalAmount;
+    state.currentSaved = currentSaved; // 실제 잔액은 사용자가 입력한 값만 반영
+    state.legacyMoneyReview = false;
+
+    state.periodBudgets = state.periodBudgets || {};
+    const snapshot = budgetSnapshot();
+    if (previousBudget?.startedOn) {
+      // 첫 기간 날짜 비례 배정은 유지하면서 새 설정값으로 재산정
+      const period = {
+        key: periodKey, y: a.y, m: a.m,
+        start: paydayDate(a.y, a.m, state.payday),
+        end: paydayDate(a.y, a.m + 1, state.payday)
+      };
+      state.periodBudgets[periodKey] = prorateFirstBudget(snapshot, period, previousBudget.startedOn);
+    } else {
+      state.periodBudgets[periodKey] = snapshot;
+    }
+    state.viewYear = a.y;
+    state.viewMonth = a.m;
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+      state = JSON.parse(previousState);
+      return alert('설정 저장에 실패했습니다. 브라우저 저장 공간을 확인해주세요.');
+    }
+
+    input('my-fixed-total-badge').textContent = `합계: ${toWon(fixedExpenses)}`;
+    input('badge-reward-text').textContent = state.targetGoalName;
+    syncViewSpent();
+    renderCalendar();
+    updateWaterLevel();
+    updateGoalProgressBoard();
+    checkSettlementDay();
+    updateReportScreen(); // 마이 변경 → 리포트 즉시 재계산
+    switchTab('home', document.querySelectorAll('.nav-item')[0]);
+    alert(requestedPaydayChange ? `설정 저장 완료! 급여일 ${newPayday}일은 다음 관리기간부터 적용됩니다. 현재 기간 및 과거 결산 기록은 유지됩니다.` : '설정이 저장되었습니다. 현재 급여기간의 생활비와 여유자금 계산을 갱신했습니다.');
+  };
+  const originalCalculate=calculateAndGoStep5;
+  calculateAndGoStep5=function() {
+    const income=parseNumber(document.getElementById('input-income').value);
+    const outgoing=['input-fixed','input-savings','input-variable'].reduce((sum,id)=>sum+parseNumber(document.getElementById(id).value),0);
+    if(outgoing>income)return alert('고정지출·저축·생활비 합계가 수입보다 큽니다. 예산을 조정해주세요.');
+    originalCalculate();
+  };
+  handleReceiptUpload=function(event) {
+    const file=event.target.files[0];if(!file)return;
+    if(!file.type.startsWith('image/'))return alert('이미지 파일을 선택해주세요.');
+    if(file.size>10*1024*1024)return alert('10MB 이하 이미지를 선택해주세요.');
+    const reader=new FileReader();reader.onload=e=>{
+      document.getElementById('receipt-preview-img').src=e.target.result;
+      document.getElementById('receipt-preview-box').style.display='flex';
+      document.getElementById('receipt-status-text').textContent='영수증 미리보기입니다. 금액과 분류는 직접 입력해주세요.';
+    };reader.readAsDataURL(file);
+  };
+  // 새 급여주기가 시작되면 기록을 지우지 않고 새 예산기간으로 이동.
+  function rollPeriodForward() {
+    if(!state.isUserOnboarded)return;
+    const fresh=new Date();
+    if(fresh.getFullYear()!==CURRENT_YEAR || fresh.getMonth()+1!==CURRENT_MONTH || fresh.getDate()!==TODAY){window.location.reload();return;}
+    const a=activePeriod(),key=`${a.y}-${a.m}`;
+    if(!state.periodBudgets[key]) {
+      state.periodBudgets[key]=budgetSnapshot();state.viewYear=a.y;state.viewMonth=a.m;
+      syncViewSpent();renderCalendar();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();saveStateToLocalStorage();
+    }
+  }
+  window.addEventListener('focus',rollPeriodForward);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)rollPeriodForward();});
+
+
+  /* ===== 결산 A안: 실제 이체금액 확인 + 고정 스냅샷 ===== */
+  let settlementSelectedKey = null;
+  let settlementIncomeChoice = null;
+  function refreshSettlementIncomeChoice(){
+    if(!settlementSelectedKey)return;
+    const [y,m]=settlementSelectedKey.split('-').map(Number);
+    const p=getPeriod(y,m), rows=incomesInPeriod(p);
+    const picked=document.querySelector('input[name="settlement-income-source"]:checked');
+    settlementIncomeChoice=rows.length ? (picked?.value||'recorded') : 'planned';
+    const result=settlementPreview(p);
+    document.getElementById('income-applied-display').textContent=toWon(result.actualIncome);
+    const summary=document.getElementById('settlement-summary');
+    const incomeRow=summary.querySelector('.settlement-line .settlement-value');
+    if(incomeRow)incomeRow.textContent=toWon(result.actualIncome);
+    const value=summary.querySelector('.settlement-highlight div:nth-child(2)');
+    if(value)value.textContent=toWon(result.forecast);
+    const apply=document.getElementById('income-all-confirmed').checked;
+    document.getElementById('settlement-confirm-check').disabled=!apply;
+    if(!apply)document.getElementById('settlement-confirm-check').checked=false;
+  }
+
+  function findPeriodOfDate(y,m,d) {
+    const when = new Date(y,m-1,d);
+    return Object.keys(state.periodBudgets||{}).map(key=>{
+      const [yy,mm]=key.split('-').map(Number);return getPeriod(yy,mm);
+    }).find(p=>when>=p.start && when<p.end) || null;
+  }
+  function isLockedRecordDate(y,m,d) {
+    const period=findPeriodOfDate(y,m,d);
+    return Boolean(period && state.settledMonths?.[period.key]);
+  }
+  function settlementDisplayRow(label,value) {
+    const el=document.createElement('div');el.className='settlement-line';
+    const a=document.createElement('span');a.textContent=label;
+    const b=document.createElement('span');b.className='settlement-value';b.textContent=value;
+    el.append(a,b);return el;
+  }
+  function openSettlementSheet(periodKey) {
+    const key=periodKey||getViewPeriod().key;
+    const [y,m]=key.split('-').map(Number), p=getPeriod(y,m);
+    if(!state.periodBudgets?.[key])return alert('이 기간의 저장된 예산이 없습니다.');
+    const saved=state.settlementSnapshots?.[key];
+    const w=settlementWindow(p);
+    const isClosed=Boolean(state.settledMonths?.[key]);
+    if(!isClosed&&!w.preview&&!w.final&&!w.late)return alert('결산 미리보기는 기간 종료 3일 전부터 가능합니다.');
+    settlementSelectedKey=key;
+    settlementIncomeChoice=null;
+    const r=isClosed&&saved?saved:settlementPreview(p);
+    const b=isClosed&&saved?.budget?saved.budget:p.budget;
+    const recordedCount=isClosed&&saved ? (saved.incomeRecords||[]).length : incomesInPeriod(p).length;
+    const endDay=new Date(p.end);endDay.setDate(endDay.getDate()-1);
+    document.getElementById('settlement-title').textContent=`${formatPeriod(p)} ${isClosed?'결산 기록':w.preview?'결산 미리보기':'최종 결산'}`;
+    const summary=document.getElementById('settlement-summary');summary.replaceChildren();
+    [['수입 (결산 계산 기준)',toWon(r.actualIncome)],['고정지출',toWon(b.fixedExpenses)],
+      ['기본 저축·투자',toWon(b.baseSavings)],['생활비 예산',toWon(b.variableBudget)],
+      ['기록된 생활비 지출',toWon(r.spent)],['생활비 예산 차액',toWon(b.variableBudget-r.spent)]]
+      .forEach(([label,val])=>summary.appendChild(settlementDisplayRow(label,val)));
+    const main=document.createElement('div');main.className='settlement-highlight';
+    const small=document.createElement('div');small.textContent='계산상 예상 여유자금 (실제 이체액과 다를 수 있음)';small.style.cssText='font-size:12px;color:var(--brown)';
+    const amount=document.createElement('div');amount.textContent=toWon(r.forecast);amount.style.cssText='font-size:23px;font-weight:800;color:var(--primary-dark);margin-top:4px';
+    main.append(small,amount);summary.appendChild(main);
+    if(isClosed)summary.appendChild(settlementDisplayRow('결산 당시 확인한 실제 이체액',toWon(saved?.transferredAmount ?? state.settlementAmounts?.[key] ?? 0)));
+    const notes=[];
+    if(recordedCount)notes.push('수입 기록이 일부만 입력되었다면 실제 수입 전체와 일치하는지 확인하세요. 수입 기록이 있으면 그 합계를 결산 수입으로 사용합니다.');
+    else notes.push('수입 기록이 없어 마이 설정의 월수입을 기준으로 계산했습니다. 실제 수입과 다르면 먼저 기록을 점검하세요.');
+    if(b.variableBudget===0 && r.spent>0)notes.push('생활비 예산이 0원이지만 지출이 있습니다. 예산 적정성을 점검하세요.');
+    else if(b.variableBudget>0 && Math.abs(b.variableBudget-r.spent)>=b.variableBudget*.2)notes.push('생활비 예산과 실제 지출 차이가 큽니다. 다음 기간 예산이 적절한지 검토해 보세요. 자동으로 변경되지는 않습니다.');
+    notes.push('필요한 소비를 지나치게 참기보다, 오늘의 행복과 미래 준비를 함께 지켜주세요.');
+    const incomeBox=document.getElementById('settlement-income-check');
+    incomeBox.style.display=isClosed?'none':'block';
+    if(!isClosed){
+      const rows=incomesInPeriod(p);
+      const recorded=rows.reduce((sum,e)=>sum+e.amount,0);
+      document.getElementById('income-plan-display').textContent=toWon(b.income);
+      document.getElementById('income-actual-display').textContent=rows.length?toWon(recorded):'기록 없음';
+      document.getElementById('income-record-list').textContent=rows.length
+        ? rows.map(e=>`${e.month}/${e.day} ${e.category}: ${toWon(e.amount)}`).join(' · ')
+        : '달력에 기록된 수입이 없으므로 마이 설정 수입을 사용합니다.';
+      document.getElementById('income-choice-area').style.display=rows.length?'block':'none';
+      const radio=document.querySelector('input[name="settlement-income-source"][value="recorded"]');
+      if(radio)radio.checked=true;
+      document.getElementById('income-all-confirmed').checked=false;
+      document.getElementById('income-check-guidance').textContent=rows.length
+        ? `수입 기록 ${rows.length}건 · 설정 대비 ${toWon(recorded-b.income)} 차이. 일부 수입만 기록했다면 결산 전에 보완하거나 설정 수입을 선택하세요.`
+        : '실제 수입이 설정 수입과 다른 경우 달력 기록을 먼저 입력하고 다시 확인하세요.';
+    }
+    document.getElementById('settlement-guidance').textContent=notes.join('\n');
+    document.getElementById('settlement-guidance').style.whiteSpace='pre-line';
+    const isEditable=!isClosed&&(w.preview||w.final||w.late);
+    // 미리보기와 확정은 한 화면에서 진행. 급여일 이전은 확정 불가.
+    document.getElementById('settlement-input-area').style.display=!isClosed?'block':'none';
+    document.getElementById('settlement-confirm-check').checked=false;
+    document.getElementById('settlement-transfer-input').value='0원';
+    const btn=document.getElementById('settlement-confirm-btn');
+    btn.style.display=isClosed?'none':'flex';
+    btn.disabled=!isEditable;
+    btn.textContent=isEditable?'결산 확정':'결산 확정 불가';
+    btn.style.opacity=isEditable?'1':'0.55';
+    if(!isClosed)refreshSettlementIncomeChoice();
+    const amountInput=document.getElementById('settlement-transfer-input');
+    const confirmCheck=document.getElementById('settlement-confirm-check');
+    amountInput.disabled=!isEditable;confirmCheck.disabled=!isEditable || !document.getElementById('income-all-confirmed').checked;
+    document.getElementById('settlement-overlay').classList.add('active');
+  }
+  function closeSettlementSheet(){document.getElementById('settlement-overlay').classList.remove('active');settlementSelectedKey=null;}
+  function confirmSettlementSheet(){
+    if(!settlementSelectedKey)return;
+    const key=settlementSelectedKey,[y,m]=key.split('-').map(Number),p=getPeriod(y,m);
+    if(state.settledMonths?.[key])return alert('이미 결산이 완료된 기간입니다.');
+    const w=settlementWindow(p);
+    if(!w.preview&&!w.final&&!w.late)return alert('D-3부터 결산할 수 있습니다.');
+    if(state.legacyMoneyReview)return alert('마이에서 실제 모아둔 돈을 먼저 확인해주세요.');
+    if(!document.getElementById('income-all-confirmed').checked)return alert('이번 기간 전체 수입 확인에 체크해주세요.');
+    if(!document.getElementById('settlement-confirm-check').checked)return alert('수입·지출 기록과 실제 이체액 확인에 체크해주세요.');
+    const raw=document.getElementById('settlement-transfer-input').value.replace(/[,\s원]/g,'');
+    if(!/^\d+$/.test(raw)||!Number.isSafeInteger(Number(raw)))return alert('실제 이체금액을 0원 이상의 정수로 입력해주세요.');
+    const transfer=Number(raw);
+    if(!Number.isSafeInteger(state.currentSaved+transfer))return alert('목표 잔액이 안전한 숫자 범위를 초과합니다.');
+    if(!confirm(`${formatPeriod(p)} 결산을 확정할까요?\n실제 이체 확인액 ${toWon(transfer)}만 목표 잔액에 추가됩니다.\n확정 후 해당 기간의 원래 기록은 잠깁니다. 조기 결산 이후 추가 거래는 별도 저장되어 리포트에서 확인할 수 있습니다.`))return;
+    const r=settlementPreview(p),oldState=JSON.stringify(state);
+    state.settlementSnapshots=state.settlementSnapshots||{};
+    state.settlementAmounts=state.settlementAmounts||{};
+    state.settledMonths=state.settledMonths||{};
+    state.settlementSnapshots[key]={periodId:key,confirmedAt:new Date().toISOString(),budget:{...p.budget},
+      incomeRecords:JSON.parse(JSON.stringify(incomesInPeriod(p))),
+      expenseRecords:JSON.parse(JSON.stringify(expensesInPeriod(p))),
+      noSpendDates:Object.keys(state.dailyRecords).filter(k=>dateInPeriod(k,p)&&state.dailyRecords[k]?.type==='NO_SPEND'),
+      ...r,incomeSource:settlementIncomeChoice,transferredAmount:transfer};
+    state.settledMonths[key]=true;
+    state.settlementAmounts[key]=transfer;
+    state.currentSaved+=transfer;
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+    catch(err){state=JSON.parse(oldState);alert('저장에 실패하여 결산을 취소했습니다.');return;}
+    closeSettlementSheet();
+    syncViewSpent();renderCalendar();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();updateReportScreen();
+    alert(`${formatPeriod(p)} 결산 완료! 실제 이체 확인액 ${toWon(transfer)}만 목표 잔액에 반영했습니다.`);
+  }
+  // 홈 결산 버튼과 리포트 미결산 버튼이 같은 결산 화면을 사용하도록 연결
+  executeMonthlySettlement=function(){openSettlementSheet(getViewPeriod().key);};
+  renderLateSettlements=function(){
+    const box=document.getElementById('late-settlement-list');box.replaceChildren();
+    const due=Object.keys(state.periodBudgets||{}).filter(k=>!state.settledMonths?.[k])
+      .map(k=>{const [y,m]=k.split('-').map(Number);return getPeriod(y,m);})
+      .filter(p=>settlementWindow(p).late).sort((a,b)=>a.start-b.start);
+    box.style.display=due.length?'block':'none';if(!due.length)return;
+    const title=document.createElement('strong');title.textContent='미결산 기간 정리';box.appendChild(title);
+    due.forEach(p=>{const btn=document.createElement('button');btn.className='btn-secondary';btn.style.marginTop='8px';
+      btn.textContent=`${formatPeriod(p)} 지연 결산`;btn.onclick=()=>openSettlementSheet(p.key);box.appendChild(btn);});
+  };
+  // 결산을 마친 급여기간에 새로운 수입 기록을 추가하거나 삭제하지 못하게 합니다.
+  const beforeSettlementSubmitIncome=submitIncome;
+  submitIncome=function(){
+    if(isLockedRecordDate(selectedYearForExpense,selectedMonthForExpense,selectedDayForExpense))return alert('결산 완료된 기간에는 수입을 추가할 수 없습니다.');
+    return beforeSettlementSubmitIncome();
+  };
+  const beforeSettlementDeleteIncome=deleteIncome;
+  deleteIncome=function(id){
+    const row=(state.incomeHistory||[]).find(r=>r.id===id);
+    if(row&&isLockedRecordDate(row.year,row.month,row.day))return alert('결산 완료된 수입 기록은 삭제할 수 없습니다.');
+    return beforeSettlementDeleteIncome(id);
+  };
+  const beforeSettlementNoSpend=actionNoSpend;
+  actionNoSpend=function(){
+    const t=new Date();
+    if(isLockedRecordDate(t.getFullYear(),t.getMonth()+1,t.getDate()))return alert('결산 완료된 기간에는 무지출 기록을 추가할 수 없습니다.');
+    return beforeSettlementNoSpend();
+  };
+  /* ===== 결산 A안 끝 ===== */
+
+  /* ===== 개발용 샘플 데이터: 실제 사용자 저장 공간과 분리 ===== */
+  function createDemoState() {
+    const records = [
+      [2026,8,26,25000,'🍚 식비'], [2026,8,28,65000,'🛒 마트'],
+      [2026,8,30,12000,'☕ 카페/간식'], [2026,9,2,40000,'🚕 교통'],
+      [2026,9,5,80000,'🛍️ 쇼핑'], [2026,9,9,32000,'🍚 식비'],
+      [2026,9,13,55000,'🛒 마트'], [2026,9,18,23000,'🍚 식비'],
+      [2026,9,22,18000,'☕ 카페/간식'],
+      [2026,9,26,25000,'🍚 식비'], [2026,9,28,65000,'🛒 마트'],
+      [2026,10,1,80000,'🛍️ 쇼핑'], [2026,10,3,12000,'☕ 카페/간식'],
+      [2026,10,7,35000,'🍚 식비'], [2026,10,10,20000,'🚕 교통'],
+      [2026,10,12,45000,'🛒 마트']
+    ];
+    const expenseHistory = records.map(([year,month,day,amount,category], i) =>
+      ({id:10001+i,year,month,day,amount,category}));
+    const dailyRecords = {};
+    for (const e of expenseHistory) {
+      const key = `${e.year}-${e.month}-${e.day}`;
+      dailyRecords[key] = {amount:e.amount,type:e.amount<=33000?'GREEN':'YELLOW'};
+    }
+    // 지출이 없는 날짜에만 무지출 표식. 실제 목표계좌 잔액은 변하지 않습니다.
+    for (const key of ['2026-8-29','2026-9-7','2026-9-15','2026-9-30','2026-10-5']) {
+      dailyRecords[key] = {amount:0,type:'NO_SPEND'};
+    }
+    const b = {income:3000000,fixedExpenses:700000,baseSavings:500000,
+      variableBudget:1000000,surplus:800000,payday:25};
+    const firstPeriodExpenses = expenseHistory.filter(e =>
+      new Date(e.year,e.month-1,e.day) >= new Date(2026,7,25) &&
+      new Date(e.year,e.month-1,e.day) < new Date(2026,8,25));
+    const firstSpent = firstPeriodExpenses.reduce((s,e)=>s+e.amount,0);
+    const confirmedTransfer = 550000; // 실제 이체를 가정한 가상 확정 금액
+    return {
+      ...defaultState,
+      schemaVersion:2,
+      isUserOnboarded:true,
+      startYear:2026,startMonth:8,startDate:'2026-8-25',
+      payday:25,income:3000000,fixedExpenses:700000,baseSavings:500000,
+      variableBudget:1000000,surplus:800000,currentSaved:confirmedTransfer,
+      fixedList:[
+        {id:1,name:'월세',day:25,amount:500000},
+        {id:2,name:'통신비',day:10,amount:100000},
+        {id:3,name:'보험료',day:15,amount:100000}
+      ],
+      targetGoalName:'여행 자금 만들기',targetGoalAmount:3000000,
+      expenseHistory,dailyRecords,noSpendDays:5,
+      periodBudgets:{'2026-8':{...b},'2026-9':{...b}},
+      settledMonths:{'2026-8':true},settlementAmounts:{'2026-8':confirmedTransfer},
+      settlementSnapshots:{'2026-8':{
+        periodId:'2026-8',confirmedAt:'2026-09-25T00:00:00+09:00',
+        budget:{...b},incomeRecords:[],expenseRecords:firstPeriodExpenses,
+        actualIncome:3000000,spent:firstSpent,variablePerformance:1000000-firstSpent,
+        plannedSurplus:800000,forecast:1800000-firstSpent,
+        recordedIncomeCount:0,transferredAmount:confirmedTransfer
+      }},
+      incomeHistory:[],giftHistory:[],legacyMoneyReview:false,
+      currentSpent:0,viewYear:2026,viewMonth:9,
+      showFixedInCal:true
+    };
+  }
+
+  function initializeDemoData() {
+    if (!DEMO_MODE) return;
+    const query = new URLSearchParams(location.search);
+    if (query.get('resetDemo') === '1') localStorage.removeItem(STORAGE_KEY);
+    if (localStorage.getItem(STORAGE_KEY) === null) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(createDemoState()));
+    }
+  }
+  /* ===== 개발용 샘플 데이터 끝 ===== */
+
+  /* ===== 급여일 다음 기간 적용 + 테스트 날짜 (개발용만) ===== */
+  const DEMO_TEST_DATE = (() => {
+    if (!DEMO_MODE) return null;
+    const value = new URLSearchParams(location.search).get('testDate');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return null;
+    const [y,m,d] = value.split('-').map(Number);
+    const date = new Date(y,m-1,d);
+    return date.getFullYear()===y && date.getMonth()+1===m && date.getDate()===d ? date : null;
+  })();
+  function jampleClock() { return DEMO_TEST_DATE ? new Date(DEMO_TEST_DATE) : new Date(); }
+  function parseLocalDay(str) {const [y,m,d]=str.split('-').map(Number);return new Date(y,m-1,d);}
+  const baseActivePeriod = activePeriod;
+  activePeriod=function(date=jampleClock()) {
+    const pending=state.pendingPayday;
+    if(pending) {
+      const boundary=parseLocalDay(pending.effectiveDate);
+      if(date < boundary || !state.paydayTransition) {const p=new Date(boundary);p.setDate(p.getDate()-1);return baseActivePeriod(p);}
+      const tEnd=parseLocalDay(pending.transitionEnd);
+      if(date < tEnd) {const [y,m]=pending.transitionKey.split('-').map(Number);return {y,m};}
+      let y=date.getFullYear(),m=date.getMonth()+1;
+      if(date<paydayDate(y,m,pending.day)){m--;if(m===0){m=12;y--;}}
+      return {y,m};
+    }
+    return baseActivePeriod(date);
+  };
+  const baseGetPeriod=getPeriod;
+  getPeriod=function(y,m) {
+    const p=baseGetPeriod(y,m);
+    const transition=state.paydayTransition || state.pendingPayday;
+    if(transition && p.key===transition.transitionKey) {
+      p.start=parseLocalDay(transition.effectiveDate);
+      p.end=parseLocalDay(transition.transitionEnd);
+    }
+    return p;
+  };
+  function applyPendingPaydayIfDue(manual=false) {
+    if (!manual) return false; // 급여일 도달만으로 자동 전환하지 않음
+    const pending=state.pendingPayday;
+    if(!pending || jampleClock()<parseLocalDay(pending.effectiveDate))return false;
+    state.paydayTransition={...pending};
+    state.payday=pending.day;
+    delete state.pendingPayday;
+    const [y,m]=pending.transitionKey.split('-').map(Number);
+    const key=pending.transitionKey;
+    const p=getPeriod(y,m);
+    const ratio=periodLength(p)/Math.max(1,periodLength({start:paydayDate(y,m,pending.day),end:paydayDate(y,m+1,pending.day)}));
+    const snap=budgetSnapshot();
+    state.periodBudgets[key]={...snap,fullVariableBudget:snap.variableBudget,variableBudget:Math.round(snap.variableBudget*ratio),surplus:Math.round(snap.surplus*ratio),allocationDays:periodLength(p),isTransition:true};
+    saveStateToLocalStorage();
+    return true;
+  }
+  const baseInitializeBudgetV2=initializeBudgetV2;
+  initializeBudgetV2=function() {
+    baseInitializeBudgetV2(); // 사용자의 전환 확인 전까지 기존 기간 유지
+  };
+  const baseRollPeriodForward=rollPeriodForward;
+  rollPeriodForward=function() {
+    if(false) { // 수동 결산 확정 전 자동 급여기간 전환 금지
+      const a=activePeriod(),key=`${a.y}-${a.m}`;
+      if(!state.periodBudgets[key])state.periodBudgets[key]=budgetSnapshot();
+      state.viewYear=a.y;state.viewMonth=a.m;
+      syncViewSpent();renderCalendar();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();
+      saveStateToLocalStorage();
+    }
+    // 기존 자동 기간 변경 기능을 유지합니다.
+    baseRollPeriodForward();
+  };
+  const baseSettlementWindow=settlementWindow;
+  settlementWindow=function(p,date=jampleClock()){return baseSettlementWindow(p,date);};
+  const baseRemainingDays=remainingDays;
+  remainingDays=function(p){
+    if(!DEMO_TEST_DATE)return baseRemainingDays(p);
+    const today=jampleClock(),from=today<p.start?p.start:today;
+    if(today>=p.end)return 0;
+    return Math.max(0,Math.round((Date.UTC(p.end.getFullYear(),p.end.getMonth(),p.end.getDate())-Date.UTC(from.getFullYear(),from.getMonth(),from.getDate()))/86400000));
+  };
+  const baseIsFutureDate=isFutureDate;
+  isFutureDate=function(y,m,d){return DEMO_TEST_DATE ? new Date(y,m-1,d)>jampleClock() : baseIsFutureDate(y,m,d);};
+  const baseSwitchForPayday=switchTab;
+  switchTab=function(tab,el){baseSwitchForPayday(tab,el);if(tab==='my'){
+    const note=document.getElementById('payday-change-hint');
+    if(note)note.textContent=state.pendingPayday ? `급여일 ${state.pendingPayday.day}일 변경 예약: ${state.pendingPayday.effectiveDate}부터 적용` : '급여일 변경은 다음 급여기간부터 적용되며 이미 확정한 결산은 보존됩니다.';
+  }};
+  function finishManualPaydayTransition() {
+    if(!DEMO_MODE || !state.pendingPayday)return;
+    const old=state.pendingPayday;
+    if(jampleClock()<parseLocalDay(old.effectiveDate))return alert('기존 기간 종료일 이후에 전환할 수 있습니다.');
+    const oldEnd=parseLocalDay(old.effectiveDate);
+    const prior=new Date(oldEnd);prior.setDate(prior.getDate()-1);
+    const oldPeriod=baseActivePeriod(prior),oldKey=`${oldPeriod.y}-${oldPeriod.m}`;
+    if(!state.settledMonths[oldKey])return openSettlementSheet(oldKey);
+    if(!applyPendingPaydayIfDue(true))return;
+    const a=activePeriod(),key=`${a.y}-${a.m}`;
+    if(!state.periodBudgets[key])state.periodBudgets[key]=budgetSnapshot();
+    state.viewYear=a.y;state.viewMonth=a.m;
+    saveStateToLocalStorage();syncViewSpent();renderCalendar();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();updateReportScreen();
+    refreshTransitionTestUI();
+    alert(`급여일 ${old.day}일로 전환했습니다. ${formatPeriod(getViewPeriod())} 전환기간의 홈·리포트 예산을 확인해주세요.`);
+  }
+  function beginManualPaydayTransition() {
+    if(!DEMO_MODE)return;
+    const pending=state.pendingPayday;
+    if(!pending)return alert('마이 탭에서 급여일 변경을 먼저 예약해주세요.');
+    if(jampleClock()<parseLocalDay(pending.effectiveDate))return alert('전환 예정일이 아직 아닙니다.');
+    const d=parseLocalDay(pending.effectiveDate);d.setDate(d.getDate()-1);
+    const a=baseActivePeriod(d),oldKey=`${a.y}-${a.m}`;
+    if(!state.settledMonths[oldKey])openSettlementSheet(oldKey);
+    else finishManualPaydayTransition();
+  }
+  function refreshTransitionTestUI(){
+    const btn=document.getElementById('demo-payday-transition-btn');
+    if(!btn)return;
+    const pending=state.pendingPayday;
+    btn.style.display=pending&&jampleClock()>=parseLocalDay(pending.effectiveDate)?'inline-block':'none';
+    btn.textContent=pending?`급여일 전환 · ${pending.day}일 (결산 후 적용)`:'급여일 전환';
+    const status=document.getElementById('demo-payday-status');
+    if(status)status.textContent=pending?`전환 대기 · 기존 기간을 결산해야 새 급여일 적용`:(state.paydayTransition?'전환 완료 · 전환기간 확인 가능':'마이 탭에서 급여일 예약');
+  }
+  function changeDemoTestDate(value) {
+    if(!DEMO_MODE)return;
+    const url=new URL(location.href);
+    if(value)url.searchParams.set('testDate',value);else url.searchParams.delete('testDate');
+    url.searchParams.delete('resetDemo');
+    location.href=url.toString();
+  }
+  function installDemoDateBar() {
+    if(!DEMO_MODE)return;
+    const bar=document.createElement('div');bar.style.cssText='background:#FFF5E8;border-bottom:1px solid #F1D6B7;padding:6px 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:#70451E;z-index:10';
+    const label=document.createElement('strong');label.textContent='개발 테스트 날짜';bar.appendChild(label);
+    const select=document.createElement('select');select.style.cssText='font-size:11px;padding:4px;border-radius:6px;border:1px solid #D8B890;max-width:170px';
+    const options=[['','실제 날짜'],['2026-10-14','10/14 변경 실습'],['2026-10-22','10/22 결산 미리보기'],['2026-10-25','10/25 급여일 전환'],['2026-11-09','11/9 전환기간 종료'],['2026-11-10','11/10 새 결산일']];
+    options.forEach(([value,label])=>{const opt=document.createElement('option');opt.value=value;opt.textContent=label;select.appendChild(opt)});
+    select.value=DEMO_TEST_DATE?localDateKey(DEMO_TEST_DATE):'';
+    select.onchange=()=>changeDemoTestDate(select.value);
+    bar.appendChild(select);
+    const transitionBtn=document.createElement('button');transitionBtn.id='demo-payday-transition-btn';transitionBtn.className='btn-secondary';transitionBtn.style.cssText='font-size:11px;padding:6px 8px;width:auto;display:none';transitionBtn.onclick=beginManualPaydayTransition;bar.appendChild(transitionBtn);
+    const status=document.createElement('span');status.id='demo-payday-status';bar.appendChild(status);
+    const note=document.createElement('span');note.textContent='실제 기기 날짜는 변경하지 않습니다';bar.appendChild(note);const quick=document.createElement('span');quick.id='payday-immediate-status';quick.style.cssText='width:100%;font-weight:600';bar.appendChild(quick);
+    const frame=document.querySelector('.app-frame');
+    if(frame)frame.insertBefore(bar,frame.firstChild);
+    refreshTransitionTestUI();
+  }
+  /* ===== 결산 우선: 기간 전환은 결산 확인 후 ===== */
+  function unsettledEndedPeriods() {
+    const today=jampleClock();
+    return Object.keys(state.periodBudgets || {})
+      .filter(key=>!state.settledMonths?.[key])
+      .map(key=>{const [y,m]=key.split('-').map(Number);return getPeriod(y,m);})
+      .filter(p=>p.end<=today)
+      .sort((a,b)=>b.end-a.end);
+  }
+  const initBeforeManualSettlement=initializeBudgetV2;
+  initializeBudgetV2=function(){
+    initBeforeManualSettlement();
+    if(!DEMO_MODE || !state.isUserOnboarded)return;
+    // 초기화가 새 급여기간을 생성했더라도 미결산 이전 기간을 먼저 보여준다.
+    const awaiting=state.manualTransitionAwaiting;
+    if(awaiting && state.settledMonths?.[awaiting]) {
+      const [y,m]=awaiting.split('-').map(Number);
+      state.viewYear=y;state.viewMonth=m;
+    } else {
+      const old=unsettledEndedPeriods()[0];
+      if(old){state.viewYear=old.y;state.viewMonth=old.m;}
+    }
+    syncViewSpent();saveStateToLocalStorage();
+  };
+  function advanceAfterManualSettlement(key) {
+    const [y,m]=key.split('-').map(Number);
+    const prior=getPeriod(y,m);
+    if(!state.settledMonths?.[key])return openSettlementSheet(key);
+    if(state.pendingPayday && localDateKey(prior.end)===state.pendingPayday.effectiveDate){
+      delete state.manualTransitionAwaiting;
+      finishManualPaydayTransition();return;
+    }
+    const a=baseActivePeriod(jampleClock()),nextKey=`${a.y}-${a.m}`;
+    if(!state.periodBudgets[nextKey])state.periodBudgets[nextKey]=budgetSnapshot();
+    state.viewYear=a.y;state.viewMonth=a.m;
+    delete state.manualTransitionAwaiting;
+    saveStateToLocalStorage();
+    syncViewSpent();renderCalendar();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();updateReportScreen();
+    refreshTransitionTestUI();
+    alert(`${formatPeriod(prior)} 결산을 보존하고 ${formatPeriod(getViewPeriod())} 관리기간으로 전환했습니다.`);
+  }
+  beginManualPaydayTransition=function(){
+    if(!DEMO_MODE)return;
+    if(state.manualTransitionAwaiting && state.settledMonths?.[state.manualTransitionAwaiting]){
+      return advanceAfterManualSettlement(state.manualTransitionAwaiting);
+    }
+    const old=unsettledEndedPeriods()[0];
+    if(old){
+      state.manualTransitionAwaiting=old.key;
+      saveStateToLocalStorage();
+      return openSettlementSheet(old.key);
+    }
+    if(state.pendingPayday){return alert('급여일 변경 예정일이 아직 오지 않았거나 이전 기간 결산이 완료되었습니다.');}
+    alert('현재 결산할 이전 관리기간이 없습니다.');
+  };
+  refreshTransitionTestUI=function(){
+    const btn=document.getElementById('demo-payday-transition-btn');
+    if(!btn || !DEMO_MODE)return;
+    const awaiting=state.manualTransitionAwaiting;
+    const ready=awaiting && state.settledMonths?.[awaiting];
+    const old=unsettledEndedPeriods()[0];
+    const pending=state.pendingPayday;
+    btn.style.display=(ready || old)?'inline-block':'none';
+    btn.textContent=ready?'결산 완료 · 다음 기간으로 전환':old?`${formatPeriod(old)} 결산하기`:'급여기간 전환';
+    const status=document.getElementById('demo-payday-status');
+    if(status)status.textContent=ready?'실제 이체액 확인 완료 · 수동 전환 대기':old?'이전 기간 결산 후 새 급여기간을 시작합니다':pending?`급여일 ${pending.day}일 변경 예약 · 아직 전환일 전`:'마이 탭에서 급여일 예약';
+  };
+  const confirmSettlementBeforeTransition=confirmSettlementSheet;
+  confirmSettlementSheet=function(){
+    confirmSettlementBeforeTransition();
+    if(DEMO_MODE)refreshTransitionTestUI();
+  };
+  /* ===== 결산 우선 패치 끝 ===== */
+  window.addEventListener('DOMContentLoaded', installDemoDateBar);
+  /* ===== 테스트 및 급여일 전환 끝 ===== */
+
+
+/* ===== 급여일 즉시 변경: 결산과 독립된 검증 정책 A =====
+ * 변경일 이후에만 전환 예산을 적용합니다. 저장된 과거 결산 스냅샷은 손대지 않습니다.
+ */
+function dayDifference(a,b){return Math.round((Date.UTC(b.getFullYear(),b.getMonth(),b.getDate())-Date.UTC(a.getFullYear(),a.getMonth(),a.getDate()))/86400000);}
+function upcomingPayday(from,day){
+  let y=from.getFullYear(),m=from.getMonth()+1;
+  let candidate=paydayDate(y,m,day);
+  if(candidate<=from) candidate=paydayDate(y,m+1,day);
+  return candidate;
+}
+function setDayOnInput(id,val){const el=document.getElementById(id);if(el)el.value=toWon(val);}
+function transitionNotice(){
+  const t=state.immediatePaydayTransition;
+  if(!t)return null;
+  const today=jampleClock();
+  const start=parseLocalDay(t.start),end=parseLocalDay(t.end);
+  if(today<start || today>=end)return null;
+  return `달력은 새 급여주기 전체를 표시합니다. 생활비는 변경일 ${t.start}부터 남은 ${dayDifference(start,end)}일분만 배정했어요. 변경 전 날짜는 조회용이며 새 예산에서 중복 차감되지 않습니다. 수입·고정지출·기본 저축은 마이 설정값을 사용하므로 예상 여유자금은 참고용입니다. 새로운 급여일 기준 온전한 한 달의 실적은 다음 정상기간 종료 후 확인할 수 있어요.`;
+}
+const _periodBeforeImmediate=getPeriod;
+getPeriod=function(y,m){
+  const p=_periodBeforeImmediate(y,m);
+  const custom=state.periodDateRanges?.[p.key];
+  if(custom){p.start=parseLocalDay(custom.start);p.end=parseLocalDay(custom.end);p.budget=state.periodBudgets[p.key]||p.budget;}
+  return p;
+};
+const _activeBeforeImmediate=activePeriod;
+activePeriod=function(date=jampleClock()){
+  const t=state.immediatePaydayTransition;
+  if(t){
+    const start=parseLocalDay(t.start),end=parseLocalDay(t.end);
+    if(date>=start && date<end)return {y:t.year,m:t.month};
+    if(date<start){
+      const p=Object.keys(state.periodBudgets||{}).map(k=>{const a=k.split('-').map(Number);return getPeriod(a[0],a[1]);}).find(p=>date>=p.start&&date<p.end);
+      if(p)return {y:p.y,m:p.m};
+    }
+  }
+  return _activeBeforeImmediate(date);
+};
+const _switchBeforeImmediate=switchTab;
+switchTab=function(name,el){
+  _switchBeforeImmediate(name,el);
+  if(name==='my'){
+    const note=document.getElementById('payday-change-hint');
+    if(note)note.textContent='급여일을 저장하면 오늘부터 새 관리기간으로 전환합니다. 첫 기간은 남은 일수 기준 임시 예산입니다.';
+  }
+};
+function updatePaydayTransitionNotices(){
+  const msg=transitionNotice();
+  const home=document.getElementById('payday-immediate-home-note');
+  const report=document.getElementById('payday-immediate-report-note');
+  const p=getViewPeriod();
+  [home,report].forEach(el=>{if(el){el.style.display=msg&&p.budget.isTransition?'block':'none';el.textContent=msg||'';}});
+  const summary=document.getElementById('payday-immediate-status');
+  if(summary && DEMO_MODE){
+    summary.textContent=state.immediatePaydayTransition
+      ? `전환 ${state.immediatePaydayTransition.start} ~ ${state.immediatePaydayTransition.end} 전날 · 새 급여일 ${state.payday}일 · 현재 표시 ${formatPeriod(p)}`
+      : `현재 급여일 ${state.payday}일 · 표시 기간 ${formatPeriod(p)}`;
+  }
+}
+// 급여일 변경 후 달력은 새 급여일 기준 한 주기를 표시합니다.
+// 계산/결산의 시작일은 변경일로 유지하고, 이전 날짜의 거래는 조회만 허용합니다.
+function getTransitionCalendarRange(){
+  const t=state.immediatePaydayTransition;
+  if(!t)return null;
+  const p=getViewPeriod();
+  if(!p.budget.isTransition)return null;
+  const effective=parseLocalDay(t.start);
+  const today=jampleClock();
+  if(today<effective || today>=parseLocalDay(t.end))return null;
+  const calendarStart=paydayDate(effective.getFullYear(),effective.getMonth()+1,t.newPayday);
+  // 새 급여일이 변경일 이후에 있다면 이전 달 급여일부터 시작합니다.
+  const start=calendarStart>effective
+    ? paydayDate(effective.getFullYear(),effective.getMonth(),t.newPayday)
+    : calendarStart;
+  return {start,end:parseLocalDay(t.end),effective};
+}
+function renderFullPaydayCalendar(){
+  const r=getTransitionCalendarRange();
+  if(!r)return false;
+  const grid=document.getElementById('calendar-grid');
+  grid.replaceChildren();
+  for(const label of ['일','월','화','수','목','금','토']){
+    const el=document.createElement('div');el.className='cal-day-label';el.textContent=label;grid.appendChild(el);
+  }
+  let first=new Date(r.start),end=new Date(r.end);
+  if(!state.isExpandedCal){
+    let cursor=new Date(selectedYearForExpense,selectedMonthForExpense-1,selectedDayForExpense);
+    if(cursor<r.start || cursor>=r.end){cursor=jampleClock();}
+    if(cursor<r.start || cursor>=r.end)cursor=new Date(r.effective);
+    first=new Date(cursor);first.setDate(cursor.getDate()-cursor.getDay());
+    end=new Date(first);end.setDate(first.getDate()+7);
+  }else{
+    for(let i=0;i<first.getDay();i++)grid.appendChild(document.createElement('div'));
+  }
+  for(let d=new Date(first);d<end;d.setDate(d.getDate()+1)){
+    if(d<r.start || d>=r.end){grid.appendChild(document.createElement('div'));continue;}
+    const cell=createDayCell(d.getDate(),d.getFullYear(),d.getMonth()+1);
+    cell.querySelector('.cal-day-text').textContent=`${d.getMonth()+1}/${d.getDate()}`;
+    if(d<r.effective){
+      cell.style.opacity='0.48';
+      cell.style.background='#EEF0F3';
+      cell.style.cursor='default';
+      cell.title='급여일 변경 전 기록: 달력에는 표시되지만 새 생활비 계산에는 포함되지 않습니다.';
+      cell.onclick=()=>alert('변경일 이전의 기록입니다. 새 생활비 예산에는 포함되지 않으며, 과거 기록은 보존됩니다.');
+    }
+    grid.appendChild(cell);
+  }
+  const last=new Date(r.end);last.setDate(last.getDate()-1);
+  document.getElementById('cal-month-title').textContent=`${r.start.getMonth()+1}/${r.start.getDate()}~${last.getMonth()+1}/${last.getDate()} (급여주기)`;
+  const label=document.getElementById('target-budget-label');
+  if(label)label.textContent=`전환기간 ${dayDifference(r.effective,r.end)}일 생활비 ${toWon(getViewPeriod().budget.variableBudget)}`;
+  return true;
+}
+const _renderCalendarBeforeImmediate=renderCalendar;
+renderCalendar=function(){
+  _renderCalendarBeforeImmediate();
+  renderFullPaydayCalendar();
+  updatePaydayTransitionNotices();
+};
+function transitionBudgetDetails(){
+  const p=getViewPeriod(),b=p.budget;
+  if(!b.isTransition)return null;
+  const records=expensesInPeriod(p);
+  const spent=records.reduce((sum,e)=>sum+e.amount,0);
+  const days=periodLength(p);
+  const remaining=b.variableBudget-spent;
+  const forecast=b.income-b.fixedExpenses-b.baseSavings-spent;
+  const last=new Date(p.end);last.setDate(last.getDate()-1);
+  return {p,b,spent,days,remaining,forecast,last};
+}
+function renderTransitionBudgetDetails(){
+  const details=transitionBudgetDetails();
+  const home=document.getElementById('payday-budget-debug');
+  const report=document.getElementById('payday-report-debug');
+  for(const el of [home,report]){
+    if(!el)continue;
+    el.style.display=(DEMO_MODE && details)?'block':'none';
+    if(!DEMO_MODE || !details){el.textContent='';continue;}
+    const {p,b,spent,days,remaining,forecast,last}=details;
+    const start=state.immediatePaydayTransition?.start || localDateKey(p.start);
+    const normalBudget=b.fullVariableBudget ?? state.variableBudget;
+    const normalDays=Number(b.originalAllocationDays || 0);
+    const oldPerDay=Number.isFinite(b.originalDailyBudget)?b.originalDailyBudget:null;
+    el.replaceChildren();
+    const h=document.createElement('strong');h.textContent='🧪 전환기간 계산 확인';el.appendChild(h);
+    const lines=[
+      `생활비 계산기간: ${start} ~ ${localDateKey(last)} (${days}일)`,
+      oldPerDay===null ? `기존 월 예산: ${toWon(normalBudget)}` : `변경 전 하루 생활비: ${Math.round(oldPerDay).toLocaleString()}원`,
+      `배정 생활비: ${toWon(b.variableBudget)}`,
+      `해당 기간 기록 지출: ${toWon(spent)}`,
+      `남은 생활비: ${toWon(remaining)}`,
+      `예상 여유자금: ${toWon(b.income)} − ${toWon(b.fixedExpenses)} − ${toWon(b.baseSavings)} − ${toWon(spent)} = ${toWon(forecast)}`,
+      '※ 전환기간은 수입·고정지출·선저축을 월 설정 기준으로 표시하므로 여유자금은 참고용입니다.'
+    ];
+    lines.forEach(line=>{const div=document.createElement('div');div.textContent=line;el.appendChild(div);});
+  }
+}
+const _reportBeforeImmediate=updateReportScreen;
+updateReportScreen=function(){_reportBeforeImmediate();updatePaydayTransitionNotices();renderTransitionBudgetDetails();};
+const _waterBeforeImmediate=updateWaterLevel;
+updateWaterLevel=function(){_waterBeforeImmediate();updatePaydayTransitionNotices();renderTransitionBudgetDetails();};
+
+saveMySettings=function(){
+  const get=id=>document.getElementById(id);
+  const newPayday=parseNumber(get('my-payday').value);
+  const income=parseNumber(get('my-income').value);
+  const baseSavings=parseNumber(get('my-base-savings').value);
+  const variableBudget=parseNumber(get('my-variable').value);
+  const targetGoalAmount=parseNumber(get('my-goal-amt').value);
+  const actualSaved=parseNumber(get('my-actual-saved').value);
+  const fixedExpenses=state.fixedList.reduce((sum,i)=>sum+Number(i.amount||0),0);
+  if(newPayday<1||newPayday>31)return alert('급여일은 1~31일로 입력해주세요.');
+  if(targetGoalAmount<=0)return alert('목표금액을 1원 이상 입력해주세요.');
+  if(income<fixedExpenses+baseSavings+variableBudget)return alert('고정지출·선저축·생활비 합계가 수입보다 큽니다.');
+  if(![income,baseSavings,variableBudget,targetGoalAmount,actualSaved,fixedExpenses].every(Number.isSafeInteger))return alert('금액을 확인해주세요.');
+  const changed=newPayday!==state.payday;
+  const today=jampleClock();today.setHours(0,0,0,0);
+  const a=activePeriod(today),oldKey=`${a.y}-${a.m}`;
+  if(changed && state.immediatePaydayTransition && today<parseLocalDay(state.immediatePaydayTransition.end)){
+    return alert('현재 급여일 전환기간이 끝난 뒤 다시 변경할 수 있어요.');
+  }
+  if(state.settledMonths?.[oldKey])return alert('이미 확정된 결산 기간은 수정할 수 없습니다.');
+  const before=JSON.stringify(state);
+  const oldPeriod=getPeriod(a.y,a.m);
+  const oldDaily=oldPeriod.budget.variableBudget/Math.max(1,periodLength(oldPeriod));
+  state.income=income;state.fixedExpenses=fixedExpenses;state.baseSavings=baseSavings;
+  state.variableBudget=variableBudget;state.surplus=income-fixedExpenses-baseSavings-variableBudget;
+  state.showFixedInCal=get('my-toggle-fixed').checked;
+  state.targetGoalName=get('my-goal-name').value.trim()||'목표 목적';
+  state.targetGoalAmount=targetGoalAmount;state.currentSaved=actualSaved;state.legacyMoneyReview=false;
+  state.periodBudgets=state.periodBudgets||{};
+  state.periodDateRanges=state.periodDateRanges||{};
+  if(changed){
+    const next=upcomingPayday(today,newPayday);
+    const transitionKey=`${today.getFullYear()}-${today.getMonth()+1}`;
+    // 같은 달에 정상기간이 다시 시작하면 키가 겹치므로 아직 변경 확정하지 않음.
+    if(next.getFullYear()===today.getFullYear() && next.getMonth()===today.getMonth()){
+      state=JSON.parse(before);
+      return alert('변경할 급여일이 이번 달에 다시 도래하는 경우는 기간 식별 충돌을 방지하기 위해 이번 테스트에서 제한합니다. 우선 25일 → 10일 변경을 검증해주세요.');
+    }
+    if(oldKey===transitionKey){state=JSON.parse(before);return alert('기존 기간과 새 전환기간의 저장 키가 겹칩니다. 다른 테스트 날짜에서 확인해주세요.');}
+    if(state.periodBudgets[transitionKey] || state.settledMonths?.[transitionKey]){
+      state=JSON.parse(before);return alert('새 전환기간에 이미 기록이 있습니다. 안전한 변경을 위해 별도 정리 후 적용해야 합니다.');
+    }
+    const startKey=localDateKey(today),endKey=localDateKey(next);
+    state.periodDateRanges[oldKey]={start:localDateKey(oldPeriod.start),end:startKey};
+    const days=dayDifference(today,next);
+    const allocated=Math.round(oldDaily*days);
+    state.periodBudgets[transitionKey]={...budgetSnapshot(),variableBudget:allocated,
+      fullVariableBudget:variableBudget,allocationDays:days,
+      surplus:income-fixedExpenses-baseSavings-allocated,
+      isTransition:true,startedOn:startKey,originalDailyBudget:oldDaily,originalAllocationDays:periodLength(oldPeriod)};
+    state.periodDateRanges[transitionKey]={start:startKey,end:endKey};
+    state.immediatePaydayTransition={start:startKey,end:endKey,year:today.getFullYear(),month:today.getMonth()+1,oldPayday:state.payday,newPayday};
+    state.payday=newPayday;
+    delete state.pendingPayday;
+    delete state.paydayTransition;
+    state.viewYear=today.getFullYear();state.viewMonth=today.getMonth()+1;
+  }else{
+    const prev=state.periodBudgets[oldKey];
+    state.periodBudgets[oldKey]=prev?.isTransition
+      ? {...prev,income,fixedExpenses,baseSavings,fullVariableBudget:variableBudget,surplus:income-fixedExpenses-baseSavings-prev.variableBudget}
+      : {...budgetSnapshot(),...(prev?.startedOn?{startedOn:prev.startedOn}: {})};
+    state.viewYear=a.y;state.viewMonth=a.m;
+  }
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+  catch(e){state=JSON.parse(before);return alert('저장에 실패해 변경을 취소했습니다.');}
+  // 성공적으로 저장한 첫 자금관리 설정만 보상합니다. 같은 키의 중복 지급은 grantAcorns가 차단합니다.
+  if(state.isUserOnboarded)grantAcorns('onboarding:first',JAMPLE_REWARD_POINTS.onboarding,'최초 자금관리 설정 완료');
+  get('badge-reward-text').textContent=state.targetGoalName;
+  syncViewSpent();renderCalendar();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();updateReportScreen();
+  switchTab('home',document.querySelectorAll('.nav-item')[0]);
+  alert(changed?'급여일 변경 완료! 새 관리기간과 임시 생활비 예산이 홈에 즉시 반영되었습니다. 전환기간 예상 여유자금은 참고용입니다.':'설정을 저장하고 홈·리포트를 갱신했습니다.');
+};
+// 미결산 날짜의 자동 갱신은 허용하되 결산 자체는 자동으로 확정하지 않습니다.
+rollPeriodForward=function(){
+  if(!state.isUserOnboarded)return;
+  const a=activePeriod(),key=`${a.y}-${a.m}`;
+  if(!state.periodBudgets[key] && !state.settledMonths?.[key])state.periodBudgets[key]=budgetSnapshot();
+  state.viewYear=a.y;state.viewMonth=a.m;
+  syncViewSpent();renderCalendar();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();saveStateToLocalStorage();
+};
+
+  /* 결산 집중 모드: 종료된 미결산 기간 우선 표시. 급여일 변경과 독립. */
+  function findPendingSettlementPeriod() {
+    const today=jampleClock();
+    const periods=Object.keys(state.periodBudgets||{}).filter(key=>!state.settledMonths?.[key])
+      .map(key=>{const [y,m]=key.split('-').map(Number);return getPeriod(y,m);})
+      .sort((a,b)=>a.end-b.end);
+    return periods.find(p=>p.end<=today) ||
+      periods.find(p=>{const w=settlementWindow(p,today);return w.preview;}) || null;
+  }
+  checkSettlementDay=function(){
+    const btn=document.getElementById('btn-monthly-settlement');
+    const p=findPendingSettlementPeriod();
+    if(!btn)return;
+    btn.style.display=p?'flex':'none';
+    if(p) {
+      const preview=settlementWindow(p).preview;
+      btn.querySelector('span').textContent=`${formatPeriod(p)} ${preview?'결산 미리보기':'결산하기'}`;
+      btn.onclick=()=>openSettlementSheet(p.key);
+    }
+  };
+  executeMonthlySettlement=function(){
+    const p=findPendingSettlementPeriod();
+    if(p)openSettlementSheet(p.key);
+    else alert('현재 결산할 관리기간이 없습니다.');
+  };
+  // 해당 기간이 지난 후에도 리포트에서 미결산 목록을 확인합니다.
+  const settlementFocusSwitchTab=switchTab;
+  switchTab=function(tab,el){settlementFocusSwitchTab(tab,el);if(tab==='home'||tab==='report')checkSettlementDay();};
+  /* 결산 집중 모드 끝 */
+
+
+  /* ===== 조기 결산 후 추가 거래 별도 관리 ===== */
+  // 실제 조기결산일을 저장합니다. 테스트 모드에서는 가상 날짜를 사용합니다.
+  const confirmBeforePostTracking = confirmSettlementSheet;
+  confirmSettlementSheet = function() {
+    const key = settlementSelectedKey;
+    const before = Boolean(key && state.settledMonths?.[key]);
+    const effective = typeof jampleClock === 'function' ? jampleClock() : new Date();
+    confirmBeforePostTracking();
+    if (!before && key && state.settledMonths?.[key]) {
+      const [y,m] = key.split('-').map(Number);
+      const p = getPeriod(y,m);
+      const snapshot = state.settlementSnapshots?.[key];
+      if (snapshot) {
+        snapshot.closedOn = localDateKey(effective);
+        snapshot.earlyClosure = effective < p.end;
+        snapshot.postSettlementPolicy = 'separate';
+        saveStateToLocalStorage();
+      }
+    }
+  };
+
+  function postSettlementPeriodForDate(y,m,d) {
+    const when = new Date(y,m-1,d);
+    const period = findPeriodOfDate(y,m,d);
+    if (!period || !state.settledMonths?.[period.key]) return null;
+    const snap = state.settlementSnapshots?.[period.key];
+    // 이전 정식 결산과 과거 기록은 잠금 유지. 조기 결산된 기간만 허용.
+    if (!snap?.earlyClosure || !snap.closedOn) return null;
+    if (when < parseLocalDay(snap.closedOn) || when >= period.end) return null;
+    return period;
+  }
+  function appendPostSettlementTransaction(type) {
+    const y=selectedYearForExpense,m=selectedMonthForExpense,d=selectedDayForExpense;
+    const period=postSettlementPeriodForDate(y,m,d);
+    if (!period) return false;
+    const amount=parseNumber(document.getElementById('sheet-amount').value);
+    if(!Number.isSafeInteger(amount)||amount<=0){alert('금액을 1원 이상의 정수로 입력해주세요.');return true;}
+    const category=document.querySelector('#sheet-cats .chip.selected')?.textContent?.trim() || '기타';
+    const row={id:`post-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      type,year:y,month:m,day:d,amount,category,periodKey:period.key,
+      recordedAt:new Date().toISOString(),postSettlement:true};
+    const previous=JSON.stringify(state);
+    state.postSettlementTransactions=state.postSettlementTransactions||[];
+    state.postSettlementTransactions.push(row);
+    state.postSettlementReviewed=state.postSettlementReviewed||{};
+    delete state.postSettlementReviewed[period.key];
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+    catch(e){state=JSON.parse(previous);alert('추가 거래 저장에 실패했습니다.');return true;}
+    closeExpenseSheet();
+    renderCalendar();
+    updateWaterLevel();
+    updateGoalProgressBoard();
+    if(document.getElementById('screen-report').classList.contains('active'))updateReportScreen();
+    alert('결산 후 추가 거래로 별도 저장했습니다. 확정 결산과 목표 통장 잔액은 변경하지 않았습니다.');
+    return true;
+  }
+  const submitExpenseBeforePostTracking=submitExpense;
+  submitExpense=function(){
+    if(recordType==='income')return submitIncome();
+    if(appendPostSettlementTransaction('expense'))return;
+    return submitExpenseBeforePostTracking();
+  };
+  const submitIncomeBeforePostTracking=submitIncome;
+  submitIncome=function(){
+    if(appendPostSettlementTransaction('income'))return;
+    return submitIncomeBeforePostTracking();
+  };
+  function postSettlementSummary(periodKey) {
+    const rows=(state.postSettlementTransactions||[]).filter(r=>r.periodKey===periodKey);
+    const plus=rows.filter(r=>r.type==='income').reduce((sum,r)=>sum+r.amount,0);
+    const minus=rows.filter(r=>r.type==='expense').reduce((sum,r)=>sum+r.amount,0);
+    return {rows,plus,minus,net:plus-minus};
+  }
+  function removePostSettlementTransaction(id) {
+    const row=(state.postSettlementTransactions||[]).find(r=>r.id===id);
+    if(!row || !confirm('이 결산 후 추가 거래를 삭제할까요?'))return;
+    state.postSettlementTransactions=state.postSettlementTransactions.filter(r=>r.id!==id);
+    delete (state.postSettlementReviewed||{})[row.periodKey];
+    saveStateToLocalStorage();updateReportScreen();
+  }
+  function acknowledgePostSettlement() {
+    const keys=Object.keys(state.settlementSnapshots||{}).filter(k=>postSettlementSummary(k).rows.length);
+    const selected=keys.filter(k=>!state.postSettlementReviewed?.[k]).sort()[0];
+    if(!selected)return;
+    state.postSettlementReviewed=state.postSettlementReviewed||{};
+    state.postSettlementReviewed[selected]={reviewedAt:new Date().toISOString(),recordCount:postSettlementSummary(selected).rows.length};
+    saveStateToLocalStorage();renderPostSettlementReport();
+  }
+  function renderPostSettlementReport() {
+    const box=document.getElementById('post-settlement-card');
+    const detail=document.getElementById('post-settlement-detail');
+    const button=document.getElementById('post-settlement-review-btn');
+    if(!box||!detail)return;
+    const keys=Object.keys(state.settlementSnapshots||{}).filter(k=>postSettlementSummary(k).rows.length).sort();
+    const key=keys.find(k=>!state.postSettlementReviewed?.[k])||keys[keys.length-1];
+    if(!key){box.style.display='none';return;}
+    const result=postSettlementSummary(key),snap=state.settlementSnapshots[key];
+    const reviewed=Boolean(state.postSettlementReviewed?.[key]);
+    box.style.display='block';detail.replaceChildren();
+    const heading=document.createElement('p');heading.textContent=`${key} 기간 · ${reviewed?'확인 완료':'확인 필요'} · ${result.rows.length}건`;
+    heading.style.fontWeight='700';detail.appendChild(heading);
+    result.rows.forEach(r=>{
+      const line=document.createElement('div');line.className='settlement-line';
+      const info=document.createElement('span');info.textContent=`${r.month}/${r.day} ${r.category}`;
+      const amount=document.createElement('span');amount.textContent=`${r.type==='income'?'+':'−'}${toWon(r.amount)}`;
+      const del=document.createElement('button');del.type='button';del.textContent='삭제';del.className='fixed-delete-btn';del.onclick=()=>removePostSettlementTransaction(r.id);
+      line.append(info,amount,del);detail.appendChild(line);
+    });
+    const totals=document.createElement('p');totals.style.marginTop='9px';
+    totals.textContent=`추가 수입 ${toWon(result.plus)} − 추가 지출 ${toWon(result.minus)} = 순변동 ${toWon(result.net)}`;
+    detail.appendChild(totals);
+    const estimate=document.createElement('p');estimate.style.fontWeight='700';
+    estimate.textContent=`추가 거래 반영 후 참고 여유자금: ${toWon((snap.forecast||0)+result.net)}`;
+    detail.appendChild(estimate);
+    const note=document.createElement('p');note.style.marginTop='5px';note.textContent='확정 당시 결산, 실제 이체금액, 목표 통장 잔액은 변경하지 않습니다. 추가 거래는 다음 기간 생활비에서 자동 차감되지 않습니다.';
+    detail.appendChild(note);
+    button.style.display=reviewed?'none':'flex';
+  }
+  const updateReportBeforePostTracking=updateReportScreen;
+  updateReportScreen=function(){updateReportBeforePostTracking();renderPostSettlementReport();};
+  // 완료된 조기 결산 기간의 추가 거래도 지출 내역에서 확인 가능합니다.
+  const renderHistoryBeforePostTracking=renderHistoryList;
+  renderHistoryList=function(){
+    renderHistoryBeforePostTracking();
+    const period=getViewPeriod(),result=postSettlementSummary(period.key);
+    if(!result.rows.length)return;
+    const container=document.getElementById('history-list-container');
+    const label=document.createElement('div');label.style.cssText='font-size:12px;font-weight:700;padding:8px';label.textContent='조기 결산 후 별도 거래 (아래 항목은 확정 결산에 미포함)';container.appendChild(label);
+    result.rows.forEach(r=>{const el=document.createElement('div');el.className='fixed-item';el.textContent=`${r.month}/${r.day} ${r.type==='income'?'수입':'지출'} · ${r.category} · ${toWon(r.amount)}`;container.appendChild(el);});
+  };
+  // 테스트용 날짜에 10/23, 10/24를 추가해 조기 결산 뒤 입력을 재현합니다.
+  window.addEventListener('DOMContentLoaded',()=>{
+    if(!DEMO_MODE)return;
+    const choices=document.querySelector('select');
+    if(!choices||!Array.from(choices.options).some(o=>o.value==='2026-10-22'))return;
+    for(const [value,label] of [['2026-10-23','10/23 결산 후 추가 거래'],['2026-10-24','10/24 결산 후 추가 거래']]){
+      if(!Array.from(choices.options).some(o=>o.value===value)){
+        const option=document.createElement('option');option.value=value;option.textContent=label;choices.appendChild(option);
+      }
+    }
+  });
+  /* ===== 조기 결산 후 추가 거래 관리 끝 ===== */
+
+
+  /* ===== 결산 완료 후 맞춤 코칭 (기존 결산/목표자금 계산 변경 없음) ===== */
+  function settlementCoachingItems(snapshot) {
+    const b=snapshot.budget||{};
+    const budget=Number(b.variableBudget)||0;
+    const spent=Number(snapshot.spent)||0;
+    const forecast=Number(snapshot.forecast)||0;
+    const gap=budget-spent;
+    const ratio=budget>0?Math.abs(gap)/budget:null;
+    const notes=[];
+    if(budget===0 && spent>0) {
+      notes.push({heading:'생활비 예산을 점검해 보세요',message:'생활비 예산은 0원이지만 실제 지출이 있어요. 다음 관리기간에 필요한 생활비를 마이 탭에서 검토해주세요.'});
+    } else if(ratio!==null && ratio>=0.2) {
+      notes.push(gap>0
+        ?{heading:'생활비 예산에 여유가 있었어요',message:`예산보다 ${toWon(gap)} 적게 사용했어요 (${Math.round(ratio*100)}% 차이). 필요한 소비까지 미루지 않았는지 돌아보고, 반복된다면 생활비 예산을 조정해 보세요.`}
+        :{heading:'생활비 예산을 초과했어요',message:`예산보다 ${toWon(-gap)} 더 사용했어요 (${Math.round(ratio*100)}% 차이). 일시적인 지출인지 점검하고, 다음 기간 예산과 소비 계획을 조정해 보세요.`});
+    }
+    if(forecast<0){
+      notes.push({heading:'여유자금이 마이너스예요',message:`계산상 ${toWon(Math.abs(forecast))}이 부족해요. 생활비·고정지출·저축 계획을 확인하고, 부족액을 어떻게 충당했는지도 점검해주세요.`});
+    } else if(forecast>=1000000){
+      notes.push({heading:'기본 저축·투자 확대를 검토해 보세요',message:`계산상 여유자금이 ${toWon(forecast)}이에요. 비상예비자금과 가까운 지출을 먼저 확인한 다음, 지속적인 여유가 있다면 기본 저축·투자를 높일 수 있어요.`});
+    }
+    if(notes.length===0)notes.push({heading:'계획과 실제 지출이 균형을 이루고 있어요',message:'이번 기간의 소비를 점검했어요. 현재의 행복을 누리면서 미래를 준비하는 습관을 이어가세요.'});
+    return notes;
+  }
+  function showSettlementCoaching(key){
+    const snap=state.settlementSnapshots?.[key];
+    if(!snap)return alert('확정된 결산 자료가 없습니다.');
+    const p=getPeriod(...key.split('-').map(Number));
+    const wrap=document.getElementById('settlement-coaching-overlay');
+    const metrics=document.getElementById('coaching-metrics');
+    const notes=document.getElementById('coaching-messages');
+    document.getElementById('coaching-title').textContent=`🌱 ${formatPeriod(p)} 재무링 결산 코칭`;
+    metrics.replaceChildren();notes.replaceChildren();
+    const budget=Number(snap.budget?.variableBudget)||0;
+    const figures=[['생활비 예산',budget],['실제 생활비 지출',Number(snap.spent)||0],['예산과 지출 차이',budget-(Number(snap.spent)||0)],['계산상 여유자금',Number(snap.forecast)||0],['실제 이체 확인액',Number(snap.transferredAmount)||0]];
+    for(const [label,value] of figures){const row=document.createElement('div');row.className='coaching-metric';const a=document.createElement('span');a.textContent=label;const b=document.createElement('b');b.textContent=toWon(value);row.append(a,b);metrics.appendChild(row);}
+    for(const note of settlementCoachingItems(snap)){
+      const card=document.createElement('div');card.className='coaching-item';const title=document.createElement('b');title.textContent=note.heading;const desc=document.createElement('p');desc.textContent=note.message;desc.style.marginTop='5px';card.append(title,desc);notes.appendChild(card);
+    }
+    wrap.dataset.periodKey=key;
+    wrap.classList.add('active');
+  }
+  function closeSettlementCoaching(){document.getElementById('settlement-coaching-overlay').classList.remove('active');}
+  function openMyFromCoaching(){closeSettlementCoaching();switchTab('my',document.querySelectorAll('.nav-item')[3]);}
+  // 기존 조기 결산/별도 추가 거래 저장이 성공했을 때만 코칭 열기.
+  const settleBeforeCoaching=confirmSettlementSheet;
+  confirmSettlementSheet=function(){
+    const key=settlementSelectedKey;
+    const already=Boolean(key&&state.settledMonths?.[key]);
+    settleBeforeCoaching();
+    if(key&&!already&&state.settledMonths?.[key])showSettlementCoaching(key);
+  };
+  // 결산 후 다시 보기: 현재 또는 최근 확정 결산 코칭을 리포트에서 확인.
+  const reportBeforeCoaching=updateReportScreen;
+  updateReportScreen=function(){
+    reportBeforeCoaching();
+    const panel=document.getElementById('settlement-coaching-history');
+    if(!panel)return;
+    const keys=Object.keys(state.settlementSnapshots||{}).filter(k=>state.settledMonths?.[k]).sort();
+    const key=state.settledMonths?.[getViewPeriod().key]?getViewPeriod().key:keys[keys.length-1];
+    panel.style.display=key?'block':'none';
+    if(key)panel.querySelector('button').onclick=()=>showSettlementCoaching(key);
+  };
+  /* ===== 결산 맞춤 코칭 끝 ===== */
+
+
+  /* ===== 재무링 리워드 v1: 확정 지급액 + 중복 방지 ===== */
+  const JAMPLE_REWARD_POINTS = Object.freeze({ onboarding:1000, todayExpense:20, pastExpense:10, noSpend:50, diagnosis:180 });
+  const JAMPLE_DIAGNOSES = Object.freeze([
+    ['mbti','재무 MBTI'],['diagnosis','가계부 셀프 진단'],['basket','목적자금 맞춤 설계'],
+    ['invest','투자자산 점검'],['debt','대출 점검']
+  ]);
+  const JAMPLE_GROWTH = Object.freeze([
+    {level:1,name:'씨앗 재무링',acorns:0,goals:0,reward:null},
+    {level:2,name:'새싹 재무링',acorns:1500,goals:1,reward:'단일 재무상담 50% 할인'},
+    {level:3,name:'성장 재무링',acorns:3000,goals:2,reward:'단일 재무상담 무료'},
+    {level:4,name:'튼튼 재무링',acorns:6000,goals:5,reward:'종합재무상담 20% 할인'},
+    {level:5,name:'꿈 재무링',acorns:10000,goals:10,reward:'종합재무상담 30% 할인'}
+  ]);
+  function ensureRewardData(){
+    if(!state.ringReward || typeof state.ringReward!=='object')state.ringReward={};
+    const r=state.ringReward;
+    if(!Array.isArray(r.ledger))r.ledger=[];
+    if(!Number.isSafeInteger(r.goalAchievementCount)||r.goalAchievementCount<0)r.goalAchievementCount=0;
+    if(!r.issuedCoupons || typeof r.issuedCoupons!=='object' || Array.isArray(r.issuedCoupons))r.issuedCoupons={};
+    if(!Number.isSafeInteger(r.demoGoals)||r.demoGoals<0)r.demoGoals=0;
+    if(!Array.isArray(r.couponUseHistory))r.couponUseHistory=[];
+    return r;
+  }
+  function rewardTotal(){return ensureRewardData().ledger.reduce((n,e)=>n+e.points,0);}
+  function grantAcorns(onceKey,points,title){
+    const r=ensureRewardData();
+    if(r.ledger.some(e=>e.key===onceKey))return false;
+    if(!Number.isSafeInteger(points)||points<=0)return false;
+    r.ledger.push({key:onceKey,points,title,at:new Date().toISOString()});
+    saveStateToLocalStorage();
+    syncGrowthCoupons();
+    refreshRewardDisplay();
+    refreshVisibleRewardHistory();
+    return true;
+  }
+  function getRingGrowth(){
+    const earned=rewardTotal(),reward=ensureRewardData(),goals=reward.goalAchievementCount+(DEMO_MODE?reward.demoGoals:0);
+    return [...JAMPLE_GROWTH].reverse().find(g=>earned>=g.acorns && goals>=g.goals)||JAMPLE_GROWTH[0];
+  }
+  function refreshRewardDisplay(){
+    const root=document.getElementById('ring-reward-card');if(!root)return;
+    const r=ensureRewardData(),earned=rewardTotal(),stage=getRingGrowth();
+    state.ringLevel=stage.level; // 성장 조건은 목표 통장 잔액 비율과 분리
+    document.getElementById('ring-earned').textContent=earned.toLocaleString()+'알';
+    document.getElementById('ring-available').textContent=earned.toLocaleString()+'알'; // 쿠폰 구매 가격 미확정
+    document.getElementById('ring-stage-label').textContent=stage.name;
+    document.getElementById('ring-goal-count').textContent=(r.goalAchievementCount+(DEMO_MODE?r.demoGoals:0))+'회'+(DEMO_MODE&&r.demoGoals?' (테스트 포함)':'');
+    const stageIcon=document.getElementById('ring-stage-icon');
+    if(stageIcon)stageIcon.src=(RING_STAGES[stage.level]&&RING_STAGES[stage.level].file)||'RING1.png';
+    const nextStageLine=document.getElementById('ring-next-stage');
+    if(nextStageLine){nextStageLine.textContent=''; nextStageLine.style.display='none';}
+    document.getElementById('ring-coupon-status').textContent='상담 할인 쿠폰 신청 기능은 추후 업데이트 예정입니다. 성장 단계와 도토리 기록은 그대로 유지됩니다.';
+    const testPanel=document.getElementById('ring-growth-demo');
+    if(testPanel)testPanel.style.display='none'; // 베타: 개발용 성장 버튼 비노출
+    renderGrowthCoupons();
+  }
+  /* 성장 보상: 단계별 한 번만 발급, 실제 할인권 사용은 인증 전까지 불가 */
+  function issueGrowthCoupons(){
+    const r=ensureRewardData(),stage=getRingGrowth();
+    let changed=false;
+    for(const growth of JAMPLE_GROWTH.slice(1)){
+      if(stage.level<growth.level || r.issuedCoupons[String(growth.level)])continue;
+      r.issuedCoupons[String(growth.level)]={
+        id:'RING-LEVEL-'+growth.level,
+        level:growth.level,
+        title:growth.reward,
+        issuedAt:new Date().toISOString(),
+        status:'issued',
+        testOnly:DEMO_MODE,
+        verified:false
+      };
+      changed=true;
+    }
+    if(changed)saveStateToLocalStorage();
+    return changed;
+  }
+  // 쿠폰 사용 요청은 로컬에서 기록합니다. 실제 상담 할인 인증은 별도의 상담사 확인이 필요합니다.
+  function couponRequestCode(coupon){
+    if(coupon.requestCode)return coupon.requestCode;
+    const bytes=new Uint8Array(8);
+    if(window.crypto?.getRandomValues)window.crypto.getRandomValues(bytes);
+    else for(let i=0;i<bytes.length;i++)bytes[i]=Math.floor(Math.random()*256);
+    const suffix=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+    coupon.requestCode=`JMP-${coupon.level}-${suffix}`;
+    return coupon.requestCode;
+  }
+  function requestCouponUse(level){
+    const coupon=ensureRewardData().issuedCoupons[String(level)];
+    if(!coupon)return alert('아직 발급되지 않은 쿠폰입니다.');
+    if(coupon.status==='used')return alert('이미 사용 완료된 쿠폰입니다.');
+    if(coupon.status==='requested')return showCouponRequest(level);
+    if(!confirm(`${coupon.title} 쿠폰의 사용을 요청할까요?\n실제 할인은 상담사 확인 후 확정됩니다.`))return;
+    couponRequestCode(coupon);
+    coupon.status='requested';coupon.requestedAt=new Date().toISOString();
+    saveStateToLocalStorage();refreshRewardDisplay();showCouponRequest(level);
+  }
+  function showCouponRequest(level){
+    const coupon=ensureRewardData().issuedCoupons[String(level)];
+    if(!coupon)return;
+    const code=couponRequestCode(coupon);
+    const message=`잼플 상담쿠폰 사용 요청\n쿠폰: ${coupon.title}\n인증번호: ${code}\n상태: 상담사 확인 대기\n(앱 자체로 할인 적용이 확정되지 않습니다)`;
+    if(navigator.clipboard?.writeText && window.isSecureContext){
+      navigator.clipboard.writeText(message).then(()=>alert('상담사에게 보낼 요청 내용이 복사되었습니다.')).catch(()=>prompt('다음 내용을 복사해 상담사에게 전달해주세요.',message));
+    } else prompt('다음 내용을 복사해 상담사에게 전달해주세요.',message);
+  }
+  function cancelCouponRequest(level){
+    const coupon=ensureRewardData().issuedCoupons[String(level)];
+    if(!coupon || coupon.status!=='requested')return;
+    if(!confirm('쿠폰 사용 요청을 취소할까요? 상담사에게 이미 전달했다면 별도로 취소를 알려주세요.'))return;
+    coupon.status='issued';delete coupon.requestedAt;
+    saveStateToLocalStorage();refreshRewardDisplay();
+  }
+  function demoConfirmCouponUse(level){
+    if(!DEMO_MODE)return;
+    const coupon=ensureRewardData().issuedCoupons[String(level)];
+    if(!coupon||coupon.status!=='requested')return alert('먼저 사용 요청을 해주세요.');
+    if(!confirm('[테스트] 상담사가 확인했다고 가정하고 사용 완료 처리할까요?\n이 처리는 실제 상담 할인으로 인정되지 않습니다.'))return;
+    coupon.status='used';coupon.usedAt=new Date().toISOString();coupon.verified=false;
+    coupon.demoUsed=true;
+    saveStateToLocalStorage();refreshRewardDisplay();
+  }
+
+  // V1은 구글 신청서에서 접수 완료 메시지를 본 사용자가 직접 접수일을 기록합니다.
+  // Apps Script의 실제 접수 여부와 자동 동기화되지는 않습니다.
+  function recordCouponSubmission(level){
+    const coupon=ensureRewardData().issuedCoupons[String(level)];
+    if(!coupon || coupon.status==='used')return alert('기록할 수 없는 쿠폰입니다.');
+    if(coupon.status==='requested' && coupon.requestedAt)return alert('이미 이 기기에 접수 완료로 기록된 쿠폰입니다.');
+    const code=couponRequestCode(coupon);
+    if(!confirm(`구글 신청서에서 실제로 '접수 완료' 메시지를 확인하셨나요?\n\n${coupon.title}\n쿠폰번호: ${code}\n\n확인을 누르면 이 기기에 접수일시가 저장되고 재신청 버튼이 사라집니다. (관리대장과 자동 동기화되지는 않습니다.)`))return;
+    coupon.status='requested';
+    coupon.requestedAt=new Date().toISOString();
+    coupon.submissionRecordedLocally=true;
+    saveStateToLocalStorage();
+    refreshRewardDisplay();
+    alert('접수 완료로 기록했습니다. 실제 접수 여부는 구글 관리대장에서 확인할 수 있습니다.');
+  }
+
+  // 구글 Apps Script 웹 앱 배포 후 /exec 주소로 교체하세요.
+  const JAMPLE_COUPON_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxWlzB5XB0dtqLd2dLzja76azmuS165XCc9duiEQHFKS8lavYmKAZlktXnLGTpUgTWy_g/exec';
+  function openCouponGoogleRequest(level){
+    const c=ensureRewardData().issuedCoupons[String(level)];
+    if(!c || c.status!=='issued')return alert('이미 신청 기록이 있거나 사용 가능한 쿠폰이 아닙니다.');
+    const code=couponRequestCode(c);
+    if(!JAMPLE_COUPON_WEBAPP_URL){
+      alert('관리자 자동 접수 주소가 아직 설정되지 않았습니다. 기존 코드 복사 방식으로 안내합니다.');
+      return showCouponRequest(level);
+    }
+    const url=new URL(JAMPLE_COUPON_WEBAPP_URL);
+    url.searchParams.set('code',code);url.searchParams.set('level',String(c.level));
+    url.searchParams.set('title',c.title);if(DEMO_MODE)url.searchParams.set('demo','1');
+    // 실제 접수는 구글 신청서의 제출 후에만 성립하며, 로컬 상태는 자동 승인하지 않습니다.
+    window.open(url.toString(),'_blank','noopener,noreferrer');
+  }
+
+  function renderGrowthCoupons(){
+    const wallet=document.getElementById('ring-coupon-wallet');
+    if(!wallet)return;
+    const r=ensureRewardData();wallet.replaceChildren();
+    for(const g of JAMPLE_GROWTH.slice(1)){
+      const card=document.createElement('div');
+      card.style.cssText='background:#fffaf2;border:1px solid #f3e1c9;border-radius:10px;padding:10px;margin-bottom:8px';
+      const coupon=r.issuedCoupons[String(g.level)];
+      const title=document.createElement('div');
+      title.style.cssText='display:flex;align-items:center;gap:8px;font-weight:700';
+      const icon=document.createElement('img');
+      icon.src=(RING_STAGES[g.level]&&RING_STAGES[g.level].file)||'RING1.png';
+      icon.alt=`${g.level}단계 재무링`;
+      icon.style.cssText='width:28px;height:28px;object-fit:contain;flex:0 0 auto';
+      const titleText=document.createElement('div');
+      titleText.innerHTML=`<div style="font-size:12px;color:#8a6a45;margin-bottom:2px">${g.level}단계 · ${(RING_STAGES[g.level]&&RING_STAGES[g.level].name)||g.name}</div><div>${g.reward}</div>`;
+      title.append(icon,titleText);
+      const status=document.createElement('div');status.style.cssText='color:#6c757d;margin:7px 0 7px';
+      if(!coupon){status.textContent=`잠금 · 누적 ${g.acorns.toLocaleString()}알 + 목표 달성 ${g.goals}회 필요`;}
+      else if(coupon.status==='used')status.textContent=coupon.demoUsed?'개발 테스트에서 사용 완료 처리됨 (실제 할인 인증 아님)':coupon.manualCompleted?'사용완료 · 고객이 이 기기에 기록함 (관리대장 자동 연동 아님)':'사용 완료';
+      else if(coupon.status==='requested')status.textContent=coupon.requestedAt?'접수 완료 기록 · '+new Date(coupon.requestedAt).toLocaleString('ko-KR')+' (이 기기 기준)':'신청 기록 있음 · 관리자 확인 대기';
+      else status.textContent=`발급 완료 (${coupon.issuedAt.slice(0,10)}) · 사용 가능`;
+      card.append(title,status);
+      if(coupon){
+        const actions=document.createElement('div');actions.style.cssText='display:flex;gap:6px;flex-wrap:wrap';
+        function button(label,handler){const b=document.createElement('button');b.className='btn-secondary';b.style.cssText='width:auto;font-size:11px;padding:7px 10px';b.textContent=label;b.onclick=handler;actions.appendChild(b);}
+        if(coupon.status==='issued'){
+          // 베타 출시 시 신청 기능 비노출; 추후 연동 검증 후 활성화
+          // 사용자 수동 접수 기록 비노출
+        }
+        if(coupon.status==='requested' && !coupon.requestedAt){
+          // 사용자 수동 접수 기록 비노출
+        }
+        if(coupon.status==='used' && coupon.usedAt){
+          const done=document.createElement('div');done.style.cssText='font-size:11px;color:#6c757d;margin-top:6px';
+          done.textContent='사용완료 기록일: '+new Date(coupon.usedAt).toLocaleString('ko-KR');
+          card.appendChild(done);
+        }
+        if(actions.childNodes.length)card.appendChild(actions);
+      }
+      wallet.appendChild(card);
+    }
+  }
+  // 기존 기록을 읽은 다음 달성 조건에 맞는 쿠폰을 발급합니다.
+  function syncGrowthCoupons(){
+    issueGrowthCoupons();
+    renderGrowthCoupons();
+  }
+  function demoRewardAcorns(){
+    if(!DEMO_MODE)return;
+    grantAcorns('growth-demo:'+Date.now()+':'+Math.random(),1000,'[테스트] 성장 조건 실습');
+    syncGrowthCoupons();refreshRewardDisplay();
+  }
+  function demoRewardGoal(){
+    if(!DEMO_MODE)return;
+    const r=ensureRewardData();r.demoGoals++;
+    saveStateToLocalStorage();syncGrowthCoupons();refreshRewardDisplay();
+    const avatar=document.getElementById('home-ring-avatar');
+    if(avatar)avatar.src=RING_STAGES[getRingGrowth().level].file;
+  }
+  function showRewardHistory(){
+    const el=document.getElementById('ring-reward-history');if(!el)return;
+    el.style.display=el.style.display==='none'?'block':'none';
+    el.replaceChildren();
+    const entries=ensureRewardData().ledger.slice().reverse();
+    if(!entries.length){el.textContent='아직 지급된 도토리가 없습니다.';return;}
+    for(const e of entries){const div=document.createElement('div');div.textContent=`+${e.points}알 · ${e.title}`;el.appendChild(div);}
+  }
+  // 지급 내역을 열어둔 상태에서 새 보상이 발생하면 즉시 목록도 갱신합니다.
+  function refreshVisibleRewardHistory(){
+    const el=document.getElementById('ring-reward-history');
+    if(!el || el.style.display==='none')return;
+    el.replaceChildren();
+    const entries=ensureRewardData().ledger.slice().reverse();
+    if(!entries.length){el.textContent='아직 지급된 도토리가 없습니다.';return;}
+    for(const entry of entries){
+      const row=document.createElement('div');
+      row.textContent=`+${entry.points}알 · ${entry.title}`;
+      el.appendChild(row);
+    }
+  }
+  // 최초 설정 완료 보상: 실제 온보딩을 새로 완료했을 때 한 번만 지급
+  const finishBeforeRewards=finishOnboarding;
+  finishOnboarding=function(){
+    const wasComplete=!!state.isUserOnboarded;
+    finishBeforeRewards();
+    if(!wasComplete && state.isUserOnboarded)grantAcorns('onboarding:first',JAMPLE_REWARD_POINTS.onboarding,'최초 자금관리 설정 완료');
+  };
+  // 지출기록 보상: 같은 날짜는 여러 건 입력해도 하루 한 번만 (실제 지출 저장 성공한 경우)
+  const submitBeforeRewards=submitExpense;
+  submitExpense=function(){
+    const wasIncome=recordType==='income';
+    const oldCount=state.expenseHistory.length;
+    const key=`${selectedYearForExpense}-${selectedMonthForExpense}-${selectedDayForExpense}`;
+    const isToday=key===localDateKey(jampleClock());
+    const ret=submitBeforeRewards();
+    if(!wasIncome && state.expenseHistory.length>oldCount){
+      grantAcorns('expense:'+key,isToday?JAMPLE_REWARD_POINTS.todayExpense:JAMPLE_REWARD_POINTS.pastExpense,
+        isToday?'당일 지출 기록':'지난 날짜 지출 기록');
+    }
+    return ret;
+  };
+  // 무지출 챌린지: 당일 정상 등록 시 50알 지급 (날짜당 한 번만).
+  // 기존에 무지출은 기록됐으나 보상 누락된 '오늘'의 기록도 재클릭 시 1회 복구.
+  const noSpendBeforeRewards=actionNoSpend;
+  actionNoSpend=function(){
+    const today=new Date(); // 기존 무지출 버튼과 동일한 실제 날짜 기준
+    const key=localDateKey(today);
+    const before=state.dailyRecords?.[key]?.type;
+    const result=noSpendBeforeRewards();
+    const after=state.dailyRecords?.[key]?.type;
+    const hasExpense=(state.expenseHistory||[]).some(e=>
+      `${e.year}-${e.month}-${e.day}`===key && e.amount>0);
+    const locked=typeof isLockedRecordDate==='function' &&
+      isLockedRecordDate(today.getFullYear(),today.getMonth()+1,today.getDate());
+    if(after==='NO_SPEND' && !hasExpense && !locked && (before!=='NO_SPEND' ||
+       !ensureRewardData().ledger.some(e=>e.key==='nospend:'+key))){
+      grantAcorns('nospend:'+key,JAMPLE_REWARD_POINTS.noSpend,'무지출 성공');
+    }
+    return result;
+  };
+  // 각 재무진단 페이지에서 완료 후 호출할 수 있는 통합 지급 함수.
+  // 예: 부모 페이지에서 잼플로 복귀하며 저장된 실제 완료 이벤트에 연동.
+  // 진단 보상은 진단별 달력 월(사용자 기기 현지시간)마다 1회 지급합니다.
+  // 이전 버전의 'diagnosis:유형' 지급 이력도 해당 지급 월에는 중복 지급하지 않습니다.
+  function diagnosisRewardMonth(date=new Date()) {
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
+  }
+  function wasDiagnosisRewardedThisMonth(type, month=diagnosisRewardMonth()) {
+    return ensureRewardData().ledger.some(entry => {
+      if(entry.key===`diagnosis:${type}:${month}`)return true;
+      if(entry.key!==`diagnosis:${type}` || !entry.at)return false;
+      const issued=new Date(entry.at);
+      return !Number.isNaN(issued.getTime()) && diagnosisRewardMonth(issued)===month;
+    });
+  }
+  function rewardCompletedDiagnosis(type){
+    const pair=JAMPLE_DIAGNOSES.find(([id])=>id===type);
+    if(!pair)return false;
+    const month=diagnosisRewardMonth();
+    if(wasDiagnosisRewardedThisMonth(type,month))return false;
+    return grantAcorns(`diagnosis:${type}:${month}`,JAMPLE_REWARD_POINTS.diagnosis,
+      `${pair[1]} ${month} 완료`);
+  }
+  // 목표 달성 횟수는 실제 목표 달성에 대한 확정 기록에서만 집계. 금액 예측/무지출은 제외.
+  function syncRewardGoalMilestones(){
+    const r=ensureRewardData();
+    const items=(state.giftHistory||[]).filter(e=>e && Number.isFinite(e.amount)&&e.amount>0);
+    const count=items.length;
+    if(count>r.goalAchievementCount){r.goalAchievementCount=count;saveStateToLocalStorage();}
+    syncGrowthCoupons();
+    refreshRewardDisplay();
+  }
+  const giftBeforeRewards=recordGiftPurchase;
+  recordGiftPurchase=function(){
+    const length=(state.giftHistory||[]).length;
+    const result=giftBeforeRewards();
+    if((state.giftHistory||[]).length>length)syncRewardGoalMilestones();
+    return result;
+  };
+  const goalBoardBeforeRewards=updateGoalProgressBoard;
+  updateGoalProgressBoard=function(){
+    goalBoardBeforeRewards();
+    const growth=getRingGrowth();state.ringLevel=growth.level;
+    const avatar=document.getElementById('home-ring-avatar');if(avatar)avatar.src=RING_STAGES[growth.level].file;
+    syncGrowthCoupons();
+    refreshRewardDisplay();
+  };
+  const switchBeforeRewards=switchTab;
+  switchTab=function(name,el){switchBeforeRewards(name,el);if(name==='my')refreshRewardDisplay();};
+  window.addEventListener('DOMContentLoaded',()=>{
+    // 기존 데이터에 신규가입 1,000알을 소급해서 지급하지 않습니다.
+    // 새로운 온보딩 완료 이후 지급합니다.
+    refreshRewardDisplay();
+    syncRewardGoalMilestones();
+    syncGrowthCoupons();
+  });
+  window.addEventListener('storage',event=>{
+    if(event.key!==STORAGE_KEY)return;
+    // 동일 저장소를 사용하는 다른 탭에서 기록이 바뀌었을 때만 새 데이터를 로드합니다.
+    loadStateFromLocalStorage();
+    refreshRewardDisplay();
+    refreshVisibleRewardHistory();
+  });
+
+  /* ===== 재무진단 월 1회 완료 신호 연결 (동일 출처 진단 페이지) ===== */
+  const DIAG_EVENT_KEY = DEMO_MODE ? 'jample_diagnosis_complete_demo_v1' : 'jample_diagnosis_complete_v1';
+  function consumeDiagnosisCompletion() {
+    const raw=localStorage.getItem(DIAG_EVENT_KEY);
+    if (!raw || !state.isUserOnboarded) return;
+    let evt;
+    try { evt=JSON.parse(raw); } catch(e) { return; }
+    if(!evt || !JAMPLE_DIAGNOSES.some(([id])=>id===evt.type) || evt.status!=='completed')return;
+    // 완료 신호가 현재 달의 이벤트인지 확인해 늦게 도착한 오래된 이벤트의 오지급을 방지합니다.
+    const completedAt=new Date(evt.at);
+    if(!evt.at || Number.isNaN(completedAt.getTime()) || diagnosisRewardMonth(completedAt)!==diagnosisRewardMonth()) {
+      try {localStorage.removeItem(DIAG_EVENT_KEY);}catch(e){}
+      return;
+    }
+    const awarded=rewardCompletedDiagnosis(evt.type);
+    // 이미 지급된 같은 달 반복 진단 이벤트도 소비합니다.
+    if(awarded || wasDiagnosisRewardedThisMonth(evt.type)) {
+      try {localStorage.removeItem(DIAG_EVENT_KEY);}catch(e){}
+      if(awarded) console.info('잼플 재무진단 월간 보상 180알:',evt.type);
+      refreshRewardDisplay();refreshVisibleRewardHistory();
+    }
+  }
+  // 초기 로딩 완료 후 호출: 메인 DOMContentLoaded에서 실행
+  window.addEventListener('focus',consumeDiagnosisCompletion);
+  window.addEventListener('storage',e=>{if(e.key===DIAG_EVENT_KEY)consumeDiagnosisCompletion();});
+  // 개발 전용: 실제 진단 HTML을 연결하기 전 보상 지급을 검증하는 버튼
+  function installDiagnosisRewardTester(){
+    if(!DEMO_MODE)return;
+    const root=document.getElementById('ring-reward-card');if(!root)return;
+    const box=document.createElement('div');box.style.cssText='margin-top:12px;padding:10px;border:1px dashed #FF8A3D;border-radius:12px';
+    const h=document.createElement('strong');h.textContent='🧪 진단 보상 테스트 전용';h.style.fontSize='12px';box.appendChild(h);
+    const desc=document.createElement('p');desc.style.cssText='font-size:11px;color:#6c757d;margin:6px 0';desc.textContent='실제 진단 결과와 무관한 개발용 이벤트입니다. 각 진단별 매월 첫 완료 1회만 180알을 지급합니다.';box.appendChild(desc);
+    for(const [type,name] of JAMPLE_DIAGNOSES){
+      const btn=document.createElement('button');btn.type='button';btn.className='btn-secondary';btn.style.cssText='margin-top:5px;padding:7px;font-size:12px';
+      btn.textContent=name+' 완료 이벤트 시험';
+      btn.onclick=()=>{
+        localStorage.setItem(DIAG_EVENT_KEY,JSON.stringify({type,status:'completed',at:new Date().toISOString()}));
+        const before=rewardTotal();consumeDiagnosisCompletion();
+        alert(rewardTotal()>before ? `${name}: 이번 달 보상 180알이 지급되었습니다.`:`${name}: 이번 달 보상은 이미 받았습니다. 다음 달 첫 완료 시 다시 지급됩니다.`);
+      };box.appendChild(btn);
+    }
+    root.appendChild(box);
+  }
+  window.addEventListener('DOMContentLoaded',installDiagnosisRewardTester);
+  /* ===== 재무진단 완료 신호 연결 끝 ===== */
+
+  /* ===== 리워드 v1 끝 ===== */
+
   /* ─── 초기 로딩 및 PWA 서비스 워커 등록 처리 ─── */
   window.addEventListener('DOMContentLoaded', () => {
     // 1. PWA 서비스워커 등록
@@ -2128,7 +4064,13 @@
     }
 
     // 2. 로컬 스토리지 데이터 불러오기
+    initializeDemoData();
     const hasSavedData = loadStateFromLocalStorage();
+    initializeBudgetV2();
+    // 진단 완료 신호는 가입/저장 데이터 로드가 끝난 다음에 처리해야 합니다.
+    consumeDiagnosisCompletion();
+    refreshRewardDisplay();
+    if(DEMO_MODE)refreshTransitionTestUI();
 
     const urlParams = new URLSearchParams(window.location.search);
     let targetTab = urlParams.get('tab');
@@ -2140,7 +4082,7 @@
     const bottomNav = document.getElementById('bottom-nav');
 
     // 3-1. 외부 진단 모듈(care_*.html)에서 탭으로 넘어온 경우
-    if (targetTab) {
+    if (targetTab && state.isUserOnboarded) {
       if (splashScreen) splashScreen.style.display = 'none';
       if (welcomeScreen) welcomeScreen.classList.remove('active');
       if (onboardingScreen) onboardingScreen.classList.remove('active');

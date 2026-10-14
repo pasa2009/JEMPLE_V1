@@ -331,6 +331,7 @@
 
   </div>
 
+  <script src="jample-diagnosis-reward-bridge.js"></script>
   <script>
     const AGE_BENCHMARKS = {
       '20s': { label: '20대 (사회초년생)', emergencyMonths: 2, savingsRate: 0.50, financialAssetRate: 0.95, debtRateMax: 0.30, recommendedInvestorType: '적극투자형' },
@@ -679,6 +680,8 @@
       });
 
       renderReportScreen(items, redItems);
+       // 결과 화면 완성 후 월 1회 진단 보상 이벤트 발행
+       window.JampleDiagnosisReward?.complete('diagnosis');
     }
 
     function renderReportScreen(items, redItems) {
@@ -755,7 +758,12 @@
     }
 
     function navToAppTab(tabName) {
-      window.location.href = `index.html?tab=${tabName}`;
+      const params = new URLSearchParams(window.location.search);
+       const target = new URL('index.html', window.location.href);
+       target.searchParams.set('tab', tabName);
+       if (params.get('demo') === '1') target.searchParams.set('demo', '1');
+       if (params.get('testDate')) target.searchParams.set('testDate', params.get('testDate'));
+       window.location.href = target.toString();
     }
 
     window.addEventListener('DOMContentLoaded', () => {

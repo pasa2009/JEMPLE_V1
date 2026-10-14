@@ -364,6 +364,7 @@
 
   </div>
 
+  <script src="jample-diagnosis-reward-bridge.js"></script>
   <script>
     const PRESETS = [
       { id: 'wedding', label: '결혼자금', amount: 50000000, months: 36, monthly: 1200000 },
@@ -733,6 +734,8 @@
       document.getElementById('step1View').classList.add('hidden');
       document.getElementById('step2View').classList.remove('hidden');
       document.getElementById('step2View').classList.add('flex');
+       // 결과 화면 완성 후 월 1회 진단 보상 이벤트 발행
+       window.JampleDiagnosisReward?.complete('basket');
     }
 
     function renderFundCards(funds) {
@@ -794,7 +797,12 @@
     }
 
     function navToAppTab(tabName) {
-      window.location.href = `index.html?tab=${tabName}`;
+      const params = new URLSearchParams(window.location.search);
+       const target = new URL('index.html', window.location.href);
+       target.searchParams.set('tab', tabName);
+       if (params.get('demo') === '1') target.searchParams.set('demo', '1');
+       if (params.get('testDate')) target.searchParams.set('testDate', params.get('testDate'));
+       window.location.href = target.toString();
     }
 
     document.getElementById('btnGoToStep2').addEventListener('click', goToStep2);

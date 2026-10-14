@@ -297,6 +297,7 @@
   </div>
 
   <!-- 자바스크립트 로직 -->
+  <script src="jample-diagnosis-reward-bridge.js"></script>
   <script>
     function formatCurrencyInput(input) {
       let value = input.value.replace(/[^0-9]/g, '');
@@ -481,6 +482,8 @@
       document.getElementById('formSection').classList.add('hidden');
       document.getElementById('resultSection').classList.remove('hidden');
       document.getElementById('resultSection').classList.add('flex');
+       // 결과 화면 완성 후 월 1회 진단 보상 이벤트 발행
+       window.JampleDiagnosisReward?.complete('debt');
     }
 
     function resetForm() {
@@ -492,7 +495,12 @@
     }
 
     function navToAppTab(tabName) {
-      window.location.href = `index.html?tab=${tabName}`;
+      const params = new URLSearchParams(window.location.search);
+       const target = new URL('index.html', window.location.href);
+       target.searchParams.set('tab', tabName);
+       if (params.get('demo') === '1') target.searchParams.set('demo', '1');
+       if (params.get('testDate')) target.searchParams.set('testDate', params.get('testDate'));
+       window.location.href = target.toString();
     }
   </script>
 </body>

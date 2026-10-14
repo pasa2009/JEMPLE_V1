@@ -1,44 +1,45 @@
-const CACHE_NAME = 'jample-cache-v1';
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.json',
-  './logo.png',
-  './RING1.png',
-  './RING2.png',
-  './RING3.png',
-  './RING4.png',
-  './RING5.png'
-];
+/* Jample PWA: network-first updates, offline fallback. */
+const CACHE_NAME = 'jample-cache-v2';
+const CACHE_PREFIX = 'jample-cache-';
+const APP_SHELL = ['./', './index.html', './manifest.json'];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
-  self.skipWaiting();
+self.addEventListener('install', event => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    // Failure of one asset must not block worker installation.
+    await Promise.allSettled(APP_SHELL.map(url => cache.add(url)));
+    await self.skipWaiting();
+  })());
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
-  );
-  self.clients.claim();
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const names = await caches.keys();
+    await Promise.all(names.filter(name => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME).map(name => caches.delete(name)));
+    await self.clients.claim();
+  })());
 });
 
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request);
-    })
-  );
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    try {
+      // Always favor up-to-date HTML, scripts, images and icons while online.
+      const response = await fetch(request, { cache: 'no-cache' });
+      if (response.ok) await cache.put(request, response.clone());
+      return response;
+    } catch (error) {
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      if (request.mode === 'navigate') {
+        const fallback = await cache.match('./index.html');
+        if (fallback) return fallback;
+      }
+      throw error;
+    }
+  })());
 });

@@ -4058,8 +4058,37 @@ rollPeriodForward=function(){
   window.addEventListener('DOMContentLoaded', () => {
     // 1. PWA 서비스워커 등록
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(() => console.log('Jample Service Worker Registered'))
+      // 페이지를 다시 열 때 최신 버전 확인. 재무 데이터(localStorage)는 유지합니다.
+      let refreshedForNewWorker = false;
+      let pendingWorkerRefresh = false;
+      function safeRefreshForNewWorker() {
+        if (refreshedForNewWorker || document.visibilityState !== 'visible') return;
+        const el = document.activeElement;
+        const typing = el && (el.matches('input, textarea, select') || el.isContentEditable);
+        if (typing) { pendingWorkerRefresh = true; return; }
+        refreshedForNewWorker = true;
+        window.location.reload();
+      }
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        // 새 SW가 실제로 제어를 시작한 경우에만 화면을 갱신합니다.
+        safeRefreshForNewWorker();
+      });
+      document.addEventListener('focusout', () => {
+        if (pendingWorkerRefresh) {
+          pendingWorkerRefresh = false;
+          safeRefreshForNewWorker();
+        }
+      });
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+        .then((registration) => {
+          registration.update().catch(() => {});
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+              registration.update().catch(() => {});
+              if (pendingWorkerRefresh) safeRefreshForNewWorker();
+            }
+          });
+        })
         .catch((err) => console.log('Service Worker Registration Failed:', err));
     }
 

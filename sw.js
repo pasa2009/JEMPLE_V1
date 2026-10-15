@@ -1,7 +1,7 @@
 /* Jample PWA: network-first updates, offline fallback. */
-const CACHE_NAME = 'jample-cache-v2';
+const CACHE_NAME = 'jample-cache-v3';
 const CACHE_PREFIX = 'jample-cache-';
-const APP_SHELL = ['./', './index.html', './manifest.json'];
+const APP_SHELL = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
@@ -29,7 +29,7 @@ self.addEventListener('fetch', event => {
     const cache = await caches.open(CACHE_NAME);
     try {
       // Always favor up-to-date HTML, scripts, images and icons while online.
-      const response = await fetch(request, { cache: 'no-cache' });
+      const response = await fetch(request, { cache: 'no-store' });
       if (response.ok) await cache.put(request, response.clone());
       return response;
     } catch (error) {

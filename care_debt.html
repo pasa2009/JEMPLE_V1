@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    [hidden] { display: none !important; }
     :root {
       --primary: #FF8A3D;
       --primary-dark: #E67220;
@@ -121,7 +122,7 @@
             </p>
           </div>
 
-          <form id="loanForm" onsubmit="handleDiagnosis(event)" class="space-y-3.5">
+          <form id="loanForm" novalidate onsubmit="handleDiagnosis(event)" class="space-y-3.5">
             <!-- 월 소득 입력 -->
             <div class="bg-[#FDFBF7] p-3.5 rounded-2xl border border-[#EFE6D8] shadow-sm">
               <label for="monthlyIncome" class="block text-xs font-bold text-[#8B5A2B] mb-1.5">
@@ -161,7 +162,7 @@
                     <div>
                       <label class="block text-[10px] text-slate-500 font-medium mb-1">적용 금리</label>
                       <div class="relative flex items-center">
-                        <input type="number" step="0.01" name="rate" required placeholder="4.5" oninput="onLoanFieldChange(this)"
+                        <input type="number" min="0" step="0.01" name="rate" required placeholder="4.5" oninput="onLoanFieldChange(this)"
                           class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-right pr-7 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#FF8A3D]">
                         <span class="absolute right-2 text-[10px] font-bold text-slate-400 pointer-events-none">%</span>
                       </div>
@@ -172,14 +173,14 @@
                       <label class="block text-[10px] text-slate-500 font-medium mb-1">상환 형태</label>
                       <select name="type" onchange="onTypeChange(this)"
                         class="w-full bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:border-[#FF8A3D] h-[34px]">
-                        <option value="principal">원리금 (원금+이자)</option>
+                        <option value="principal">원리금균등상환</option>
                         <option value="interest">이자만 (만기일시)</option>
                       </select>
                     </div>
                     <div>
-                      <label class="block text-[10px] text-[#E67220] font-bold mb-1">이번 달 상환액</label>
+                      <label class="block text-[10px] text-[#E67220] font-bold mb-1">다음 회차 예상 상환액</label>
                       <div class="relative flex items-center">
-                        <input type="text" name="payment" required placeholder="500,000" oninput="formatCurrencyInput(this)"
+                        <input type="text" name="payment" required readonly placeholder="자동 계산"
                           class="w-full bg-[#FFF8E8] border border-[#FF8A3D]/40 rounded-xl px-2.5 py-1.5 text-right pr-7 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#FF8A3D] h-[34px]">
                         <span class="absolute right-2 text-[10px] font-bold text-[#E67220] pointer-events-none">원</span>
                       </div>
@@ -191,7 +192,7 @@
 
             <!-- 점검하기 버튼 -->
             <div class="pt-3 pb-2">
-              <button type="submit" class="w-full py-3.5 bg-[#FF8A3D] hover:bg-[#E67220] active:scale-[0.99] text-white font-extrabold rounded-2xl shadow-md transition-all text-sm flex items-center justify-center gap-1.5">
+              <button type="button" onclick="handleDiagnosis(event)" class="w-full py-3.5 bg-[#FF8A3D] hover:bg-[#E67220] active:scale-[0.99] text-white font-extrabold rounded-2xl shadow-md transition-all text-sm flex items-center justify-center gap-1.5">
                 <span>소득 대비 대출 부담 점검하기</span>
                 <i class="fa-solid fa-arrow-right text-xs"></i>
               </button>
@@ -312,32 +313,112 @@
       return parseFloat(value.toString().replace(/,/g, '')) || 0;
     }
 
+    // 현재 잔액과 잔여 기간 기준, 다음 1회 납입 예상액 (연금리 / 12).
+    function computeLoanPayment(balance, annualRate, months, type) {
+      if (!Number.isFinite(balance) || balance <= 0 || !Number.isFinite(annualRate) || annualRate < 0) return null;
+      const r = annualRate / 1200;
+      if (type !== 'interest' && (!Number.isInteger(months) || months < 1)) return null;
+      const rawPayment = type === 'interest' ? balance * r :
+        (r === 0 ? balance / months : balance * r / -Math.expm1(-months * Math.log1p(r)));
+      if (!Number.isFinite(rawPayment)) return null;
+      const interest = Math.round(balance * r);
+      const payment = Math.round(rawPayment);
+      return { payment, interest, principal: Math.max(0, payment - interest) };
+    }
+
+    function koreaToday() {
+      return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date());
+    }
+
+    // 매월 시작일과 같은 일자. 해당 일이 없는 달에는 말일로 조정.
+    function dueDate(start, offset) {
+      const [y, m, d] = start.split('-').map(Number);
+      const first = new Date(Date.UTC(y, m - 1 + offset, 1));
+      const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+      return [first.getUTCFullYear(), String(first.getUTCMonth() + 1).padStart(2, '0'), String(Math.min(d, last)).padStart(2, '0')].join('-');
+    }
+
+    function computeLoanAsOf(principal, rate, months, start, today) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || dueDate(start, 0) !== start || start > today) return null;
+      const base = computeLoanPayment(principal, rate, months, 'principal');
+      if (!base || months > 1200) return null;
+      const [y, m] = start.split('-').map(Number);
+      const [ty, tm] = today.split('-').map(Number);
+      let paid = Math.min(months, Math.max(0, (ty - y) * 12 + tm - m));
+      if (paid > 0 && dueDate(start, paid) > today) paid--;
+      const r = rate / 1200;
+      const fixed = r === 0 ? principal / months : principal * r / -Math.expm1(-months * Math.log1p(r));
+      // 잔여 연금의 현재가치로 잔액 계산: 긴 기간에도 안정적으로 계산.
+      const balance = paid >= months ? 0 : (r === 0 ? fixed * (months - paid) : fixed * -Math.expm1(-(months - paid) * Math.log1p(r)) / r);
+      const interest = Math.round(balance * r);
+      const payment = Math.round(Math.min(fixed, balance * (1 + r)));
+      return { balance: Math.round(balance), interest, payment, principal: Math.max(0, payment - interest), paid,
+        next: paid < months ? dueDate(start, paid + 1) : null };
+    }
+
+    function initializeLoanRow(item) {
+      if (item.querySelector('[name="months"]')) return;
+      const select = item.querySelector('[name="type"]');
+      const selectorBlock = select.parentElement;
+      item.insertBefore(selectorBlock, item.querySelector('.grid'));
+      const balance = item.querySelector('[name="balance"]');
+      balance.parentElement.previousElementSibling.setAttribute('data-balance-label', '');
+      const extra = document.createElement('div');
+      extra.innerHTML = `
+        <div data-principal-fields class="grid grid-cols-2 gap-2">
+          <label class="block text-xs text-slate-500">대출 시작일
+            <input type="date" name="startDate" required max="${koreaToday()}" oninput="onLoanFieldChange(this)"
+              class="w-full bg-white border border-slate-200 rounded-xl px-2 py-2 mt-1">
+          </label>
+          <label class="block text-xs text-slate-500">전체 상환기간 (개월)
+            <input type="number" name="months" min="1" max="1200" step="1" required placeholder="예: 360 (30년)"
+              oninput="onLoanFieldChange(this)" class="w-full bg-white border border-slate-200 rounded-xl px-2 py-2 mt-1">
+          </label>
+        </div>
+        <p class="text-xs font-bold text-[#8B5A2B] mt-2" aria-live="polite" data-current-balance></p>
+        <p class="text-xs text-slate-600 mt-2" aria-live="polite" data-breakdown>원금 — · 이자 —</p>
+        <p class="text-[10px] text-slate-500 mt-1" data-calculation-note></p>`;
+      item.appendChild(extra);
+      calculateInterestPayment(item);
+    }
+
     function calculateInterestPayment(itemElement) {
-      const typeSelect = itemElement.querySelector('select[name="type"]');
-      if (typeSelect.value === 'interest') {
-        const balanceInput = itemElement.querySelector('input[name="balance"]');
-        const rateInput = itemElement.querySelector('input[name="rate"]');
-        const paymentInput = itemElement.querySelector('input[name="payment"]');
-
-        const balance = parseCurrency(balanceInput.value);
-        const rate = parseFloat(rateInput.value) || 0;
-
-        if (balance > 0 && rate > 0) {
-          const monthlyInterest = Math.floor((balance * (rate / 100)) / 12);
-          paymentInput.value = monthlyInterest.toLocaleString();
-        }
-      }
+      const interestOnly = itemElement.querySelector('[name="type"]').value === 'interest';
+      const term = itemElement.querySelector('[name="months"]');
+      if (!term) return null;
+      const start = itemElement.querySelector('[name="startDate"]');
+      for (const input of [term, start]) { input.required = !interestOnly; input.disabled = interestOnly; }
+      itemElement.querySelector('[data-principal-fields]').hidden = interestOnly;
+      itemElement.querySelector('[data-balance-label]').textContent = interestOnly ? '현재 대출 잔액' : '최초 대출원금';
+      const rateInput = itemElement.querySelector('[name="rate"]');
+      const amount = parseCurrency(itemElement.querySelector('[name="balance"]').value);
+      const today = koreaToday();
+      const result = rateInput.value.trim() === '' ? null : (interestOnly ?
+        computeLoanPayment(amount, Number(rateInput.value), 0, 'interest') :
+        computeLoanAsOf(amount, Number(rateInput.value), Number(term.value), start.value, today));
+      if (result && interestOnly) result.balance = amount;
+      itemElement.loanResult = result;
+      const payment = itemElement.querySelector('[name="payment"]');
+      payment.value = result ? result.payment.toLocaleString('ko-KR') : '';
+      const won = n => n.toLocaleString('ko-KR') + '원';
+      const balanceText = itemElement.querySelector('[data-current-balance]');
+      balanceText.hidden = interestOnly;
+      balanceText.textContent = result ? today + ' 기준 예상 잔액: ' + won(result.balance) : '필요한 정보를 입력하면 자동 계산됩니다.';
+      itemElement.querySelector('[data-breakdown]').hidden = interestOnly;
+      itemElement.querySelector('[data-breakdown]').textContent = result ? '원금 ' + won(result.principal) + ' · 이자 ' + won(result.interest) : '원금 — · 이자 —';
+      const note = itemElement.querySelector('[data-calculation-note]');
+      note.hidden = interestOnly;
+      note.textContent = '실제 은행잔액과 다를 수 있음';
+      return result;
     }
 
     function onLoanFieldChange(input) {
-      formatCurrencyInput(input);
-      const loanItem = input.closest('.loan-item');
-      calculateInterestPayment(loanItem);
+      if (input.name === 'balance') formatCurrencyInput(input);
+      calculateInterestPayment(input.closest('.loan-item'));
     }
 
     function onTypeChange(select) {
-      const loanItem = select.closest('.loan-item');
-      calculateInterestPayment(loanItem);
+      calculateInterestPayment(select.closest('.loan-item'));
     }
 
     function addLoanRow() {
@@ -360,7 +441,7 @@
           <div>
             <label class="block text-[10px] text-slate-500 font-medium mb-1">적용 금리</label>
             <div class="relative flex items-center">
-              <input type="number" step="0.01" name="rate" required placeholder="4.5" oninput="onLoanFieldChange(this)"
+              <input type="number" min="0" step="0.01" name="rate" required placeholder="4.5" oninput="onLoanFieldChange(this)"
                 class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-right pr-7 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#FF8A3D]">
               <span class="absolute right-2 text-[10px] font-bold text-slate-400 pointer-events-none">%</span>
             </div>
@@ -371,14 +452,14 @@
             <label class="block text-[10px] text-slate-500 font-medium mb-1">상환 형태</label>
             <select name="type" onchange="onTypeChange(this)"
               class="w-full bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:border-[#FF8A3D] h-[34px]">
-              <option value="principal">원리금 (원금+이자)</option>
+              <option value="principal">원리금균등상환</option>
               <option value="interest">이자만 (만기일시)</option>
             </select>
           </div>
           <div>
-            <label class="block text-[10px] text-[#E67220] font-bold mb-1">이번 달 상환액</label>
+            <label class="block text-[10px] text-[#E67220] font-bold mb-1">다음 회차 예상 상환액</label>
             <div class="relative flex items-center">
-              <input type="text" name="payment" required placeholder="500,000" oninput="formatCurrencyInput(this)"
+              <input type="text" name="payment" required readonly placeholder="자동 계산"
                 class="w-full bg-[#FFF8E8] border border-[#FF8A3D]/40 rounded-xl px-2.5 py-1.5 text-right pr-7 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#FF8A3D] h-[34px]">
               <span class="absolute right-2 text-[10px] font-bold text-[#E67220] pointer-events-none">원</span>
             </div>
@@ -386,6 +467,7 @@
         </div>
       `;
       container.appendChild(newItem);
+      initializeLoanRow(newItem);
       updateDeleteButtons();
     }
 
@@ -408,8 +490,24 @@
 
     function handleDiagnosis(event) {
       event.preventDefault();
+      // 자동 계산 필드를 제외하고 실제 입력 항목의 오류를 명시한다.
+      const form = document.getElementById('loanForm');
+      for (const input of form.querySelectorAll('input:not([readonly]):not(:disabled)')) {
+        if (!input.checkValidity()) {
+          input.reportValidity();
+          input.focus();
+          return;
+        }
+      }
 
+      for (const item of document.querySelectorAll('.loan-item')) {
+        if (!calculateInterestPayment(item)) {
+          alert('대출원금(또는 현재 잔액), 연금리, 대출 시작일과 전체 상환기간을 확인해주세요.');
+          return;
+        }
+      }
       const income = parseCurrency(document.getElementById('monthlyIncome').value);
+      if (income <= 0) { alert('월 실수령 소득을 1원 이상 입력해주세요.'); return; }
       const balances = document.querySelectorAll('input[name="balance"]');
       const rates = document.querySelectorAll('input[name="rate"]');
       const payments = document.querySelectorAll('input[name="payment"]');
@@ -419,7 +517,7 @@
       let weightedRateSum = 0;
 
       for (let i = 0; i < balances.length; i++) {
-        const bal = parseCurrency(balances[i].value);
+        const bal = balances[i].closest('.loan-item').loanResult.balance;
         const rat = parseFloat(rates[i].value) || 0;
         const pay = parseCurrency(payments[i].value);
 
@@ -479,6 +577,8 @@
         `;
       }
 
+      document.getElementById('formSection').hidden = true;
+      document.getElementById('resultSection').hidden = false;
       document.getElementById('formSection').classList.add('hidden');
       document.getElementById('resultSection').classList.remove('hidden');
       document.getElementById('resultSection').classList.add('flex');
@@ -488,6 +588,9 @@
 
     function resetForm() {
       document.getElementById('loanForm').reset();
+      document.querySelectorAll('.loan-item').forEach(calculateInterestPayment);
+      document.getElementById('resultSection').hidden = true;
+      document.getElementById('formSection').hidden = false;
       document.getElementById('resultSection').classList.add('hidden');
       document.getElementById('resultSection').classList.remove('flex');
       document.getElementById('formSection').classList.remove('hidden');
@@ -502,6 +605,7 @@
        if (params.get('testDate')) target.searchParams.set('testDate', params.get('testDate'));
        window.location.href = target.toString();
     }
+    document.querySelectorAll('.loan-item').forEach(initializeLoanRow);
   </script>
 </body>
 </html>

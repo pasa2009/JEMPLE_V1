@@ -368,7 +368,13 @@
   .coaching-panel{width:100%;max-height:88%;overflow-y:auto;background:#fff;border-radius:24px 24px 0 0;padding:22px 20px 26px}
   .coaching-item{padding:13px;margin:10px 0;background:#FFF8E8;border-radius:12px;font-size:13px;line-height:1.65}
   .coaching-metric{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:7px 0;border-bottom:1px solid #f1f3f5}
-  </style>
+  
+#fixed-save-confirm-dialog::backdrop,#fixed-item-dialog::backdrop{background:rgba(20,25,30,.5)}
+.fixed-edit-row{display:grid;grid-template-columns:minmax(70px,1fr) 48px minmax(70px,1fr) 22px;gap:5px;align-items:center;background:var(--cream);border:1px solid #F5E5C9;border-radius:12px;padding:10px 8px;margin-bottom:8px}
+.fixed-edit-row input{width:100%;min-width:0;border:0;border-bottom:1px solid #e8cfa8;background:transparent;font:inherit;color:var(--brown);padding:5px 1px;border-radius:0;font-size:12px;box-sizing:border-box}
+.fixed-edit-row input:focus{outline:2px solid var(--primary);border-radius:4px;background:white}
+.fixed-edit-row button{border:0;background:transparent;padding:3px;cursor:pointer;font-size:14px}
+</style>
 </head>
 <body>
 
@@ -455,13 +461,6 @@
           <span>고정지출 총액</span>
         </label>
         <input type="text" id="input-fixed" class="input-text" placeholder="700,000원" value="700,000원" oninput="formatCurrencyInput(this)">
-      </div>
-      <div class="input-group" style="display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; align-items:center; gap:6px;">
-          <img src="my_icon_calendar_pin.png" class="ui-input-icon" alt="달력 핀">
-          <span style="font-size:13px; font-weight:bold; color:var(--brown);">달력에 고정지출 표시하기</span>
-        </div>
-        <input type="checkbox" id="toggle-fixed-cal" checked style="width:20px; height:20px; accent-color:var(--primary);">
       </div>
       <button class="btn-main" onclick="goToStep(3)">다음 단계로 넘어가기 →</button>
     </div>
@@ -577,8 +576,7 @@
       </div>
     </div>
 
-    <div class="card" style="font-size:13px; line-height:1.6;">
-      이번 기간 모을 예정인 돈: <b id="planned-goal-money">0원</b>
+    <div id="home-gift-details" class="card" style="display:none; font-size:13px; line-height:1.6;">
       <button id="btn-gift-purchase" class="btn-main" style="display:none; margin-top:12px;" onclick="recordGiftPurchase()">🎁 선물 구매 완료 기록하기</button>
       <div id="gift-history" style="margin-top:10px;"></div>
     </div>
@@ -949,25 +947,9 @@
       </div>
       
       <div id="fixed-items-list" style="margin-bottom:12px;"></div>
+      <p id="fixed-detail-guidance" style="font-size:12px;line-height:1.6;color:var(--text-sub)"></p>
 
-      <div class="fixed-form-card">
-        <div style="display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:bold; color:var(--brown); margin-bottom:8px;">
-          <img src="my_icon_add.png" style="width:18px; height:18px; object-fit:contain;" alt="등록">
-          <span>새로운 고정지출 등록</span>
-        </div>
-        <div class="fixed-form-row">
-          <input type="text" id="add-fixed-name" class="input-mini" placeholder="항목명 (예: 운동비, 월세)" style="flex: 1.4;">
-          <input type="text" id="add-fixed-day" class="input-mini" placeholder="출금일" style="flex: 0.9; text-align:right;" oninput="formatDayInput(this)">
-        </div>
-        <div style="margin-bottom:8px;">
-          <input type="text" id="add-fixed-amt" class="input-mini" placeholder="금액 (예: 150,000원)" style="text-align:right;" oninput="formatCurrencyInput(this)">
-        </div>
-        <button class="btn-main" style="padding:10px; font-size:13px; border-radius:10px;" onclick="addFixedItem()">
-          <img src="my_icon_add.png" class="ui-btn-icon" alt="추가">
-          <span>고정지출 항목 추가하기</span>
-        </button>
-      </div>
-
+      <button type="button" class="btn-secondary" style="width:100%" onclick="openFixedItemAdd()">＋ 고정지출 추가</button>
       <div class="input-group" style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; margin-bottom:0;">
         <div style="display:flex; align-items:center; gap:6px;">
           <img src="my_icon_calendar_pin.png" style="width:18px; height:18px; object-fit:contain;" alt="달력에 표시">
@@ -1001,6 +983,7 @@
       </div>
     </div>
 
+    <p id="my-settings-save-status" role="status" aria-live="polite" style="display:none;font-size:13px;line-height:1.6;padding:10px;border-radius:10px;background:#fff5e8;"></p>
     <button class="btn-main" onclick="saveMySettings()" style="margin-bottom:14px;">
       <img src="report_icon_defense.png" class="ui-btn-icon" alt="저장">
       <span>설정 저장 및 정원 갱신</span>
@@ -1355,7 +1338,8 @@
     state.payday = parseNumber(document.getElementById('input-payday').value) || 25;
     state.income = parseNumber(document.getElementById('input-income').value);
     state.fixedExpenses = parseNumber(document.getElementById('input-fixed').value);
-    state.showFixedInCal = document.getElementById('toggle-fixed-cal').checked;
+    state.initialFixedExpenses=state.fixedExpenses;
+    state.showFixedInCal = true; // 표시 여부는 마이페이지에서 변경합니다.
     state.baseSavings = parseNumber(document.getElementById('input-savings').value);
     state.variableBudget = parseNumber(document.getElementById('input-variable').value);
     
@@ -1971,37 +1955,102 @@
     closeExpenseSheet();
   }
 
+  let editingFixedItemId=null;
+  function preserveFixedReference(){
+    if(!Number.isFinite(state.initialFixedExpenses)){
+      state.initialFixedExpenses=state.fixedExpenses;
+      saveStateToLocalStorage();
+    }
+  }
+  function cancelFixedItemEdit(){
+    editingFixedItemId=null;
+    for(const id of ['add-fixed-name','add-fixed-day','add-fixed-amt'])document.getElementById(id).value='';
+    document.getElementById('fixed-form-title').textContent='새로운 고정지출 등록';
+    document.getElementById('fixed-item-submit-label').textContent='고정지출 항목 추가하기';
+    document.getElementById('fixed-edit-cancel').style.display='block';
+    const dialog=document.getElementById('fixed-item-dialog');if(dialog.open)dialog.close();
+  }
+  function editFixedItem(id){
+    const item=fixedItemsForEditing().find(item=>item.id===id);
+    if(!item)return;
+    preserveFixedReference();editingFixedItemId=id;
+    document.getElementById('add-fixed-name').value=item.name;
+    document.getElementById('add-fixed-day').value=item.day+'일';
+    document.getElementById('add-fixed-amt').value=toWon(item.amount);
+    document.getElementById('fixed-form-title').textContent='고정지출 항목 수정';
+    document.getElementById('fixed-item-submit-label').textContent='수정한 항목 반영하기';
+    document.getElementById('fixed-edit-cancel').style.display='block';
+    document.getElementById('fixed-item-dialog').showModal();
+    document.getElementById('add-fixed-name').focus();
+  }
+  window.addEventListener('DOMContentLoaded',()=>{
+    const dialog=document.getElementById('fixed-item-dialog');
+    dialog.addEventListener('cancel',event=>{event.preventDefault();cancelFixedItemEdit();});
+    dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)cancelFixedItemEdit();}});
+  });
+  function openFixedItemAdd(){
+    cancelFixedItemEdit();
+    document.getElementById('fixed-item-dialog').showModal();
+    document.getElementById('add-fixed-name').focus();
+  }
+  function updateFixedInline(id,field,input){
+    const item=fixedItemsForEditing().find(row=>row.id===id);if(!item)return;
+    const value=field==='name'?input.value.trim():parseNumber(input.value);
+    if((field==='name'&&!value)||(field==='day'&&(!Number.isInteger(value)||value<1||value>31))||
+      (field==='amount'&&(!Number.isSafeInteger(value)||value<0))){
+      input.value=field==='name'?item.name:field==='day'?item.day+'일':toWon(item.amount);
+      return alert('항목명, 출금일(1~31일), 금액(0원 이상)을 확인해주세요.');
+    }
+    preserveFixedReference();
+    if(!Array.isArray(state.fixedDraftList))state.fixedDraftList=state.fixedList.map(row=>({...row}));
+    state.fixedDraftList.find(row=>row.id===id)[field]=value;
+    input.value=field==='name'?value:field==='day'?value+'일':toWon(value);
+    saveStateToLocalStorage();refreshFixedDraftTotal();
+  }
+  function refreshFixedDraftTotal(){
+    const total=fixedItemsForEditing().reduce((sum,item)=>sum+item.amount,0);
+    document.getElementById('my-fixed-total-badge').innerText=`합계: ${toWon(total)}`;
+    document.getElementById('fixed-detail-guidance').textContent=fixedItemsForEditing().some(item=>item.amount===0)
+      ? `현재 적용 총액 ${toWon(state.fixedExpenses)} 유지 · 항목명·날짜·금액을 바로 수정할 수 있습니다. 사용하지 않는 항목은 삭제 후 작성 완료를 눌러주세요.`:'';
+  }
+  function fixedItemsForEditing(){
+    return Array.isArray(state.fixedDraftList) ? state.fixedDraftList : state.fixedList;
+  }
+  function prepareFixedDetailRows(){
+    const rows=fixedItemsForEditing();
+    const oldNames=['월세','관리비','통신료','운동비','주유비'];
+    const oldUnused=rows.length===5 && rows.every((item,i)=>item.id===81001+i && item.amount===0 && item.name===oldNames[i]);
+    if((rows.length && rows.every(isInitialFixedTotal)) || oldUnused){
+      preserveFixedReference();
+      state.fixedDraftList=['통신비','보험료','관리비','교통비','대출이자'].map((name,i)=>({id:82001+i,name,day:25,amount:0}));
+      saveStateToLocalStorage();
+    }
+  }
+  function isInitialFixedTotal(item){
+    return item.isTotalPlaceholder===true || item.name==='고정지출 합계 (세부 항목으로 교체 가능)';
+  }
   function renderFixedItems() {
+    preserveFixedReference();
+    prepareFixedDetailRows();
     const container = document.getElementById('fixed-items-list');
     container.innerHTML = '';
 
     let total = 0;
-    state.fixedList.forEach((item) => {
+    fixedItemsForEditing().forEach((item) => {
       total += item.amount;
       
-      let itemIcon = 'my_icon_fixed_list.png';
-      if (item.name.includes('월세') || item.name.includes('집')) itemIcon = 'my_icon_rent.png';
-      else if (item.name.includes('통신') || item.name.includes('전화') || item.name.includes('폰')) itemIcon = 'my_icon_phone.png';
-      else if (item.name.includes('보험')) itemIcon = 'my_icon_insurance.png';
-
       const el = document.createElement('div');
-      el.className = 'fixed-item';
-      el.innerHTML = `
-        <div class="fixed-item-left">
-          <img src="${itemIcon}" class="ui-input-icon" onerror="this.src='my_icon_fixed_list.png'" alt="${escapeHtml(item.name)}">
-          <span>📅 ${item.day}일</span>
-          <span>${escapeHtml(item.name)}</span>
-        </div>
-        <div class="fixed-item-right">
-          <span>${toWon(item.amount)}</span>
-          <button class="fixed-delete-btn" onclick="deleteFixedItem(${item.id})">✕</button>
-        </div>
-      `;
+      el.className='fixed-edit-row';
+      el.onclick=event=>{if(!event.target.closest('input,button'))editFixedItem(item.id);};
+      el.innerHTML=`
+        <input aria-label="항목명" value="${escapeHtml(item.name)}" onchange="updateFixedInline(${item.id},'name',this)">
+        <input aria-label="출금일" inputmode="numeric" value="${item.day}일" onchange="updateFixedInline(${item.id},'day',this)">
+        <input aria-label="금액" inputmode="numeric" style="text-align:right" placeholder="금액 입력" value="${item.amount?toWon(item.amount):''}" onchange="updateFixedInline(${item.id},'amount',this)">
+        <button type="button" aria-label="항목 삭제" style="color:#ff5733" onclick="deleteFixedItem(${item.id})">×</button>`;
       container.appendChild(el);
     });
 
-    state.fixedExpenses = total;
-    document.getElementById('my-fixed-total-badge').innerText = `합계: ${toWon(total)}`;
+    refreshFixedDraftTotal();
   }
 
   function addFixedItem() {
@@ -2015,25 +2064,29 @@
 
     if (!name) return alert('항목명을 입력해주세요 (예: 운동비)');
     if (day < 1 || day > 31) return alert('출금일을 1~31일 사이로 입력해주세요');
-    if (amount <= 0) return alert('금액을 입력해주세요');
+    if (amount < 0) return alert('금액은 0원 이상 입력해주세요');
 
-    state.fixedList.push({
-      id: Date.now(),
-      name: name,
-      day: day,
-      amount: amount
-    });
-
-    nameInput.value = '';
-    dayInput.value = '';
-    amtInput.value = '';
+    if(!amtInput.value.trim() || !Number.isSafeInteger(amount))return alert('금액을 입력해주세요.');
+    preserveFixedReference();
+    if(!Array.isArray(state.fixedDraftList))state.fixedDraftList=state.fixedList.map(item=>({...item}));
+    if(editingFixedItemId!==null){
+      const index=state.fixedDraftList.findIndex(item=>item.id===editingFixedItemId);
+      if(index<0)return alert('수정할 항목을 다시 선택해주세요.');
+      state.fixedDraftList[index]={...state.fixedDraftList[index],name,day,amount};
+    }else{
+      state.fixedDraftList=state.fixedDraftList.filter(item=>!isInitialFixedTotal(item));
+      state.fixedDraftList.push({id:Date.now()+Math.random(),name,day,amount});
+    }
+    cancelFixedItemEdit();
 
     saveStateToLocalStorage();
     renderFixedItems();
   }
 
   function deleteFixedItem(id) {
-    state.fixedList = state.fixedList.filter(item => item.id !== id);
+    preserveFixedReference();
+    if(editingFixedItemId===id)cancelFixedItemEdit();
+    state.fixedDraftList = fixedItemsForEditing().filter(item => item.id !== id).map(item=>({...item}));
     saveStateToLocalStorage();
     renderFixedItems();
   }
@@ -2411,7 +2464,7 @@
   function renderGoalMoneyDetails() {
     const p=getViewPeriod();
     const spent=expensesInPeriod(p).reduce((sum,e)=>sum+e.amount,0);
-    document.getElementById('planned-goal-money').textContent=state.settledMonths[p.key] ? '결산 완료' : toWon(Math.max(0,p.budget.surplus+p.budget.variableBudget-spent));
+    document.getElementById('home-gift-details').style.display=((state.currentSaved>=state.targetGoalAmount && state.targetGoalAmount>0) || (state.giftHistory || []).length>0) ? 'block' : 'none';
     document.getElementById('btn-gift-purchase').style.display=state.currentSaved>=state.targetGoalAmount && state.targetGoalAmount>0 ? 'block' : 'none';
     document.getElementById('gift-history').innerHTML=(state.giftHistory || []).slice().reverse().map(g=>`<div>🎁 ${escapeHtml(g.date)} · ${escapeHtml(g.name)} 목표 달성 · 선물 ${toWon(g.amount)}</div>`).join('');
   }
@@ -2572,7 +2625,7 @@
   function renderLateSettlements() {
     const box=document.getElementById('late-settlement-list');
     const due=Object.keys(state.periodBudgets||{}).filter(key=>!state.settledMonths[key])
-      .map(key=>{const [y,m]=key.split('-').map(Number);return getPeriod(y,m);})
+      .map(key=>{const [y,m]=key.split('-').map(Number);return storedPaydayPeriod(key);})
       .filter(p=>settlementWindow(p).late).sort((a,b)=>a.start-b.start);
     box.style.display=due.length?'block':'none';
     box.replaceChildren();
@@ -2747,7 +2800,7 @@
   function findPeriodOfDate(y,m,d) {
     const when = new Date(y,m-1,d);
     return Object.keys(state.periodBudgets||{}).map(key=>{
-      const [yy,mm]=key.split('-').map(Number);return getPeriod(yy,mm);
+      const [yy,mm]=key.split('-').map(Number);return storedPaydayPeriod(key);
     }).find(p=>when>=p.start && when<p.end) || null;
   }
   function isLockedRecordDate(y,m,d) {
@@ -2762,7 +2815,7 @@
   }
   function openSettlementSheet(periodKey) {
     const key=periodKey||getViewPeriod().key;
-    const [y,m]=key.split('-').map(Number), p=getPeriod(y,m);
+    const [y,m]=key.split('-').map(Number), p=storedPaydayPeriod(key);
     if(!state.periodBudgets?.[key])return alert('이 기간의 저장된 예산이 없습니다.');
     const saved=state.settlementSnapshots?.[key];
     const w=settlementWindow(p);
@@ -2830,7 +2883,7 @@
   function closeSettlementSheet(){document.getElementById('settlement-overlay').classList.remove('active');settlementSelectedKey=null;}
   function confirmSettlementSheet(){
     if(!settlementSelectedKey)return;
-    const key=settlementSelectedKey,[y,m]=key.split('-').map(Number),p=getPeriod(y,m);
+    const key=settlementSelectedKey,[y,m]=key.split('-').map(Number),p=storedPaydayPeriod(key);
     if(state.settledMonths?.[key])return alert('이미 결산이 완료된 기간입니다.');
     const w=settlementWindow(p);
     if(!w.preview&&!w.final&&!w.late)return alert('D-3부터 결산할 수 있습니다.');
@@ -2865,7 +2918,7 @@
   renderLateSettlements=function(){
     const box=document.getElementById('late-settlement-list');box.replaceChildren();
     const due=Object.keys(state.periodBudgets||{}).filter(k=>!state.settledMonths?.[k])
-      .map(k=>{const [y,m]=k.split('-').map(Number);return getPeriod(y,m);})
+      .map(k=>storedPaydayPeriod(k))
       .filter(p=>settlementWindow(p).late).sort((a,b)=>a.start-b.start);
     box.style.display=due.length?'block':'none';if(!due.length)return;
     const title=document.createElement('strong');title.textContent='미결산 기간 정리';box.appendChild(title);
@@ -3109,7 +3162,7 @@
     const today=jampleClock();
     return Object.keys(state.periodBudgets || {})
       .filter(key=>!state.settledMonths?.[key])
-      .map(key=>{const [y,m]=key.split('-').map(Number);return getPeriod(y,m);})
+      .map(key=>{const [y,m]=key.split('-').map(Number);return storedPaydayPeriod(key);})
       .filter(p=>p.end<=today)
       .sort((a,b)=>b.end-a.end);
   }
@@ -3214,7 +3267,7 @@ activePeriod=function(date=jampleClock()){
     const start=parseLocalDay(t.start),end=parseLocalDay(t.end);
     if(date>=start && date<end)return {y:t.year,m:t.month};
     if(date<start){
-      const p=Object.keys(state.periodBudgets||{}).map(k=>{const a=k.split('-').map(Number);return getPeriod(a[0],a[1]);}).find(p=>date>=p.start&&date<p.end);
+      const p=Object.keys(state.periodBudgets||{}).map(k=>{const a=k.split('-').map(Number);return storedPaydayPeriod(k);}).find(p=>date>=p.start&&date<p.end);
       if(p)return {y:p.y,m:p.m};
     }
   }
@@ -3225,7 +3278,7 @@ switchTab=function(name,el){
   _switchBeforeImmediate(name,el);
   if(name==='my'){
     const note=document.getElementById('payday-change-hint');
-    if(note)note.textContent='급여일을 저장하면 오늘부터 새 관리기간으로 전환합니다. 첫 기간은 남은 일수 기준 임시 예산입니다.';
+    if(note)note.textContent='급여일을 저장하면 오늘이 포함된 한 달 전체를 새 기준으로 즉시 표시합니다.';
   }
 };
 function updatePaydayTransitionNotices(){
@@ -3344,7 +3397,51 @@ updateReportScreen=function(){_reportBeforeImmediate();updatePaydayTransitionNot
 const _waterBeforeImmediate=updateWaterLevel;
 updateWaterLevel=function(){_waterBeforeImmediate();updatePaydayTransitionNotices();renderTransitionBudgetDetails();};
 
-saveMySettings=function(){
+// Full-cycle policy: original transactions and confirmed snapshots remain intact.
+const periodBeforeFullCycle=getPeriod;
+getPeriod=function(y,m){
+  if(!state.fullPaydayCycle)return periodBeforeFullCycle(y,m);
+  const base=`${y}-${m}`;
+  const saved=state.periodBudgets?.[base];
+  const key=saved && (saved.payday!==state.payday || saved.isTransition || state.periodDateRanges?.[base])
+    ? `${base}-${state.payday}` : base;
+  const budget=state.periodBudgets?.[key] || budgetSnapshot();
+  return {key,y,m,budget,start:paydayDate(y,m,state.payday),end:paydayDate(y,m+1,state.payday)};
+};
+activePeriod=function(date=jampleClock()){
+  let y=date.getFullYear(),m=date.getMonth()+1;
+  if(date<paydayDate(y,m,state.payday)){m--;if(!m){m=12;y--;}}
+  return {y,m};
+};
+function storedPaydayPeriod(key){
+  const [y,m]=key.split('-').map(Number);
+  if(!state.fullPaydayCycle)return getPeriod(y,m);
+  const snapshot=state.settlementSnapshots?.[key];
+  const budget=snapshot?.budget || state.periodBudgets?.[key] || budgetSnapshot();
+  const range=state.periodDateRanges?.[key];
+  return {key,y,m,budget,start:range?parseLocalDay(range.start):paydayDate(y,m,budget.payday),
+    end:range?parseLocalDay(range.end):paydayDate(y,m+1,budget.payday)};
+}
+function settingsSaveFeedback(message){
+  const status=document.getElementById('my-settings-save-status');
+  if(status){status.textContent=message;status.style.display='block';}
+  alert(message);
+}
+function confirmFixedSettingsChange(previous,next){
+  return new Promise(resolve=>{
+    const dialog=document.getElementById('fixed-save-confirm-dialog');
+    document.getElementById('fixed-save-confirm-message').textContent=`고정지출 총액을 변경하시겠습니까?\n\n기존 총액: ${toWon(previous)}\n변경할 합계: ${toWon(next)}`;
+    const finish=approved=>{dialog.oncancel=null;dialog.close();resolve(approved);};
+    document.getElementById('fixed-save-confirm-yes').onclick=()=>finish(true);
+    document.getElementById('fixed-save-confirm-no').onclick=()=>finish(false);
+    dialog.oncancel=event=>{event.preventDefault();finish(false);};
+    const status=document.getElementById('my-settings-save-status');
+    if(status)status.textContent='고정지출 변경 확인을 기다리고 있습니다.';
+    dialog.showModal();
+  });
+}
+saveMySettings=async function(){
+  if(editingFixedItemId!==null)return settingsSaveFeedback('항목의 수정 내용을 먼저 반영하거나 수정 취소를 눌러주세요.');
   const get=id=>document.getElementById(id);
   const newPayday=parseNumber(get('my-payday').value);
   const income=parseNumber(get('my-income').value);
@@ -3352,21 +3449,29 @@ saveMySettings=function(){
   const variableBudget=parseNumber(get('my-variable').value);
   const targetGoalAmount=parseNumber(get('my-goal-amt').value);
   const actualSaved=parseNumber(get('my-actual-saved').value);
-  const fixedExpenses=state.fixedList.reduce((sum,i)=>sum+Number(i.amount||0),0);
-  if(newPayday<1||newPayday>31)return alert('급여일은 1~31일로 입력해주세요.');
-  if(targetGoalAmount<=0)return alert('목표금액을 1원 이상 입력해주세요.');
-  if(income<fixedExpenses+baseSavings+variableBudget)return alert('고정지출·선저축·생활비 합계가 수입보다 큽니다.');
-  if(![income,baseSavings,variableBudget,targetGoalAmount,actualSaved,fixedExpenses].every(Number.isSafeInteger))return alert('금액을 확인해주세요.');
+  const fixedItems=fixedItemsForEditing();
+  const fixedExpenses=Array.isArray(state.fixedDraftList)
+    ? fixedItems.reduce((sum,i)=>sum+Number(i.amount||0),0) : state.fixedExpenses;
+  if(newPayday<1||newPayday>31)return settingsSaveFeedback('급여일은 1~31일로 입력해주세요.');
+  if(targetGoalAmount<=0)return settingsSaveFeedback('목표금액을 1원 이상 입력해주세요.');
+  if(income<fixedExpenses+baseSavings+variableBudget)return settingsSaveFeedback('고정지출·선저축·생활비 합계가 수입보다 큽니다.');
+  if(![income,baseSavings,variableBudget,targetGoalAmount,actualSaved,fixedExpenses].every(Number.isSafeInteger))return settingsSaveFeedback('금액을 확인해주세요.');
+  const fixedChanged=Array.isArray(state.fixedDraftList) &&
+    (JSON.stringify(state.fixedDraftList)!==JSON.stringify(state.fixedList) || fixedExpenses!==state.fixedExpenses);
+  if(fixedChanged){
+    const approved=await confirmFixedSettingsChange(state.fixedExpenses,fixedExpenses);
+    if(!approved){
+      const status=document.getElementById('my-settings-save-status');
+      if(status)status.textContent='저장을 취소했습니다. 기존 설정은 유지됩니다.';
+      return;
+    }
+  }
   const changed=newPayday!==state.payday;
   const today=jampleClock();today.setHours(0,0,0,0);
   const a=activePeriod(today),oldKey=`${a.y}-${a.m}`;
-  if(changed && state.immediatePaydayTransition && today<parseLocalDay(state.immediatePaydayTransition.end)){
-    return alert('현재 급여일 전환기간이 끝난 뒤 다시 변경할 수 있어요.');
-  }
-  if(state.settledMonths?.[oldKey])return alert('이미 확정된 결산 기간은 수정할 수 없습니다.');
   const before=JSON.stringify(state);
-  const oldPeriod=getPeriod(a.y,a.m);
-  const oldDaily=oldPeriod.budget.variableBudget/Math.max(1,periodLength(oldPeriod));
+  if(Array.isArray(state.fixedDraftList))state.fixedList=state.fixedDraftList.map(item=>({...item}));
+  delete state.fixedDraftList;
   state.income=income;state.fixedExpenses=fixedExpenses;state.baseSavings=baseSavings;
   state.variableBudget=variableBudget;state.surplus=income-fixedExpenses-baseSavings-variableBudget;
   state.showFixedInCal=get('my-toggle-fixed').checked;
@@ -3374,52 +3479,45 @@ saveMySettings=function(){
   state.targetGoalAmount=targetGoalAmount;state.currentSaved=actualSaved;state.legacyMoneyReview=false;
   state.periodBudgets=state.periodBudgets||{};
   state.periodDateRanges=state.periodDateRanges||{};
-  if(changed){
-    const next=upcomingPayday(today,newPayday);
-    const transitionKey=`${today.getFullYear()}-${today.getMonth()+1}`;
-    // 같은 달에 정상기간이 다시 시작하면 키가 겹치므로 아직 변경 확정하지 않음.
-    if(next.getFullYear()===today.getFullYear() && next.getMonth()===today.getMonth()){
-      state=JSON.parse(before);
-      return alert('변경할 급여일이 이번 달에 다시 도래하는 경우는 기간 식별 충돌을 방지하기 위해 이번 테스트에서 제한합니다. 우선 25일 → 10일 변경을 검증해주세요.');
-    }
-    if(oldKey===transitionKey){state=JSON.parse(before);return alert('기존 기간과 새 전환기간의 저장 키가 겹칩니다. 다른 테스트 날짜에서 확인해주세요.');}
-    if(state.periodBudgets[transitionKey] || state.settledMonths?.[transitionKey]){
-      state=JSON.parse(before);return alert('새 전환기간에 이미 기록이 있습니다. 안전한 변경을 위해 별도 정리 후 적용해야 합니다.');
-    }
-    const startKey=localDateKey(today),endKey=localDateKey(next);
-    state.periodDateRanges[oldKey]={start:localDateKey(oldPeriod.start),end:startKey};
-    const days=dayDifference(today,next);
-    const allocated=Math.round(oldDaily*days);
-    state.periodBudgets[transitionKey]={...budgetSnapshot(),variableBudget:allocated,
-      fullVariableBudget:variableBudget,allocationDays:days,
-      surplus:income-fixedExpenses-baseSavings-allocated,
-      isTransition:true,startedOn:startKey,originalDailyBudget:oldDaily,originalAllocationDays:periodLength(oldPeriod)};
-    state.periodDateRanges[transitionKey]={start:startKey,end:endKey};
-    state.immediatePaydayTransition={start:startKey,end:endKey,year:today.getFullYear(),month:today.getMonth()+1,oldPayday:state.payday,newPayday};
-    state.payday=newPayday;
-    delete state.pendingPayday;
-    delete state.paydayTransition;
-    state.viewYear=today.getFullYear();state.viewMonth=today.getMonth()+1;
-  }else{
-    const prev=state.periodBudgets[oldKey];
-    state.periodBudgets[oldKey]=prev?.isTransition
-      ? {...prev,income,fixedExpenses,baseSavings,fullVariableBudget:variableBudget,surplus:income-fixedExpenses-baseSavings-prev.variableBudget}
-      : {...budgetSnapshot(),...(prev?.startedOn?{startedOn:prev.startedOn}: {})};
-    state.viewYear=a.y;state.viewMonth=a.m;
+  state.payday=newPayday;
+  state.fullPaydayCycle=true;
+  delete state.immediatePaydayTransition;
+  delete state.pendingPayday;
+  delete state.paydayTransition;
+  const current=activePeriod(today);
+  const currentPeriod=getPeriod(current.y,current.m);
+  if(!state.settledMonths?.[currentPeriod.key]) {
+    state.periodBudgets[currentPeriod.key]=budgetSnapshot();
+    delete state.periodDateRanges[currentPeriod.key];
+  }
+  state.viewYear=current.y;state.viewMonth=current.m;
+  // A changed cycle may start in the preceding month, including for a new user.
+  if(state.startYear*12+state.startMonth>current.y*12+current.m){
+    state.startYear=current.y;state.startMonth=current.m;
   }
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
-  catch(e){state=JSON.parse(before);return alert('저장에 실패해 변경을 취소했습니다.');}
+  catch(e){state=JSON.parse(before);return settingsSaveFeedback('저장에 실패해 변경을 취소했습니다.');}
   // 성공적으로 저장한 첫 자금관리 설정만 보상합니다. 같은 키의 중복 지급은 grantAcorns가 차단합니다.
   if(state.isUserOnboarded)grantAcorns('onboarding:first',JAMPLE_REWARD_POINTS.onboarding,'최초 자금관리 설정 완료');
   get('badge-reward-text').textContent=state.targetGoalName;
   syncViewSpent();renderCalendar();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();updateReportScreen();
   switchTab('home',document.querySelectorAll('.nav-item')[0]);
-  alert(changed?'급여일 변경 완료! 새 관리기간과 임시 생활비 예산이 홈에 즉시 반영되었습니다. 전환기간 예상 여유자금은 참고용입니다.':'설정을 저장하고 홈·리포트를 갱신했습니다.');
+  settingsSaveFeedback(changed?'급여일 변경 완료! 새 급여일 기준 한 달의 생활비·달력·리포트를 갱신했습니다.':'설정을 저장하고 홈·리포트를 갱신했습니다.');
+};
+const saveSettingsWithFeedback=saveMySettings;
+saveMySettings=async function(){
+  const status=document.getElementById('my-settings-save-status');
+  if(status){status.textContent='입력값을 확인하고 있습니다.';status.style.display='block';}
+  try{return await saveSettingsWithFeedback();}
+  catch(error){
+    console.error('Settings save execution error',error);
+    settingsSaveFeedback('설정 저장 처리 중 오류가 발생했습니다. 안내 내용을 알려주세요: '+error.message);
+  }
 };
 // 미결산 날짜의 자동 갱신은 허용하되 결산 자체는 자동으로 확정하지 않습니다.
 rollPeriodForward=function(){
   if(!state.isUserOnboarded)return;
-  const a=activePeriod(),key=`${a.y}-${a.m}`;
+  const a=activePeriod(),key=getPeriod(a.y,a.m).key;
   if(!state.periodBudgets[key] && !state.settledMonths?.[key])state.periodBudgets[key]=budgetSnapshot();
   state.viewYear=a.y;state.viewMonth=a.m;
   syncViewSpent();renderCalendar();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();saveStateToLocalStorage();
@@ -3429,7 +3527,7 @@ rollPeriodForward=function(){
   function findPendingSettlementPeriod() {
     const today=jampleClock();
     const periods=Object.keys(state.periodBudgets||{}).filter(key=>!state.settledMonths?.[key])
-      .map(key=>{const [y,m]=key.split('-').map(Number);return getPeriod(y,m);})
+      .map(key=>{const [y,m]=key.split('-').map(Number);return storedPaydayPeriod(key);})
       .sort((a,b)=>a.end-b.end);
     return periods.find(p=>p.end<=today) ||
       periods.find(p=>{const w=settlementWindow(p,today);return w.preview;}) || null;
@@ -3466,7 +3564,7 @@ rollPeriodForward=function(){
     confirmBeforePostTracking();
     if (!before && key && state.settledMonths?.[key]) {
       const [y,m] = key.split('-').map(Number);
-      const p = getPeriod(y,m);
+      const p = storedPaydayPeriod(key);
       const snapshot = state.settlementSnapshots?.[key];
       if (snapshot) {
         snapshot.closedOn = localDateKey(effective);
@@ -3627,7 +3725,7 @@ rollPeriodForward=function(){
   function showSettlementCoaching(key){
     const snap=state.settlementSnapshots?.[key];
     if(!snap)return alert('확정된 결산 자료가 없습니다.');
-    const p=getPeriod(...key.split('-').map(Number));
+    const p=storedPaydayPeriod(key);
     const wrap=document.getElementById('settlement-coaching-overlay');
     const metrics=document.getElementById('coaching-metrics');
     const notes=document.getElementById('coaching-messages');
@@ -4155,5 +4253,31 @@ rollPeriodForward=function(){
   });
 </script>
 
+<dialog id="fixed-item-dialog" aria-labelledby="fixed-form-title" style="width:calc(100% - 32px);max-width:380px;border:0;border-radius:20px;padding:18px;color:var(--brown);box-shadow:0 12px 50px #0003;">
+      <div class="fixed-form-card">
+        <div style="display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:bold; color:var(--brown); margin-bottom:8px;">
+          <img src="my_icon_add.png" style="width:18px; height:18px; object-fit:contain;" alt="등록">
+          <span id="fixed-form-title">새로운 고정지출 등록</span>
+        </div>
+        <div class="fixed-form-row">
+          <input type="text" id="add-fixed-name" class="input-mini" placeholder="항목명 (예: 운동비, 월세)" style="flex: 1.4;">
+          <input type="text" id="add-fixed-day" class="input-mini" placeholder="출금일" style="flex: 0.9; text-align:right;" oninput="formatDayInput(this)">
+        </div>
+        <div style="margin-bottom:8px;">
+          <input type="text" id="add-fixed-amt" class="input-mini" placeholder="금액 (예: 150,000원)" style="text-align:right;" oninput="formatCurrencyInput(this)">
+        </div>
+        <button class="btn-main" style="padding:10px; font-size:13px; border-radius:10px;" onclick="addFixedItem()">
+          <img src="my_icon_add.png" class="ui-btn-icon" alt="추가">
+          <span id="fixed-item-submit-label">항목 반영하기</span>
+        </button>
+        <button type="button" id="fixed-edit-cancel" class="btn-secondary" style="margin-top:8px;width:100%" onclick="cancelFixedItemEdit()">취소</button>
+      </div>
+
+</dialog>
+<dialog id="fixed-save-confirm-dialog" aria-labelledby="fixed-save-confirm-title" style="width:calc(100% - 32px);max-width:360px;border:0;border-radius:18px;padding:22px;box-sizing:border-box;color:var(--brown);">
+<strong id="fixed-save-confirm-title">설정 변경 확인</strong>
+<p id="fixed-save-confirm-message" style="white-space:pre-line;line-height:1.7;font-size:14px"></p>
+<div style="display:flex;gap:10px"><button type="button" id="fixed-save-confirm-no" class="btn-secondary">취소</button><button type="button" id="fixed-save-confirm-yes" class="btn-main">변경하고 저장</button></div>
+</dialog>
 </body>
 </html>

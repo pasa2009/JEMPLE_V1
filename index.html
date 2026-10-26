@@ -1126,10 +1126,13 @@
         </div>
       </div>
 
-      <button class="btn-main" onclick="submitExpense()">
-        <img src="report_icon_defense.png" class="ui-btn-icon" alt="등록">
-        <span>등록하고 재무링 키우기</span>
-      </button>
+      <div id="expense-add-feedback" role="status" style="font-size:12px;color:#2E7D32;margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px;align-items:stretch">
+        <button type="button" id="expense-add-another" class="btn-secondary" style="flex:1;min-width:0;width:auto;margin:0;padding:14px 6px;font-size:13px;white-space:nowrap" onclick="addAnotherLivingExpense()" aria-label="생활비 저장하고 계속 입력">＋ 생활비 추가</button>
+        <button type="button" class="btn-main" style="flex:1;min-width:0;width:auto;margin:0;padding:14px 6px;font-size:13px;white-space:nowrap" onclick="submitExpense()">
+          <span>등록하고 재무링 키우기</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1142,7 +1145,7 @@
       <div id="coaching-metrics"></div>
       <div id="coaching-messages"></div>
       <p class="settlement-note">재무링의 제안은 자동 변경되지 않아요. 필요할 때만 마이 탭에서 계획을 조정해주세요. 조기 결산 뒤 거래는 별도로 관리됩니다.</p>
-      <div class="settlement-actions"><button type="button" class="btn-secondary" onclick="closeSettlementCoaching()">결산 완료</button><button type="button" class="btn-main" onclick="openMyFromCoaching()">마이 탭에서 조정하기</button></div>
+      <div class="settlement-actions"><button type="button" class="btn-secondary" onclick="finishSettlementCoaching()">결산 완료</button><button type="button" class="btn-main" onclick="openMyFromCoaching()">마이 탭에서 조정하기</button></div>
     </div>
   </div>
   <!-- 월간 결산 전용 바텀시트: 결산 전 기록 확인과 실제 이체금액 확정 -->
@@ -3741,7 +3744,19 @@ rollPeriodForward=function(){
     wrap.classList.add('active');
   }
   function closeSettlementCoaching(){document.getElementById('settlement-coaching-overlay').classList.remove('active');}
-  function openMyFromCoaching(){closeSettlementCoaching();switchTab('my',document.querySelectorAll('.nav-item')[3]);}
+  function finishSettlementCoaching(){
+    const wrap=document.getElementById('settlement-coaching-overlay');
+    const key=wrap.dataset.periodKey;
+    if(key){
+      state.dismissedSettlementCoaching=state.dismissedSettlementCoaching||{};
+      state.dismissedSettlementCoaching[key]=true;
+      saveStateToLocalStorage();
+    }
+    closeSettlementCoaching();
+    const panel=document.getElementById('settlement-coaching-history');
+    if(panel)panel.style.display='none';
+  }
+  function openMyFromCoaching(){finishSettlementCoaching();switchTab('my',document.querySelectorAll('.nav-item')[3]);}
   // 기존 조기 결산/별도 추가 거래 저장이 성공했을 때만 코칭 열기.
   const settleBeforeCoaching=confirmSettlementSheet;
   confirmSettlementSheet=function(){
@@ -3758,7 +3773,7 @@ rollPeriodForward=function(){
     if(!panel)return;
     const keys=Object.keys(state.settlementSnapshots||{}).filter(k=>state.settledMonths?.[k]).sort();
     const key=state.settledMonths?.[getViewPeriod().key]?getViewPeriod().key:keys[keys.length-1];
-    panel.style.display=key?'block':'none';
+    panel.style.display=key&&!state.dismissedSettlementCoaching?.[key]?'block':'none';
     if(key)panel.querySelector('button').onclick=()=>showSettlementCoaching(key);
   };
   /* ===== 결산 맞춤 코칭 끝 ===== */
@@ -4251,6 +4266,56 @@ rollPeriodForward=function(){
       }, 1300);
     }
   });
+
+// 생활비 연속 입력과 날짜별 실제 합계 표시.
+function addAnotherLivingExpense() {
+  const before=state.expenseHistory.length+(state.postSettlementTransactions||[]).length;
+  submitExpense();
+  const after=state.expenseHistory.length+(state.postSettlementTransactions||[]).length;
+  if(after<=before)return;
+  openExpenseSheet(selectedDayForExpense,selectedYearForExpense,selectedMonthForExpense);
+  document.getElementById('expense-add-feedback').textContent='저장했어요. 같은 날짜의 다음 생활비를 입력해주세요.';
+  document.getElementById('sheet-amount').focus();
+}
+const setRecordTypeBeforeLivingAdd=setRecordType;
+setRecordType=function(type){
+  setRecordTypeBeforeLivingAdd(type);
+  document.getElementById('expense-add-another').style.display=type==='expense'?'block':'none';
+  document.getElementById('expense-add-feedback').textContent='';
+};
+function livingDayStatus(total,budget,days){
+  return total<=Math.max(0,budget)/Math.max(1,days)?'GREEN':'YELLOW';
+}
+const createDayCellBeforeLivingTotal=createDayCell;
+createDayCell=function(day,y,m){
+  const cell=createDayCellBeforeLivingTotal(day,y,m);
+  const rows=state.expenseHistory.concat((state.postSettlementTransactions||[]).filter(e=>e.type==='expense'));
+  const total=rows.filter(e=>e.year===y&&e.month===m&&e.day===day).reduce((sum,e)=>sum+e.amount,0);
+  if(total>0){
+    const p=getViewPeriod();
+    const dailyLimit=Math.max(0,p.budget.variableBudget)/Math.max(1,periodLength(p));
+    const status=livingDayStatus(total,p.budget.variableBudget,periodLength(p));
+    let stamp=cell.querySelector('.stamp-dot');
+    if(!stamp){stamp=document.createElement('span');stamp.className='stamp-dot';cell.appendChild(stamp);}
+    stamp.textContent=status==='GREEN'?'🟢':'🟡';
+    stamp.title=`생활비 합계 ${toWon(total)} · 하루 기준 ${toWon(Math.floor(dailyLimit))} · ${status==='GREEN'?'예산 이내':'예산 초과'}`;
+    const amount=document.createElement('div');
+    amount.textContent=toWon(total);
+    amount.style.cssText='font-size:10px;color:var(--text-main);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    amount.title=stamp.title;
+    cell.appendChild(amount);
+  }
+  return cell;
+};
+const renderCalendarBeforeLivingLegend=renderCalendar;
+renderCalendar=function(){
+  renderCalendarBeforeLivingLegend();
+  let legend=document.getElementById('living-calendar-legend');
+  if(!legend){legend=document.createElement('div');legend.id='living-calendar-legend';legend.style.cssText='font-size:11px;color:var(--text-sub);margin-top:8px;line-height:1.6';document.getElementById('calendar-grid').after(legend);}
+  legend.textContent='🟢 하루 기준 이내 · 🟡 초과 · ✨ 무지출';
+};
+renderCalendar();
+
 </script>
 
 <dialog id="fixed-item-dialog" aria-labelledby="fixed-form-title" style="width:calc(100% - 32px);max-width:380px;border:0;border-radius:20px;padding:18px;color:var(--brown);box-shadow:0 12px 50px #0003;">

@@ -8,6 +8,20 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     [hidden] { display: none !important; }
+    .repayment-modal { position: fixed; inset: 0; z-index: 100; background: rgba(30, 41, 59, .55); display: flex; align-items: center; justify-content: center; padding: 12px; }
+    .repayment-card { width: min(100%, 560px); max-height: 90vh; overflow: auto; background: white; border-radius: 20px; padding: 16px; box-shadow: 0 12px 35px rgba(0,0,0,.2); }
+    .repayment-heading { display: flex; align-items: center; justify-content: space-between; color: #8B5A2B; font-weight: 800; }
+    .repayment-heading h2 { margin: 0; font-size: 18px; }
+    .repayment-heading button { border: 0; background: transparent; padding: 8px; cursor: pointer; }
+    .repayment-info { color: #64748b; font-size: 11px; margin: 8px 0; }
+    .repayment-table-wrap { overflow-x: auto; }
+    .repayment-table { width: 100%; min-width: 470px; border-collapse: collapse; font-size: 11px; white-space: nowrap; }
+    .repayment-table th, .repayment-table td { padding: 9px 5px; border-bottom: 1px solid #efe6d8; text-align: right; }
+    .repayment-table th { color: #8B5A2B; background: #FFF8E8; }
+    .repayment-table th:nth-child(-n+2), .repayment-table td:nth-child(-n+2) { text-align: center; }
+    .repayment-pagination { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: 12px; }
+    .repayment-pagination button { border: 1px solid #f5e5c9; border-radius: 8px; background: #fff8e8; color: #8B5A2B; padding: 8px 14px; cursor: pointer; }
+    .repayment-pagination button:disabled { opacity: .4; cursor: default; }
     :root {
       --primary: #FF8A3D;
       --primary-dark: #E67220;
@@ -297,6 +311,16 @@
 
   </div>
 
+  <div id="repaymentPlanModal" hidden role="dialog" aria-modal="true" aria-labelledby="repaymentPlanTitle" class="repayment-modal">
+    <div class="repayment-card">
+      <div class="repayment-heading"><h2 id="repaymentPlanTitle">상환계획</h2><button type="button" id="repaymentPlanClose" onclick="closeRepaymentPlan()" aria-label="닫기">✕</button></div>
+      <p class="repayment-info">예상 상환내역 · 단위: 원</p>
+      <div class="repayment-table-wrap"><table class="repayment-table"><thead><tr><th>회차</th><th>상환일</th><th>상환액</th><th>원금</th><th>이자</th><th>잔액</th></tr></thead><tbody id="repaymentPlanRows"></tbody></table></div>
+      <div class="repayment-pagination"><button type="button" id="repaymentPlanPrev" onclick="changeRepaymentPlanPage(-1)">이전</button><span id="repaymentPlanPage" aria-live="polite"></span><button type="button" id="repaymentPlanNext" onclick="changeRepaymentPlanPage(1)">다음</button></div>
+      <p class="repayment-info">매월 정상 납부와 현재 금리 유지 기준이며, 실제 은행 내역과 다를 수 있습니다.</p>
+    </div>
+  </div>
+
   <!-- 자바스크립트 로직 -->
   <script src="jample-diagnosis-reward-bridge.js"></script>
   <script>
@@ -376,7 +400,10 @@
           </label>
         </div>
         <p class="text-xs font-bold text-[#8B5A2B] mt-2" aria-live="polite" data-current-balance></p>
-        <p class="text-xs text-slate-600 mt-2" aria-live="polite" data-breakdown>원금 — · 이자 —</p>
+        <div class="flex items-center justify-between gap-2 mt-2">
+          <p class="text-xs text-slate-600" aria-live="polite" data-breakdown>원금 — · 이자 —</p>
+          <button type="button" data-schedule-button hidden onclick="openRepaymentPlan(this)" class="text-xs font-bold text-[#E67220] underline whitespace-nowrap">상환계획</button>
+        </div>
         <p class="text-[10px] text-slate-500 mt-1" data-calculation-note></p>`;
       item.appendChild(extra);
       calculateInterestPayment(item);
@@ -398,6 +425,7 @@
         computeLoanAsOf(amount, Number(rateInput.value), Number(term.value), start.value, today));
       if (result && interestOnly) result.balance = amount;
       itemElement.loanResult = result;
+      itemElement.querySelector('[data-schedule-button]').hidden = interestOnly || !result;
       const payment = itemElement.querySelector('[name="payment"]');
       payment.value = result ? result.payment.toLocaleString('ko-KR') : '';
       const won = n => n.toLocaleString('ko-KR') + '원';
@@ -411,6 +439,71 @@
       note.textContent = '실제 은행잔액과 다를 수 있음';
       return result;
     }
+
+    // 각 회차의 금액은 현재 화면과 같은 고정금리·월별 상환 기준으로 계산한다.
+    function repaymentPlanRow(principal, rate, months, start, installment) {
+      const r = rate / 1200;
+      const fixed = r === 0 ? principal / months : principal * r / -Math.expm1(-months * Math.log1p(r));
+      function remaining(count) {
+        if (count >= months) return 0;
+        return r === 0 ? fixed * (months - count) : fixed * -Math.expm1(-(months - count) * Math.log1p(r)) / r;
+      }
+      const before = remaining(installment - 1);
+      const after = remaining(installment);
+      const interest = Math.round(before * r);
+      const payment = Math.round(Math.min(fixed, before * (1 + r)));
+      return { number: installment, date: dueDate(start, installment), payment,
+        interest, principal: Math.max(0, payment - interest), balance: Math.round(after) };
+    }
+
+    let repaymentPlanState = null;
+    function openRepaymentPlan(button) {
+      const item = button.closest('.loan-item');
+      const result = calculateInterestPayment(item);
+      if (!result || item.querySelector('[name="type"]').value !== 'principal') return;
+      repaymentPlanState = {
+        amount: parseCurrency(item.querySelector('[name="balance"]').value),
+        rate: Number(item.querySelector('[name="rate"]').value),
+        months: Number(item.querySelector('[name="months"]').value),
+        start: item.querySelector('[name="startDate"]').value,
+        page: 0, opener: button
+      };
+      renderRepaymentPlan();
+      const modal = document.getElementById('repaymentPlanModal');
+      modal.hidden = false;
+      document.getElementById('repaymentPlanClose').focus();
+    }
+
+    function renderRepaymentPlan() {
+      const state = repaymentPlanState;
+      if (!state) return;
+      const first = state.page * 10 + 1;
+      const last = Math.min(state.months, first + 9);
+      const rows = [];
+      for (let n = first; n <= last; n++) {
+        const row = repaymentPlanRow(state.amount, state.rate, state.months, state.start, n);
+        const number = value => value.toLocaleString('ko-KR');
+        rows.push(`<tr><td>${row.number}</td><td>${row.date.slice(2)}</td><td>${number(row.payment)}</td><td>${number(row.principal)}</td><td>${number(row.interest)}</td><td>${number(row.balance)}</td></tr>`);
+      }
+      document.getElementById('repaymentPlanRows').innerHTML = rows.join('');
+      document.getElementById('repaymentPlanPage').textContent = `${first}–${last}회 / 총 ${state.months}회`;
+      document.getElementById('repaymentPlanPrev').disabled = state.page === 0;
+      document.getElementById('repaymentPlanNext').disabled = last >= state.months;
+    }
+    function changeRepaymentPlanPage(direction) {
+      if (!repaymentPlanState) return;
+      const lastPage = Math.ceil(repaymentPlanState.months / 10) - 1;
+      repaymentPlanState.page = Math.max(0, Math.min(lastPage, repaymentPlanState.page + direction));
+      renderRepaymentPlan();
+    }
+    function closeRepaymentPlan() {
+      document.getElementById('repaymentPlanModal').hidden = true;
+      if (repaymentPlanState?.opener?.isConnected) repaymentPlanState.opener.focus();
+      repaymentPlanState = null;
+    }
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && repaymentPlanState) closeRepaymentPlan();
+    });
 
     function onLoanFieldChange(input) {
       if (input.name === 'balance') formatCurrencyInput(input);

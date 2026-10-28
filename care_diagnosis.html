@@ -83,6 +83,37 @@
       color: var(--primary); 
       font-weight: bold; 
     }
+
+    #screen-report { color: #102b49; gap: 16px; }
+    #screen-report > .report-overview { background:white; padding:22px 20px; border:1px solid #edf2f7; border-radius:26px; box-shadow:0 2px 3px #102b4908; text-align:left; }
+    #screen-report h2 { color:#0f172a; font-size:20px; margin:12px 0; }
+    #rep-summary-text { background:#f7f9fc; color:#234567; border:1px solid #edf2f7; padding:16px; border-radius:18px; font-size:12px; line-height:1.9; }
+    #rep-items-container { display:grid; gap:16px; }
+    .diagnosis-card { position:relative; overflow:hidden; padding:23px 16px 18px 21px; border:1px solid var(--card-border); border-radius:20px; background:linear-gradient(100deg,var(--card-bg),white); box-shadow:0 3px 5px #102b4910; }
+    .diagnosis-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:6px; background:var(--card-color); }
+    .diagnosis-card-heading { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:5px 0 12px; }
+    .diagnosis-card-title { display:flex; align-items:center; gap:9px; font-size:14px; font-weight:800; color:var(--card-text); }
+    .diagnosis-icon { display:grid; place-items:center; width:32px; height:32px; border-radius:10px; background:var(--card-icon); flex-shrink:0; }
+    .diagnosis-status { font-size:10px; font-weight:800; border-radius:30px; padding:4px 9px; white-space:nowrap; border:1px solid; }
+    .diagnosis-status.GREEN { background:#dcfce7; color:#047857; border-color:#99f6c5; }
+    .diagnosis-status.YELLOW { background:#fff7d6; color:#a65a05; border-color:#fddd79; }
+    .diagnosis-status.RED { background:#fff0f3; color:#e11d48; border-color:#fecdd3; }
+    .diagnosis-values { background:#ffffffdf; border:1px solid #edf2f7; border-radius:15px; padding:12px; font-size:12px; }
+    .diagnosis-value-row { display:grid; grid-template-columns:65px minmax(0,1fr); align-items:center; gap:8px; }
+    .diagnosis-value-row + .diagnosis-value-row { border-top:1px solid #edf2f7; margin-top:7px; padding-top:7px; }
+    .diagnosis-value-row > span:first-child { color:#94a3b8; }
+    .diagnosis-value-row > span:last-child { text-align:right; overflow-wrap:anywhere; line-height:1.6; }
+    .diagnosis-analysis { font-size:12px; line-height:1.8; margin:12px 2px; color:#365676; }
+    .diagnosis-analysis b { color:#94a3b8; }
+    .diagnosis-solution summary { cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; padding:12px; border:1px solid #fddd79; border-radius:14px; background:#fff7d6; color:#92400e; font-size:11px; font-weight:800; }
+    .diagnosis-solution summary::-webkit-details-marker { display:none; }
+    .solution-title { flex:1; min-width:0; line-height:1.6; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .solution-toggle { background:#ffedab; padding:4px 6px; border-radius:6px; white-space:nowrap; }
+    .solution-toggle::after { content:'보기 ▼'; }
+    .diagnosis-solution[open] .solution-toggle::after { content:'닫기 ▲'; }
+    .diagnosis-guide { margin-top:6px; padding:14px 12px; background:#fffbef; border:1px solid #fddd79; border-radius:14px; color:#92400e; box-shadow:0 3px 5px #102b4910; font-size:11px; line-height:1.9; }
+    .diagnosis-guide strong { display:block; margin-bottom:5px; }
+    @media (max-width:360px) { .diagnosis-card { padding-left:16px; padding-right:12px; } .diagnosis-card-title { font-size:12px; gap:6px; } }
   </style>
 </head>
 <body>
@@ -270,14 +301,14 @@
 
       <!-- SCREEN 6: 결과 리포트 화면 -->
       <div id="screen-report" class="hidden flex-1 flex flex-col py-1 space-y-3.5">
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center">
+        <div class="report-overview">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Financial Health Report</span>
+            <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">FINANCIAL REPORT</span>
             <span id="rep-health-badge" class="px-2.5 py-0.5 text-[11px] font-extrabold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               매우 양호 🟢
             </span>
           </div>
-          <h2 class="text-lg font-black text-slate-900 mb-1.5">재무 밸런스 진단 결과</h2>
+          <h2 class="text-lg font-black text-slate-900 mb-1.5">재무건강 진단 결과</h2>
           <div class="p-3 bg-[#FDFBF7] rounded-xl text-xs font-medium leading-relaxed text-[#8B5A2B] border border-[#EFE6D8]" id="rep-summary-text">
             "진단 결과 요약"
           </div>
@@ -709,49 +740,42 @@
       const container = document.getElementById('rep-items-container');
       container.innerHTML = '';
 
-      items.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'bg-[#FDFBF7] p-3.5 rounded-2xl border border-[#EFE6D8] space-y-2';
-
-        const statusBadge = item.status === 'GREEN' 
-          ? '<span class="text-[10.5px] px-2 py-0.5 font-bold rounded-full bg-emerald-100 text-emerald-800">정상 🟢</span>'
-          : item.status === 'YELLOW'
-            ? '<span class="text-[10.5px] px-2 py-0.5 font-bold rounded-full bg-amber-100 text-amber-800">활용필요 🟡</span>'
-            : '<span class="text-[10.5px] px-2 py-0.5 font-bold rounded-full bg-rose-100 text-rose-800">점검필요 🔴</span>';
-
-        let solHtml = '';
-        if (item.solTitle) {
-          solHtml = `
-            <div class="mt-2 text-xs bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-amber-950">
-              <div class="font-extrabold text-amber-900 mb-0.5">[해결책] ${item.solTitle}</div>
-              <p class="text-[11px] text-amber-800 leading-relaxed">${item.solDetail}</p>
-            </div>
-          `;
-        }
-
+      const themes = [
+        ['🛡️','#0ea5e9','#bae6fd','#f2faff','#dff2ff','#075985'],
+        ['🌱','#10b981','#a7f3d0','#f0fdf8','#d1fae5','#065f46'],
+        ['💼','#6366f1','#c7d2fe','#f5f6ff','#e0e7ff','#3730a3'],
+        ['⚖️','#f43f5e','#fecdd3','#fff5f6','#ffe4e6','#9f1239'],
+        ['🩺','#14b8a6','#99f6e4','#f0fdfa','#ccfbf1','#115e59'],
+        ['🧭','#a855f7','#e9d5ff','#faf5ff','#f3e8ff','#6b21a8']
+      ];
+      const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+      items.forEach((item, index) => {
+        const [icon, color, border, bg, iconBg, text] = themes[index % themes.length];
+        const card = document.createElement('section');
+        card.className = 'diagnosis-card';
+        card.style.cssText = `--card-color:${color};--card-border:${border};--card-bg:${bg};--card-icon:${iconBg};--card-text:${text}`;
+        const label = item.status === 'GREEN' ? '정상 🟢' : item.status === 'YELLOW' ? '활용필요 🟡' : '점검필요 🔴';
+        const solution = item.solTitle ? `
+          <details class="diagnosis-solution">
+            <summary><span aria-hidden="true">💡</span><span class="solution-title">[해결책] ${escapeHtml(item.solTitle)}</span><span class="solution-toggle" aria-hidden="true"></span></summary>
+            <div class="diagnosis-guide"><strong>📋 재무코치 실행 가이드</strong><p>${escapeHtml(item.solDetail)}</p></div>
+          </details>` : '';
         card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-xs text-[#8B5A2B]">${item.title}</span>
-            ${statusBadge}
+          <div class="diagnosis-card-heading">
+            <h3 class="diagnosis-card-title"><span class="diagnosis-icon" aria-hidden="true">${icon}</span>${escapeHtml(item.title)}</h3>
+            <span class="diagnosis-status ${item.status}">${label}</span>
           </div>
-          <div class="bg-white p-2.5 rounded-xl border border-slate-100 text-xs space-y-1">
-            <div class="flex justify-between items-center">
-              <span class="text-slate-400">내 현황</span>
-              <span class="font-bold text-slate-800">${item.currText}</span>
-            </div>
-            <div class="flex justify-between items-center border-t border-slate-100 pt-1">
-              <span class="text-slate-400">가이드라인</span>
-              <span class="text-slate-600 font-medium">${item.guideText}</span>
-            </div>
+          <div class="diagnosis-values">
+            <div class="diagnosis-value-row"><span>내 현황</span><span><strong>${escapeHtml(item.currText)}</strong></span></div>
+            <div class="diagnosis-value-row"><span>가이드라인</span><span>${escapeHtml(item.guideText)}</span></div>
           </div>
-          <div class="text-[11px] text-slate-600 leading-relaxed px-0.5">
-            <span class="text-slate-400 font-semibold">분석:</span> ${item.evalText}
-          </div>
-          ${solHtml}
-        `;
+          <p class="diagnosis-analysis"><b>분석:</b> ${escapeHtml(item.evalText)}</p>
+          ${solution}`;
         container.appendChild(card);
       });
+      document.querySelector('.content-area').scrollTop = 0;
     }
+
 
     function restartDiagnosis() {
       goToStep(1);

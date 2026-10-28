@@ -1129,6 +1129,7 @@
       <div id="expense-add-feedback" role="status" style="font-size:12px;color:#2E7D32;margin-bottom:8px"></div>
       <div style="display:flex;gap:8px;align-items:stretch">
         <button type="button" id="expense-add-another" class="btn-secondary" style="flex:1;min-width:0;width:auto;margin:0;padding:14px 6px;font-size:13px;white-space:nowrap" onclick="addAnotherLivingExpense()" aria-label="생활비 저장하고 계속 입력">＋ 생활비 추가</button>
+        <button type="button" id="income-add-another" class="btn-secondary" style="display:none;flex:1;min-width:0;width:auto;margin:0;padding:14px 6px;font-size:13px;white-space:nowrap" onclick="addAnotherIncome()" aria-label="수입 저장하고 계속 입력">＋ 수입 추가</button>
         <button type="button" class="btn-main" style="flex:1;min-width:0;width:auto;margin:0;padding:14px 6px;font-size:13px;white-space:nowrap" onclick="submitExpense()">
           <span>등록하고 재무링 키우기</span>
         </button>
@@ -1969,8 +1970,8 @@
     editingFixedItemId=null;
     for(const id of ['add-fixed-name','add-fixed-day','add-fixed-amt'])document.getElementById(id).value='';
     document.getElementById('fixed-form-title').textContent='새로운 고정지출 등록';
-    document.getElementById('fixed-item-submit-label').textContent='고정지출 항목 추가하기';
-    document.getElementById('fixed-edit-cancel').style.display='block';
+    document.getElementById('fixed-item-submit-label').textContent='확인';
+    document.getElementById('fixed-item-add-another').style.display='flex';
     const dialog=document.getElementById('fixed-item-dialog');if(dialog.open)dialog.close();
   }
   function editFixedItem(id){
@@ -1981,8 +1982,8 @@
     document.getElementById('add-fixed-day').value=item.day+'일';
     document.getElementById('add-fixed-amt').value=toWon(item.amount);
     document.getElementById('fixed-form-title').textContent='고정지출 항목 수정';
-    document.getElementById('fixed-item-submit-label').textContent='수정한 항목 반영하기';
-    document.getElementById('fixed-edit-cancel').style.display='block';
+    document.getElementById('fixed-item-submit-label').textContent='수정 확인';
+    document.getElementById('fixed-item-add-another').style.display='none';
     document.getElementById('fixed-item-dialog').showModal();
     document.getElementById('add-fixed-name').focus();
   }
@@ -2056,7 +2057,7 @@
     refreshFixedDraftTotal();
   }
 
-  function addFixedItem() {
+  function addFixedItem(keepOpen = false) {
     const nameInput = document.getElementById('add-fixed-name');
     const dayInput = document.getElementById('add-fixed-day');
     const amtInput = document.getElementById('add-fixed-amt');
@@ -2084,6 +2085,17 @@
 
     saveStateToLocalStorage();
     renderFixedItems();
+    if (keepOpen) {
+      document.getElementById('fixed-item-dialog').showModal();
+      document.getElementById('add-fixed-name').focus();
+    }
+  }
+
+  function confirmFixedItem() {
+    const hasInput = ['add-fixed-name','add-fixed-day','add-fixed-amt']
+      .some(id => document.getElementById(id).value.trim());
+    if (hasInput) return addFixedItem(false);
+    cancelFixedItemEdit();
   }
 
   function deleteFixedItem(id) {
@@ -2623,7 +2635,7 @@
   const originalRenderFixed=renderFixedItems;
   renderFixedItems=function(){originalRenderFixed();state.surplus=state.income-state.fixedExpenses-state.baseSavings-state.variableBudget;};
   const originalAddFixed=addFixedItem,originalDeleteFixed=deleteFixedItem;
-  addFixedItem=function(){originalAddFixed();saveStateToLocalStorage();};
+  addFixedItem=function(keepOpen = false){originalAddFixed(keepOpen);saveStateToLocalStorage();};
   deleteFixedItem=function(id){originalDeleteFixed(id);saveStateToLocalStorage();};
   function renderLateSettlements() {
     const box=document.getElementById('late-settlement-list');
@@ -4277,10 +4289,23 @@ function addAnotherLivingExpense() {
   document.getElementById('expense-add-feedback').textContent='저장했어요. 같은 날짜의 다음 생활비를 입력해주세요.';
   document.getElementById('sheet-amount').focus();
 }
+// 기존 수입 저장 경로를 사용해 일반 수입과 결산 후 수입 모두 연속 입력합니다.
+function addAnotherIncome() {
+  const countIncomeRecords = () => (state.incomeHistory || []).length +
+    (state.postSettlementTransactions || []).filter(row => row.type === 'income').length;
+  const before = countIncomeRecords();
+  submitIncome();
+  if (countIncomeRecords() <= before) return;
+  openExpenseSheet(selectedDayForExpense, selectedYearForExpense, selectedMonthForExpense);
+  setRecordType('income');
+  document.getElementById('expense-add-feedback').textContent = '저장했어요. 같은 날짜의 다음 수입을 입력해주세요.';
+  document.getElementById('sheet-amount').focus();
+}
 const setRecordTypeBeforeLivingAdd=setRecordType;
 setRecordType=function(type){
   setRecordTypeBeforeLivingAdd(type);
   document.getElementById('expense-add-another').style.display=type==='expense'?'block':'none';
+  document.getElementById('income-add-another').style.display=type==='income'?'block':'none';
   document.getElementById('expense-add-feedback').textContent='';
 };
 function livingDayStatus(total,budget,days){
@@ -4331,11 +4356,10 @@ renderCalendar();
         <div style="margin-bottom:8px;">
           <input type="text" id="add-fixed-amt" class="input-mini" placeholder="금액 (예: 150,000원)" style="text-align:right;" oninput="formatCurrencyInput(this)">
         </div>
-        <button class="btn-main" style="padding:10px; font-size:13px; border-radius:10px;" onclick="addFixedItem()">
-          <img src="my_icon_add.png" class="ui-btn-icon" alt="추가">
-          <span id="fixed-item-submit-label">항목 반영하기</span>
-        </button>
-        <button type="button" id="fixed-edit-cancel" class="btn-secondary" style="margin-top:8px;width:100%" onclick="cancelFixedItemEdit()">취소</button>
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <button type="button" id="fixed-item-add-another" class="btn-secondary" style="flex:1;min-width:0;width:auto;margin:0;padding:12px 8px;font-size:13px;border-radius:10px" onclick="addFixedItem(true)">＋ 추가</button>
+          <button type="button" class="btn-main" style="flex:1;min-width:0;width:auto;margin:0;padding:12px 8px;font-size:13px;border-radius:10px" onclick="confirmFixedItem()"><span id="fixed-item-submit-label">확인</span></button>
+        </div>
       </div>
 
 </dialog>

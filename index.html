@@ -431,7 +431,7 @@
       
       <div class="input-group">
         <label class="ui-label-with-icon">
-          <img src="my_icon_payday.png" class="ui-input-icon" alt="월급 기준일">
+          <img src="my_icon_payday.png" class="ui-input-icon" alt="정산일(급여일)">
           <span>매월 월급 기준일</span>
         </label>
         <input type="text" id="input-payday" class="input-text" placeholder="25일" value="25일" oninput="formatDayInput(this)">
@@ -904,11 +904,11 @@
       
       <div class="input-group">
         <label class="ui-label-with-icon">
-          <img src="my_icon_payday.png" class="ui-input-icon" alt="월급 기준일">
-          <span>월급 기준일</span>
+          <img src="my_icon_payday.png" class="ui-input-icon" alt="정산일(급여일)">
+          <span>정산일(급여일)</span>
         </label>
         <input type="text" id="my-payday" class="input-text" oninput="formatDayInput(this)">
-        <p id="payday-change-hint" style="font-size:11px;color:#8B5A2B;margin-top:6px">급여일 변경은 다음 관리기간부터 적용됩니다.</p>
+        <p id="payday-change-hint" style="font-size:11px;color:#8B5A2B;margin-top:6px">정산일(급여일) 변경은 개인·사업 달력에 함께 적용되며, 기존 변경 정책에 따라 적용됩니다.</p>
       </div>
 
       <div class="input-group">
@@ -1228,6 +1228,7 @@
   };
 
   const defaultState = {
+    calendarUsage: 'personal',
     isUserOnboarded: false,
     startYear: 2026,
     startMonth: 9,
@@ -2354,7 +2355,7 @@
   }
   function getPeriod(y,m) {
     const key=`${y}-${m}`;
-    const budget=state.periodBudgets[key] || budgetSnapshot();
+    const budget=(state.periodBudgets || {})[key] || budgetSnapshot();
     return {key,y,m,budget,start:paydayDate(y,m,budget.payday),end:paydayDate(y,m+1,budget.payday)};
   }
   function getViewPeriod() { return getPeriod(state.viewYear,state.viewMonth); }
@@ -4368,5 +4369,147 @@ renderCalendar();
 <p id="fixed-save-confirm-message" style="white-space:pre-line;line-height:1.7;font-size:14px"></p>
 <div style="display:flex;gap:10px"><button type="button" id="fixed-save-confirm-no" class="btn-secondary">취소</button><button type="button" id="fixed-save-confirm-yes" class="btn-main">변경하고 저장</button></div>
 </dialog>
+<style>
+#screen-home.business-mode > :not(#finance-mode-switch):not(#business-home):not(.header):not(.goal-progress-box){display:none!important}
+#business-calendar-card{background:#F0F7FC;border-color:#D4E6F3}#business-calendar-card .cal-cell{background:#E8F1F8}#business-calendar-card .cal-cell:hover{background:#DDEBF6}#business-calendar-card .cal-cell.today{background:#fff}#business-calendar-card .cal-cell.selected-cursor{background:#DCECF8!important}
+#finance-mode-switch{display:flex;gap:6px;margin:0 0 8px;justify-content:flex-end}#finance-mode-switch button{flex:none;width:auto;margin:0;padding:6px 14px;font-size:12px;border-radius:20px;box-shadow:none}
+#business-home .biz-row{display:flex;gap:8px;align-items:center;margin:10px 0;flex-wrap:wrap}
+#business-home small,.biz-note{font-size:12px;color:#667085;line-height:1.6}
+.biz-dialog{border:0;border-radius:20px;padding:22px;width:calc(100% - 32px);max-width:460px;max-height:85vh;overflow:auto;box-sizing:border-box;color:#61452e}
+.biz-dialog::backdrop{background:#0006}.biz-dialog label{display:block;margin:12px 0 5px;font-size:13px}.biz-dialog input,.biz-dialog select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #eadaca;border-radius:10px;background:white;color:#392d24}
+.biz-dialog button{margin-top:12px}.biz-entry{padding:12px 0;border-bottom:1px solid #eee;font-size:13px}.biz-entry button{font-size:12px;padding:6px 10px;width:auto;margin:4px}.biz-metric{display:flex;justify-content:space-between;margin:10px 0;font-size:14px;gap:10px}
+</style>
+<dialog id="biz-record-dialog" class="biz-dialog"><h3 id="biz-record-title">사업 수입·경비 기록</h3>
+<form id="biz-record-form"><input id="biz-edit-id" type="hidden"><label>날짜</label><input id="biz-date" type="date" required>
+<div style="display:flex;gap:8px;margin:12px 0"><button type="button" id="biz-expense-tab" class="btn-secondary" style="flex:1;margin:0" onclick="bizChooseType('variable')">지출(경비)</button><button type="button" id="biz-income-tab" class="btn-secondary" style="flex:1;margin:0" onclick="bizChooseType('income')">수입</button></div><select id="biz-type" hidden aria-hidden="true" tabindex="-1" onchange="bizRecordFields()"><option value="income">수입</option><option value="variable">변동경비</option></select>
+<label>분류</label><select id="biz-category"></select><label>금액 (원)</label><input id="biz-amount" type="text" inputmode="numeric" maxlength="25" oninput="formatCurrencyInput(this)" style="text-align:right" placeholder="예: 15,000원" required>
+<div id="biz-vat-fields"><label>부가세 구분 (10% 적용 거래용)</label><select id="biz-vat-mode"><option value="included">입력 금액에 부가세 포함</option><option value="exclusive">입력 금액에 부가세 별도</option><option value="none">부가세 해당 없음</option></select><p id="biz-input-vat-note" class="biz-note">포함·별도 선택 시 매입 부가세에 반영합니다. 실제 공제 여부는 증빙·공제 요건을 확인하세요.</p><p class="biz-note">10% 적용 거래의 부가세를 구분합니다. 별도 선택 시 입력 금액에 부가세를 더해 기록합니다.</p></div>
+<label>내용 / 메모</label><input id="biz-memo" maxlength="120" placeholder="예: 컨설팅, 강의처, 협업 상대">
+<p id="biz-record-feedback" class="biz-note" role="status"></p><div style="display:flex;gap:8px"><button type="button" class="btn-secondary" style="flex:1" onclick="bizSaveRecord(true)">＋ 추가</button><button type="button" onclick="bizConfirmRecord()" class="btn-main" style="flex:1">확인</button></div></form></dialog>
+<dialog id="biz-fixed-dialog" class="biz-dialog" aria-labelledby="biz-fixed-title" style="max-width:380px;padding:18px"><div class="fixed-form-card"><div style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:bold;margin-bottom:8px"><img src="my_icon_add.png" style="width:18px;height:18px;object-fit:contain" alt="등록"><span id="biz-fixed-title">새로운 고정경비 등록</span></div><form id="biz-fixed-form"><input id="biz-fixed-id" type="hidden"><div class="fixed-form-row"><input id="biz-fixed-name" class="input-mini" placeholder="항목명 (예: 임차료, 통신비)" style="flex:1.4" maxlength="80" required aria-label="항목명"><input id="biz-fixed-day" class="input-mini" type="text" inputmode="numeric" placeholder="출금일" style="flex:.9;text-align:right" oninput="formatDayInput(this)" required aria-label="출금일"></div><div style="margin-bottom:8px"><input id="biz-fixed-amount" class="input-mini" type="text" inputmode="numeric" maxlength="25" oninput="formatCurrencyInput(this)" style="text-align:right" placeholder="금액 (예: 150,000원)" required aria-label="금액"></div><label style="display:flex;align-items:center;gap:8px;margin:8px 0 14px;font-size:12px"><input id="biz-fixed-vat-applicable" type="checkbox" style="width:auto;padding:0">부가세 해당</label><p class="biz-note" style="font-size:11px;margin:0 0 12px">등록 금액은 부가세 포함 금액입니다. 체크하면 이번 달부터 출금일 기준으로 매입 부가세에 반영됩니다.</p><div style="display:flex;gap:8px;align-items:stretch"><button type="button" class="btn-secondary" style="flex:1;min-width:0;width:auto;margin:0;padding:12px 8px;font-size:13px;border-radius:10px" onclick="bizSaveFixed(true)">＋ 추가</button><button type="button" class="btn-main" style="flex:1;min-width:0;width:auto;margin:0;padding:12px 8px;font-size:13px;border-radius:10px" onclick="bizSaveFixed(false)">확인</button></div></form></div></dialog>
+<dialog id="biz-history-dialog" class="biz-dialog"><h3 id="biz-history-title">이번 기간 경비 내역</h3><div style="display:flex;gap:8px;margin:12px 0"><button type="button" id="biz-history-expense-tab" class="btn-secondary" onclick="bizHistoryKind('expense')">경비</button><button type="button" id="biz-history-income-tab" class="btn-secondary" onclick="bizHistoryKind('income')">수입</button></div><div id="biz-history-summary"></div><div id="biz-history-list"></div><button type="button" class="btn-secondary" onclick="this.closest('dialog').close()">닫기</button></dialog>
+<script>
+// 사업 데이터는 개인의 예산·기록·도토리와 별도로 보관합니다.
+(function(){
+ const $=id=>document.getElementById(id), now=()=>typeof jampleClock==='function'?jampleClock():new Date();
+ const expenseColors={'재료·매입':'#3978BD','교통':'#8A67B4','식비':'#D58635','소모품':'#32958C','광고':'#CC6686','기타':'#7A8794','고정경비':'#536B88'};
+
+ const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+ const date=s=>new Date(s+'T00:00:00'), month=(d,n)=>new Date(d.getFullYear(),d.getMonth()+n,1);
+ const safe=v=>Number.isSafeInteger(Number(v))&&Number(v)>0;
+ function data(){if(!state.business)state.business={version:1,records:[],fixed:[],reserve:[],periods:[],settlements:{},expanded:true};return state.business;}
+ function persist(){saveStateToLocalStorage();}
+ function newPeriod(start,day){let end=paydayDate(start.getFullYear(),start.getMonth()+2,day);if(end<=start)end=paydayDate(start.getFullYear(),start.getMonth()+3,day);return {start:iso(start),end:iso(end),day};}
+ function periods(){const b=data(),today=now();if(!b.periods.length){let start=paydayDate(today.getFullYear(),today.getMonth()+1,state.payday||25);if(start>today){const m=month(today,-1);start=paydayDate(m.getFullYear(),m.getMonth()+1,state.payday||25);}b.periods.push(newPeriod(start,state.payday||25));}
+ let last=b.periods[b.periods.length-1];while(date(last.end)<=today){const day=b.pendingDay||last.day;last=newPeriod(date(last.end),day);b.periods.push(last);delete b.pendingDay;}return b.periods;}
+ let view=null,mode='personal';
+ function period(){const p=getViewPeriod();const r=typeof getTransitionCalendarRange==='function'?getTransitionCalendarRange():null;return {start:iso(r?r.start:p.start),end:iso(r?r.end:p.end),day:p.budget.payday};}
+ function rows(p=period()){return data().records.filter(r=>r.date>=p.start&&r.date<p.end);}
+ function total(rs,type){return rs.filter(r=>r.type===type).reduce((s,r)=>s+r.amount,0);}
+ function locked(day){return false;}
+ const home=$('screen-home'),sw=document.createElement('div');sw.id='finance-mode-switch';sw.innerHTML='<button type="button" id="mode-personal" class="btn-main">개인</button><button type="button" id="mode-business" class="btn-secondary">사업</button>';const personalCalendar=$('calendar-grid').closest('.card');personalCalendar.id='personal-calendar-card';personalCalendar.before(sw);
+ const panel=document.createElement('div');panel.id='business-home';panel.style.display='none';sw.after(panel);
+ const fixedCard=$('fixed-items-list').closest('.card');
+ const personalFixed=document.createElement('div');personalFixed.id='my-personal-fixed';
+ while(fixedCard.firstChild)personalFixed.append(fixedCard.firstChild);
+ const fixedSwitch=document.createElement('div');fixedSwitch.className='biz-row';fixedSwitch.style.cssText='display:flex;gap:6px;margin-bottom:12px';
+ fixedSwitch.innerHTML='<button type="button" id="my-fixed-personal-mode" class="btn-main" style="width:auto;padding:6px 14px;font-size:12px;margin:0" onclick="bizFixedMode(\'personal\')">개인</button><button type="button" id="my-fixed-business-mode" class="btn-secondary" style="width:auto;padding:6px 14px;font-size:12px;margin:0" onclick="bizFixedMode(\'business\')">사업</button>';
+ const businessFixed=document.createElement('div');businessFixed.id='my-business-fixed';businessFixed.style.display='none';
+ fixedCard.append(fixedSwitch,personalFixed,businessFixed);
+ window.bizFixedMode=function(next){personalFixed.style.display=next==='personal'?'block':'none';businessFixed.style.display=next==='business'?'block':'none';$('my-fixed-personal-mode').className=next==='personal'?'btn-main':'btn-secondary';$('my-fixed-business-mode').className=next==='business'?'btn-main':'btn-secondary';renderMyBusinessFixed();};
+ function renderMyBusinessFixed(){const b=data();businessFixed.innerHTML='<div class="ui-card-title">사업 고정경비 세부 내역</div>'+metric('합계',b.fixed.reduce((sum,r)=>sum+r.amount,0))+b.fixed.map(r=>`<div class="biz-entry">${escapeHtml(r.name)} · ${r.day}일 · ${toWon(r.amount)} · ${r.vatApplicable?'부가세 해당':'부가세 해당 없음'}<div><button type="button" onclick="bizEditFixed('${r.id}')">수정</button><button type="button" onclick="bizDeleteFixed('${r.id}')">삭제</button></div></div>`).join('')+'<p class="biz-note">부가세 해당 항목은 출금일 기준으로 홈의 매입 부가세에 반영됩니다.</p><button type="button" class="btn-secondary" style="width:100%" onclick="bizOpenFixed()">＋ 고정경비 추가</button>';}
+
+ window.bizMode=function(next){if(state.calendarUsage==='personal')next='personal';mode=next;home.classList.toggle('business-mode',next==='business');panel.style.display=next==='business'?'block':'none';$('mode-personal').className=next==='personal'?'btn-main':'btn-secondary';$('mode-business').className=next==='business'?'btn-main':'btn-secondary';if(next==='business'){render();}};
+ $('mode-personal').onclick=()=>bizMode('personal');$('mode-business').onclick=()=>bizMode('business');
+ const usageCard=document.createElement('div');usageCard.className='card';usageCard.id='calendar-usage-settings';
+ usageCard.innerHTML='<div class="ui-card-title">달력 사용 설정</div><select aria-label="달력 사용 설정" id="calendar-usage" style="width:100%;margin-top:8px;padding:12px;border:1px solid var(--border-color);border-radius:12px"><option value="personal">개인만 사용</option><option value="both">개인·사업 함께 사용</option></select>';
+ fixedCard.before(usageCard);
+ function applyCalendarUsage(){const both=state.calendarUsage!=='personal';$('calendar-usage').value=both?'both':'personal';sw.style.display=both?'flex':'none';fixedSwitch.style.display=both?'flex':'none';if(!both){bizMode('personal');bizFixedMode('personal');}}
+ $('calendar-usage').onchange=()=>{state.calendarUsage=$('calendar-usage').value;applyCalendarUsage();persist();};
+ applyCalendarUsage();
+ window.addEventListener('DOMContentLoaded',applyCalendarUsage);
+
+ function vatHalfYearSummary(reference=now()){const year=reference.getFullYear(),half=reference.getMonth()<6?1:2;const start=`${year}-${half===1?'01':'07'}-01`,end=half===1?`${year}-07-01`:`${year+1}-01-01`;const records=data().records.filter(r=>r.date>=start&&r.date<end);const sales=records.filter(r=>r.type==='income'&&r.category==='매출').reduce((sum,r)=>sum+(r.vat||0),0);let purchases=records.filter(r=>r.type!=='income'&&(r.vatMode==='included'||r.vatMode==='exclusive')).reduce((sum,r)=>sum+(r.vat||0),0);// Fixed VAT is calculated once per scheduled month; linked actual records take precedence.
+ for(const f of data().fixed.filter(f=>f.vatApplicable&&f.vatStartMonth)){
+  for(let m=half===1?0:6;m<(half===1?6:12);m++){
+   const due=iso(new Date(year,m,Math.min(f.day,new Date(year,m+1,0).getDate())));
+   if(due.slice(0,7)<f.vatStartMonth||due>iso(reference))continue;
+   const key=f.id+':'+due;
+   if(data().records.some(r=>r.fixedOccurrence===key))continue;
+   purchases+=Math.round(f.amount/11);
+  }
+ }
+ return {year,half,sales,purchases,total:Math.max(0,sales-purchases)};}
+ function reserveTotals(){const b=data();const vat=b.records.reduce((s,r)=>s+(r.vat||0),0),paid=b.reserve.filter(r=>r.type==='payment').reduce((s,r)=>s+r.amount,0),held=b.reserve.reduce((s,r)=>s+(r.type==='reserve'?r.amount:-r.amount),0);return {target:Math.max(0,vat-paid),held,paid};}
+ function metric(label,value){return `<div class="biz-metric"><span>${label}</span><b>${toWon(value)}</b></div>`;}
+ function render(){renderMyBusinessFixed();if(mode!=='business')return;const b=data(),p=period(),rs=rows(p),income=total(rs,'income'),fixed=total(rs,'fixed'),variable=total(rs,'variable'),v=vatHalfYearSummary(),saved=b.settlements[p.start];
+ panel.innerHTML=`<div class="card" id="business-calendar-card"><div class="cal-header"><div style="display:flex; align-items:center; gap:8px;"><button class="btn-secondary" style="padding:4px 8px; font-size:12px; width:auto;" onclick="bizMove(-1)">◀</button><span style="font-size:14px; font-weight:bold; color:var(--text-main);" id="biz-cal-title">${date(p.start).getFullYear()}년 ${date(p.start).getMonth()+1}/${date(p.start).getDate()}~${new Date(date(p.end).getTime()-86400000).getMonth()+1}/${new Date(date(p.end).getTime()-86400000).getDate()}</span><button class="btn-secondary" style="padding:4px 8px; font-size:12px; width:auto;" onclick="bizMove(1)">▶</button></div><button class="btn-secondary" style="width:auto; padding:4px 8px; font-size:11px;" onclick="bizExpand()">${b.expanded?'▲ 주간으로 접기':'▼ 한 달 전체 펼치기'}</button></div><div class="cal-grid" id="biz-calendar"></div><div class="biz-note" style="display:flex;gap:6px 12px;flex-wrap:wrap;margin-top:10px">${Object.entries(expenseColors).filter(([name])=>name!=='고정경비'||rs.some(r=>r.type==='fixed')).map(([name,color])=>`<span style="display:inline-flex;align-items:center;gap:4px"><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color}"></i>${name}</span>`).join('')}</div></div>
+ <div class="card"><div class="biz-metric" style="margin:0"><strong>부가세 준비금 <small id="biz-vat-half" style="font-weight:normal">(${v.year}년 ${v.half===1?'1~6월':'7~12월'})</small></strong><b id="biz-vat-total">${toWon(v.total)}</b></div><div id="biz-vat-breakdown" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;font-size:12px"><div style="display:flex;justify-content:space-between;gap:12px"><span>매출 부가세</span><b id="biz-output-vat">${toWon(v.sales)}</b></div><div style="display:flex;justify-content:space-between;gap:12px"><span>매입 부가세</span><b id="biz-input-vat">${toWon(v.purchases)}</b></div></div><small class="biz-note">실제 납부액과 다를 수 있어요.</small><hr><button class="btn-secondary" onclick="bizOpenHistory()">이번 기간 수입·경비 내역</button></div>
+
+ <div style="display:flex;gap:8px"><button class="btn-main" style="flex:1" onclick="bizOpenRecord(undefined,null,'variable')">경비 입력</button><button class="btn-secondary" style="flex:1" onclick="bizOpenRecord(undefined,null,'income')">수입 입력</button></div><p class="biz-note">사업 기록은 개인 생활비·고정지출·보상에 합산하지 않습니다.</p>`;
+ const grid=$('biz-calendar');for(const name of ['일','월','화','수','목','금','토']){const el=document.createElement('div');el.className='cal-day-label';el.textContent=name;grid.append(el);}
+ let first=date(p.start),end=date(p.end);if(!b.expanded){let anchor=now();if(anchor<first||anchor>=end)anchor=first;first=new Date(anchor);first.setDate(first.getDate()-first.getDay());end=new Date(first);end.setDate(end.getDate()+7);}else for(let i=0;i<first.getDay();i++)grid.append(document.createElement('div'));
+ for(let d=new Date(first);d<end;d.setDate(d.getDate()+1)){const el=document.createElement('div'),key=iso(d);if(key<p.start||key>=p.end){grid.append(el);continue;}el.className='cal-cell';if(key===iso(now()))el.classList.add('today');if(key>iso(now()))el.classList.add('future-day');const dayRows=b.records.filter(r=>r.date===key),ins=total(dayRows,'income'),outs=total(dayRows,'fixed')+total(dayRows,'variable');el.innerHTML=`<span class="cal-day-text">${d.getMonth()+1}/${d.getDate()}</span>`;for(const [n,sign,color] of [[ins,'+','#2474A8']])if(n){const t=document.createElement('span');t.style.cssText='font-size:9px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;color:'+color;t.textContent=sign+toWon(n);el.append(t);}if(outs>0){const group=document.createElement('div');group.className='biz-expense-dots';group.style.cssText='display:flex;flex-wrap:wrap;gap:3px;justify-content:center;align-self:center;max-width:42px;margin:3px 0';const categories=[...new Set(dayRows.filter(r=>r.type!=='income').map(r=>r.category))];for(const category of categories){const dot=document.createElement('span');dot.className='biz-expense-dot';dot.dataset.category=category;dot.setAttribute('role','img');dot.setAttribute('aria-label',category+' 경비 기록 있음');dot.title=category;dot.style.cssText='display:block;width:10px;height:10px;border-radius:50%;background:'+(expenseColors[category]||expenseColors['기타']);group.append(dot);}el.append(group);}for(const f of b.fixed.filter(f=>Math.min(f.day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate())===d.getDate())){const t=document.createElement('span');t.className='fixed-pin';t.textContent=f.name+' 예정';el.append(t);}el.onclick=()=>bizOpenRecord(key,null,'variable');grid.append(el);}
+ }
+ // 개인 달력 갱신과 같은 시점에 현재 사업 기간도 다시 그립니다.
+ const renderPersonalCalendar=renderCalendar;
+ renderCalendar=function(){const result=renderPersonalCalendar.apply(this,arguments);if(mode==='business')render();return result;};
+ window.bizMove=n=>{changeMonth(n);persist();render();};
+ window.bizExpand=()=>{data().expanded=!data().expanded;persist();render();};
+ window.bizChooseType=type=>{$('biz-type').value=type;$('biz-vat-mode').value=type==='income'?'included':'none';bizRecordFields();};
+ window.bizRecordFields=()=>{const type=$('biz-type').value,old=$('biz-category').value,cats=type==='income'?['매출','강의','부수입','기타']:type==='fixed'?['고정경비']:['재료·매입','교통','식비','소모품','광고','기타'];$('biz-category').replaceChildren(...cats.map(c=>new Option(c,c)));if(cats.includes(old))$('biz-category').value=old;$('biz-expense-tab').className=type==='income'?'btn-secondary':'btn-main';$('biz-income-tab').className=type==='income'?'btn-main':'btn-secondary';bizVatFields();};
+ window.bizVatFields=()=>{const expense=$('biz-type').value!=='income';$('biz-vat-fields').style.display=expense||$('biz-category').value==='매출'?'block':'none';$('biz-input-vat-note').style.display=expense?'block':'none';};$('biz-category').onchange=bizVatFields;
+ window.bizOpenRecord=(day=iso(now()),id=null,initialType='income')=>{if(day>iso(now()))return alert('미래 날짜에는 기록할 수 없습니다.');if(locked(day))return alert('결산한 기간의 기록은 변경할 수 없습니다.');$('biz-type').querySelector('option[value="fixed"]')?.remove();pendingFixed=null;$('biz-expense-tab').parentElement.style.display='flex';$('biz-record-form').reset();$('biz-edit-id').value=id||'';$('biz-date').value=day;$('biz-date').max=iso(now());$('biz-type').value=initialType;bizRecordFields();if(initialType!=='income')$('biz-vat-mode').value='none';if(id){const r=data().records.find(r=>r.id===id);if(r.fixedOccurrence)pendingFixed={fixedId:r.fixedId,fixedOccurrence:r.fixedOccurrence};if(r.type==='fixed'){$('biz-expense-tab').parentElement.style.display='none';const option=new Option('기존 고정경비 기록','fixed');option.disabled=true;$('biz-type').append(option);}$('biz-type').value=r.type;bizRecordFields();$('biz-category').value=r.category;$('biz-amount').value=toWon(r.inputAmount||r.amount);$('biz-memo').value=r.memo;$('biz-vat-mode').value=r.vatMode||'none';bizVatFields();}$('biz-record-title').textContent=id?'사업 기록 수정':'사업 수입·경비 기록';$('biz-record-feedback').textContent='';$('biz-record-dialog').showModal();};
+ window.bizConfirmRecord=()=>{if(!$('biz-edit-id').value&&!$('biz-amount').value.trim()&&!$('biz-memo').value.trim()){$('biz-record-dialog').close();return;}bizSaveRecord(false);};
+ window.bizSaveRecord=keep=>{const form=$('biz-record-form');if(!form.reportValidity())return;const amount=parseNumber($('biz-amount').value),day=$('biz-date').value,id=$('biz-edit-id').value;if(!safe(amount))return alert('금액을 1원 이상의 정수로 입력해주세요.');if(day>iso(now())||locked(day))return alert('미래 또는 결산한 기간에는 기록할 수 없습니다.');const type=$('biz-type').value,category=$('biz-category').value,vm=type!=='income'||category==='매출'?$('biz-vat-mode').value:'none';let vat=vm==='included'?Math.round(amount/11):vm==='exclusive'?Math.round(amount*.1):0;const gross=vm==='exclusive'?amount+vat:amount;if(!Number.isSafeInteger(gross))return alert('금액이 너무 큽니다.');if(pendingFixed&&data().records.some(r=>r.fixedOccurrence===pendingFixed.fixedOccurrence&&r.id!==id))return alert('이미 납부 기록이 있습니다. 경비 내역에서 확인해주세요.');const r={...(pendingFixed||{}),id:id||crypto.randomUUID(),date:day,type,category,amount:gross,inputAmount:amount,vat,vatMode:vm,inputVatEligible:type!=='income'&&vm!=='none'&&vat>0,supply:gross-vat,memo:$('biz-memo').value.trim()};const b=data(),i=b.records.findIndex(r=>r.id===id);if(i>=0&&locked(b.records[i].date))return alert('결산한 기록은 수정할 수 없습니다.');if(i>=0)b.records[i]=r;else b.records.push(r);persist();render();if($('biz-history-dialog').open)bizRenderHistory();if(keep&&pendingFixed){$('biz-record-dialog').close();return;}if(keep){$('biz-edit-id').value='';$('biz-amount').value='';$('biz-memo').value='';$('biz-record-feedback').textContent='저장했습니다. 다음 항목을 입력해주세요.';}else $('biz-record-dialog').close();};$('biz-record-form').onsubmit=e=>{e.preventDefault();bizConfirmRecord();};
+ window.bizOpenFixed=()=>{$('biz-fixed-form').reset();$('biz-fixed-id').value='';$('biz-fixed-title').textContent='새로운 고정경비 등록';$('biz-fixed-dialog').showModal();$('biz-fixed-name').focus();};
+ window.bizRenderFixed=()=>{renderMyBusinessFixed();};
+ window.bizEditFixed=id=>{const r=data().fixed.find(f=>f.id===id);bizOpenFixed();$('biz-fixed-title').textContent='고정경비 수정';$('biz-fixed-id').value=id;$('biz-fixed-name').value=r.name;$('biz-fixed-day').value=r.day;$('biz-fixed-amount').value=toWon(r.amount);$('biz-fixed-vat-applicable').checked=!!r.vatApplicable;};
+ window.bizDeleteFixed=id=>{if(!confirm('이 고정경비 예정 항목을 삭제할까요? 실제 지출 기록은 유지됩니다.'))return;data().fixed=data().fixed.filter(f=>f.id!==id);persist();bizRenderFixed();render();};
+ window.bizSaveFixed=keep=>{const empty=!$('biz-fixed-name').value&&!$('biz-fixed-day').value&&!$('biz-fixed-amount').value;if(!keep&&empty){$('biz-fixed-dialog').close();return;}if(!$('biz-fixed-form').reportValidity())return;const amount=parseNumber($('biz-fixed-amount').value),day=parseNumber($('biz-fixed-day').value);if(!safe(amount)||!Number.isInteger(day)||day<1||day>31)return;const b=data(),id=$('biz-fixed-id').value,r={id:id||crypto.randomUUID(),name:$('biz-fixed-name').value.trim(),day,amount,vatApplicable:$('biz-fixed-vat-applicable').checked};if(!r.name)return;const i=b.fixed.findIndex(f=>f.id===id);r.vatStartMonth=r.vatApplicable?(i>=0&&b.fixed[i].vatApplicable&&b.fixed[i].vatStartMonth?b.fixed[i].vatStartMonth:iso(now()).slice(0,7)):null;if(i>=0)b.fixed[i]=r;else b.fixed.push(r);persist();$('biz-fixed-form').reset();$('biz-fixed-id').value='';$('biz-fixed-title').textContent='새로운 고정경비 등록';bizRenderFixed();render();if(!keep)$('biz-fixed-dialog').close();};$('biz-fixed-form').onsubmit=e=>{e.preventDefault();bizSaveFixed(false);};
+ let historyKind='expense';
+ window.bizHistoryKind=kind=>{historyKind=kind;bizRenderHistory();};
+ window.bizOpenHistory=(kind='expense')=>{historyKind=kind;bizRenderHistory();$('biz-history-dialog').showModal();};
+ window.bizRenderHistory=()=>{$('biz-history-expense-tab').className=historyKind==='expense'?'btn-main':'btn-secondary';$('biz-history-income-tab').className=historyKind==='income'?'btn-main':'btn-secondary';const rs=rows().filter(r=>historyKind==='income'?r.type==='income':r.type!=='income'),p=period();$('biz-history-title').textContent=p.start+' ~ '+iso(new Date(date(p.end).getTime()-86400000))+(historyKind==='income'?' 수입 내역':' 경비 내역');$('biz-history-summary').innerHTML=historyKind==='income'?metric('총수입',total(rs,'income')):metric('총경비',total(rs,'fixed')+total(rs,'variable'));const selected=rs.sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));$('biz-history-list').innerHTML=selected.map(r=>`<div class="biz-entry"><b>${r.date} · ${escapeHtml(r.category)} · ${toWon(r.amount)}</b><div>${escapeHtml(r.memo)}</div>${r.vat?`<small>공급가액 ${toWon(r.supply)} · 부가세 ${toWon(r.vat)}</small>`:''}<div><button onclick="bizEditRecord('${r.id}')">수정</button><button onclick="bizDeleteRecord('${r.id}')">삭제</button></div></div>`).join('')||'<p class="biz-note">해당 내역이 없습니다.</p>';};
+ window.bizEditRecord=id=>{const r=data().records.find(r=>r.id===id);bizOpenRecord(r.date,id);};window.bizDeleteRecord=id=>{const r=data().records.find(r=>r.id===id);if(locked(r.date))return alert('결산한 기록은 삭제할 수 없습니다.');if(!confirm('이 기록을 삭제할까요?'))return;data().records=data().records.filter(r=>r.id!==id);persist();bizRenderHistory();render();};
+
+ let pendingFixed=null;
+ const payments=document.createElement('dialog');payments.id='biz-payments-dialog';payments.className='biz-dialog';document.body.appendChild(payments);
+ function occurrences(){const p=period(),out=[];for(let m=new Date(date(p.start).getFullYear(),date(p.start).getMonth(),1);m<date(p.end);m.setMonth(m.getMonth()+1)){for(const f of data().fixed.filter(f=>f.trackPayment!==false)){const d=new Date(m.getFullYear(),m.getMonth(),Math.min(f.day,new Date(m.getFullYear(),m.getMonth()+1,0).getDate())),key=iso(d);if(key>=p.start&&key<p.end)out.push({f,day:key,key:f.id+':'+key});}}return out.sort((a,b)=>a.day.localeCompare(b.day));}
+ window.bizOpenPayments=()=>{payments.replaceChildren();const title=document.createElement('h3');title.textContent='고정경비 납부 확인';payments.append(title);const note=document.createElement('p');note.className='biz-note';note.textContent='실제로 납부한 항목만 확인해 주세요. 확인한 금액이 경비 내역에 반영됩니다.';payments.append(note);for(const o of occurrences()){const row=document.createElement('div');row.className='biz-entry';const paid=data().records.find(r=>r.fixedOccurrence===o.key);const name=document.createElement('div');name.textContent=o.day+' · '+o.f.name+' · '+toWon(o.f.amount);const btn=document.createElement('button');btn.className='btn-secondary';btn.type='button';btn.textContent=paid?'납부 완료':o.day>iso(now())?'납부 예정':'납부 확인';btn.disabled=!!paid||o.day>iso(now());btn.onclick=()=>{payments.close();bizOpenRecord(o.day,null,'variable');pendingFixed={fixedId:o.f.id,fixedOccurrence:o.key};const opt=new Option('고정경비','fixed');$('biz-type').append(opt);$('biz-type').value='fixed';bizRecordFields();$('biz-amount').value=toWon(o.f.amount);$('biz-memo').value=o.f.name;$('biz-record-title').textContent='고정경비 납부 기록';$('biz-expense-tab').parentElement.style.display='none';};row.append(name,btn);payments.append(row);}if(!occurrences().length){const empty=document.createElement('p');empty.textContent='이번 기간에 등록된 고정경비가 없습니다.';payments.append(empty);}const close=document.createElement('button');close.className='btn-secondary';close.textContent='닫기';close.onclick=()=>payments.close();payments.append(close);payments.showModal();};
+})();
+</script>
+
+<style>
+/* 사업 화면: 개인 오렌지와 구분되는 공통 블루 팔레트 */
+#screen-home.business-mode,.biz-dialog,#my-business-fixed{--primary:#2474A8;--primary-dark:#195A85;--border-color:#C9DFEF;--brown:#28516D;--cream:#EEF7FD;--text-main:#25475F}
+#mode-business.btn-main,#my-fixed-business-mode.btn-main{background:#2474A8;color:#fff;box-shadow:none}
+#mode-business.btn-secondary,#my-fixed-business-mode.btn-secondary{border-color:#C9DFEF;color:#28516D}
+#business-home .btn-main,.biz-dialog .btn-main,#my-business-fixed .btn-main{background:#2474A8;box-shadow:0 4px 10px rgba(36,116,168,.18)}
+#business-home .btn-main:hover,.biz-dialog .btn-main:hover,#my-business-fixed .btn-main:hover{background:#195A85}
+#business-home .card,.biz-dialog{border-color:#C9DFEF}
+.biz-dialog input,.biz-dialog select{border-color:#C9DFEF;color:#25475F}
+.biz-dialog input:focus,.biz-dialog select:focus{outline:2px solid #70AFD8;outline-offset:1px}
+.biz-dialog{color:#28516D}
+.biz-dialog h3,#business-home strong,#business-home b{color:#28516D}
+#business-calendar-card .cal-cell.today{border-color:#2474A8}
+#business-calendar-card .fixed-pin{background:#DCECF8;color:#28516D}
+#my-business-fixed .biz-entry{border-color:#DAE8F3}
+</style>
+
+
+
+
+<script>
+(function(){
+ let depth=0;
+ const originalSave=saveStateToLocalStorage;
+ saveStateToLocalStorage=function(){if(!depth)return originalSave();try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(cause){const error=new Error('입력 내용을 유지했습니다. 저장 공간을 확인한 뒤 다시 시도해주세요.');error.jampleSaveFailure=true;throw error;}};
+ function protect(fn){return function(){if(depth)return fn.apply(this,arguments);const before=JSON.stringify(state);depth++;try{return fn.apply(this,arguments);}catch(error){if(!error.jampleSaveFailure)throw error;state=JSON.parse(before);alert('저장에 실패했습니다. '+error.message);return false;}finally{depth--;}};}
+ submitExpense=protect(submitExpense);submitIncome=protect(submitIncome);addFixedItem=protect(addFixedItem);deleteFixedItem=protect(deleteFixedItem);
+ for(const name of ['bizSaveRecord','bizSaveFixed','bizDeleteRecord','bizDeleteFixed'])window[name]=protect(window[name]);
+})();
+</script>
+
 </body>
 </html>

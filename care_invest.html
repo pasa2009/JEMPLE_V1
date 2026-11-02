@@ -116,7 +116,7 @@
               내 투자 포트폴리오는<br>지금 건강할까요?
             </h1>
             <p class="text-xs text-slate-500 mt-1">
-              보유 자산을 적어주시면 유형·지역·산업별 균형을 점검해 드려요.
+              종목명·코드로 검색해 상품을 선택하고, 원금·평가액·월 적립액을 입력해주세요.
             </p>
           </div>
 
@@ -163,7 +163,8 @@
             </div>
           </section>
 
-          <!-- 2. 보유 투자 상품 리스트 -->
+          <details hidden style="display:none" class="text-xs border rounded-xl p-3"><summary class="font-bold cursor-pointer">등록 상품·출처 확인 (45개 항목)</summary><p class="my-2">펀드군 11 · ETF 28 · 주식 6. 전체 시장 목록이 아닙니다. 분류는 공식 자료를 참고한 잼플 분석 기준이며 실제 구성비나 공식 위험등급을 뜻하지 않습니다.</p><div id="catalogInventory" class="space-y-2"></div></details>
+<!-- 2. 보유 투자 상품 리스트 -->
           <section class="space-y-2.5">
             <div class="flex justify-between items-center">
               <label class="text-xs font-bold text-[#8B5A2B]">2. 보유 투자 상품</label>
@@ -188,7 +189,7 @@
               <div>
                 <label class="text-[11px] text-slate-500 font-medium">현재 비상금·예수금</label>
                 <div class="relative mt-1">
-                  <input type="text" id="bufferAmount" value="321" inputmode="numeric"
+                  <input type="text" id="bufferAmount" value="" inputmode="numeric"
                     oninput="formatInputNumber(this)"
                     class="w-full text-xs font-semibold p-2 pr-5 border border-slate-200 rounded-xl text-right focus:outline-none focus:border-[#FF8A3D] bg-white h-[38px] text-teal-800 font-mono">
                   <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">원</span>
@@ -197,7 +198,7 @@
               <div>
                 <label class="text-[11px] text-slate-500 font-medium">매월 추가 여유자금</label>
                 <div class="relative mt-1">
-                  <input type="text" id="bufferMonthly" value="150,000" inputmode="numeric"
+                  <input type="text" id="bufferMonthly" value="" inputmode="numeric"
                     oninput="formatInputNumber(this)"
                     class="w-full text-xs font-semibold p-2 pr-5 border border-slate-200 rounded-xl text-right focus:outline-none focus:border-[#FF8A3D] bg-white h-[38px]">
                   <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none">원</span>
@@ -464,49 +465,11 @@
     }
 
     function analyzeFundOrEtf(text) {
-      const name = (text || '').trim();
-      if (!name) return { type: '성장주식', region: '기타', sector: '기타' };
-
-      let type = '성장주식';
-      let region = '국내';
-      let sector = '시장대표지수';
-
-      if (/채권|국채|단기채|회사채|머니마켓|kofr|cd금리/i.test(name)) {
-        type = '채권·안전';
-      } else if (/배당|고배당|다우존스|인컴|리츠|커버드콜/i.test(name)) {
-        type = '배당·인컴';
-      } else {
-        type = '성장주식';
-      }
-
-      if (/글로벌|미국|s&p|나스닥|차이나|인도|베트남|유럽|재팬|world|china|india|피델리티/i.test(name)) {
-        if (/미국|s&p|나스닥|다우/i.test(name)) region = '미국';
-        else if (/차이나|중국/i.test(name)) region = '중국';
-        else if (/인도/i.test(name)) region = '인도';
-        else region = '글로벌';
-      } else {
-        region = '국내';
-      }
-
-      if (/테크|it|반도체|ai|소프트|인공지능|글로벌테크/i.test(name)) {
-        sector = 'IT·테크';
-      } else if (/우주항공|항공|스페이스/i.test(name)) {
-        sector = '우주항공·방산';
-      } else if (/2차전지|배터리|전기차/i.test(name)) {
-        sector = '2차전지·모빌리티';
-      } else if (/바이오|헬스|제약/i.test(name)) {
-        sector = '바이오·헬스';
-      } else if (/배당|고배당|다우존스/i.test(name)) {
-        sector = '배당·인컴';
-      } else if (/채권|국채|단기채/i.test(name)) {
-        sector = '채권자산';
-      } else {
-        sector = '시장대표지수';
-      }
-
-      return { type, region, sector };
+      return {type:'분류 미확인',region:'분류 미확인',sector:'분류 미확인'};
     }
-
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
     const COLOR_MAP = [
       { bg: 'bg-[#FF8A3D]', hex: '#FF8A3D' },
       { bg: 'bg-emerald-500', hex: '#10b981' },
@@ -516,10 +479,7 @@
       { bg: 'bg-teal-500', hex: '#14b8a6' }
     ];
 
-    let assetList = [
-      { id: 1, name: '피델리티글로벌테크', principal: 700000, amount: 752079, monthly: 100000 },
-      { id: 2, name: 'KCGI코리아증권', principal: 700000, amount: 730277, monthly: 100000 }
-    ];
+    let assetList = [{id:1,name:'',principal:0,amount:0,monthly:0}];
 
     let currentChartTab = 'type';
     let analysisResultCache = null;
@@ -538,14 +498,18 @@
             </button>
           ` : ''}
           <div>
-            <label class="text-[11px] text-slate-500 font-medium">종목명</label>
-            <input type="text" value="${item.name}" placeholder="예: 피델리티글로벌테크, KODEX 200"
-              oninput="updateAsset(${item.id}, 'name', this.value)"
+            <div class="flex items-center gap-2 mb-2" role="group" aria-label="상품 종류">
+            <span class="text-[11px] text-slate-500 shrink-0">상품 종류</span>
+            ${['펀드','ETF','주식'].map(k=>`<button type="button" aria-pressed="${item.searchKind===k}" onclick="setProductKind(${item.id},'${k}')" class="rounded-full border px-3 py-1.5 text-xs font-bold ${item.searchKind===k?'bg-orange-500 text-white border-orange-500':'bg-white text-slate-600 border-slate-200'}">${k}</button>`).join('')}</div>
+            <label class="text-[11px] text-slate-500 font-medium">종목명 또는 코드</label>
+            <input type="text" value="${escapeHtml(item.name)}" placeholder="이름 일부로 검색: 컨슈머, 나스닥, QQQ"
+              oninput="changeProductName(${item.id}, this.value)"
               class="w-full text-xs font-semibold p-2 border border-slate-200 rounded-xl mt-1 focus:outline-none focus:border-[#FF8A3D] bg-slate-50/50">
           </div>
+          <div id="productInfo-${item.id}">${renderClassification(item)}</div>
           <div class="grid grid-cols-3 gap-1.5">
             <div>
-              <label class="text-[10px] text-slate-500 font-medium">투자원금</label>
+              <label class="text-[10px] text-slate-500 font-medium">투자원금(총 매입금액)</label>
               <div class="relative mt-0.5">
                 <input type="text" inputmode="numeric" value="${formatNumber(item.principal)}" placeholder="0"
                   oninput="formatInputNumber(this); updateAsset(${item.id}, 'principal', parseNumber(this.value));"
@@ -563,7 +527,7 @@
               </div>
             </div>
             <div>
-              <label class="text-[10px] text-[#E67220] font-bold">월 적립액</label>
+              <label class="text-[10px] text-[#E67220] font-bold">월 적립액(없으면 0)</label>
               <div class="relative mt-0.5">
                 <input type="text" inputmode="numeric" value="${formatNumber(item.monthly)}" placeholder="0"
                   oninput="formatInputNumber(this); updateAsset(${item.id}, 'monthly', parseNumber(this.value));"
@@ -614,6 +578,8 @@
     }
 
     function runDiagnosis() {
+      if (assetList.some(a => !a.name.trim() || ![a.principal,a.amount,a.monthly].every(v => Number.isFinite(Number(v)) && Number(v)>=0))) { alert('각 종목명과 0 이상의 금액을 확인해주세요.'); return; }
+      if (!assetList.some(a => a.name.trim() && Number(a.amount)>0)) { alert('종목명과 원화 평가액을 입력해주세요.'); return; }
       const hasGoal = document.getElementById('chkHasGoal').checked;
       const goalTitle = document.getElementById('goalTitle').value.trim();
       const goalTargetAmount = parseNumber(document.getElementById('goalTargetAmount').value);
@@ -624,21 +590,21 @@
 
       const totalPrincipal = assetList.reduce((sum, a) => sum + (Number(a.principal) || 0), 0);
       const totalStockValuation = assetList.reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
-      const grandTotal = totalStockValuation + bufferAmount || 1;
+      const grandTotal = totalStockValuation + bufferAmount;
       const totalMonthlySaving = assetList.reduce((sum, a) => sum + (Number(a.monthly) || 0), 0);
 
       const totalProfitRate = totalPrincipal > 0
         ? (((totalStockValuation - totalPrincipal) / totalPrincipal) * 100).toFixed(1)
-        : '0.0';
+        : null;
 
-      const parsed = assetList.map(a => ({ ...a, ...analyzeFundOrEtf(a.name) }));
+      const parsed = assetList.map(a => ({ ...a, type:a.assetType || '분류 미확인', region:a.region || '분류 미확인', sector:a.sector || '분류 미확인' }));
 
       const typeMap = {};
       parsed.forEach(a => {
         const amt = Number(a.amount) || 0;
         if (amt > 0) typeMap[a.type] = (typeMap[a.type] || 0) + amt;
       });
-      if (bufferAmount > 0) typeMap['채권·안전자산'] = (typeMap['채권·안전자산'] || 0) + bufferAmount;
+      if (bufferAmount > 0) typeMap['현금성자산'] = (typeMap['현금성자산'] || 0) + bufferAmount;
       const typeList = Object.entries(typeMap).map(([name, amount]) => ({
         name, amount, percent: Math.round((amount / grandTotal) * 100)
       })).sort((a, b) => b.percent - a.percent);
@@ -670,9 +636,14 @@
         : 0;
 
       const hasAdequateBuffer = bufferAmount >= 500000 || (bufferAmount / grandTotal) >= 0.15;
-      const stockHeavy = ((typeMap['성장주식'] || 0) / grandTotal) >= 0.8;
+      const stockHeavy = (((typeMap['성장주식'] || 0)+(typeMap['주식형'] || 0)) / grandTotal) >= 0.8;
 
+      const unknownAmount = parsed.filter(a=>['assetType','region','sector'].some(k=>!a[k]||a[k]==='분류 미확인')).reduce((sum,a)=>sum+Number(a.amount||0),0);
+      const manualAmount = parsed.filter(a=>a.classificationSource==='manual').reduce((sum,a)=>sum+Number(a.amount||0),0);
+      const manualPercent = grandTotal>0?manualAmount/grandTotal*100:0;
+      const unknownPercent = grandTotal>0 ? unknownAmount/grandTotal*100 : 0;
       analysisResultCache = {
+        unknownAmount, unknownPercent, manualAmount, manualPercent,
         grandTotal, totalProfitRate, totalMonthlySaving, bufferAmount, bufferMonthly,
         hasGoal, goalTitle, goalTargetAmount, goalTargetYears, expectedTotalAmount, expectedPaceRate,
         typeList, regionList, sectorList, hasAdequateBuffer, stockHeavy
@@ -690,8 +661,8 @@
 
       document.getElementById('resGrandTotalText').textContent = `${formatNumber(r.grandTotal)}원`;
       const prEl = document.getElementById('resProfitRateText');
-      prEl.textContent = Number(r.totalProfitRate) >= 0 ? `+${r.totalProfitRate}%` : `${r.totalProfitRate}%`;
-      prEl.className = Number(r.totalProfitRate) >= 0 ? 'font-bold text-rose-500' : 'font-bold text-blue-500';
+      prEl.textContent = r.totalProfitRate===null ? '산출 불가(원금 0)' : Number(r.totalProfitRate) >= 0 ? `+${r.totalProfitRate}%` : `${r.totalProfitRate}%`;
+      prEl.className = r.totalProfitRate===null ? 'font-bold text-slate-500' : Number(r.totalProfitRate) >= 0 ? 'font-bold text-rose-500' : 'font-bold text-blue-500';
 
       document.getElementById('resMonthlySavingText').textContent = `${formatNumber(r.totalMonthlySaving)}원`;
       document.getElementById('resBufferMonthlyText').textContent = `${formatNumber(r.bufferMonthly)}원`;
@@ -729,11 +700,12 @@
       } else {
         goalBadge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700';
         goalBadge.textContent = '목적 부재 🔴';
-        goalDetailBox.innerHTML = `
+        goalDetailBox.style.display = 'none';
+        /* goalDetailBox.innerHTML = `
           <p class="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-xl leading-relaxed">
             ⚠️ 쓸 시기가 정해지지 않은 투자는 시장이 출렁일 때 공포에 질려 손해를 보고 팔아버릴 확률이 매우 높습니다.
           </p>
-        `;
+        `; */
       }
 
       renderDonutChart();
@@ -759,10 +731,10 @@
         scDesc.textContent = `현재 자산의 대부분이 주식에 들어가 있고 비상금(${formatNumber(r.bufferAmount)}원)이 거의 없어요. 만약 오늘 밤 세계 증시가 -20% 폭락하면 계좌 전체가 충격을 받고 급전 필요 시 손실 난 주식을 헐값에 팔아야 하는 악순환에 빠질 수 있습니다.`;
         scAction.innerHTML = `👉 <strong>오늘의 1줄 실천:</strong> 매월 추가 여유자금(${formatNumber(r.bufferMonthly)}원)으로 CMA나 단기채권 같은 안전 버팀목부터 50만 원 이상 채워두세요!`;
       } else {
-        scTitle.textContent = '안전 순항 가능';
+        scTitle.textContent = '배분·위험 추가 확인';
         scTitle.className = 'text-emerald-300 font-bold';
-        scDesc.textContent = `지역과 산업이 골고루 분산되어 있어 특정 국가나 테마가 출렁여도 계좌 전체가 크게 흔들리지 않아요. 목적 기간에 맞춰 차분히 적립을 이어가시면 됩니다.`;
-        scAction.innerHTML = `👉 <strong>오늘의 1줄 실천:</strong> 지금처럼 균형 잡힌 배분을 유지하며 매월 정기적으로 물을 주세요!`;
+        scDesc.textContent = '분류 미확인 자산과 직접 선택한 분류가 포함될 수 있습니다. 분산 여부와 상품별 위험은 투자설명서를 통해 확인하세요. 분산투자도 손실을 막아주지는 않습니다.';
+        scAction.innerHTML = `👉 <strong>오늘의 1줄 실천:</strong> 미확인 상품의 투자 대상·환헤지·레버리지 여부부터 확인하세요!`;
       }
     }
 
@@ -816,7 +788,7 @@
         row.innerHTML = `
           <div class="flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full ${COLOR_MAP[idx % COLOR_MAP.length].bg}"></span>
-            <span class="text-slate-700 font-medium">${item.name}</span>
+            <span class="text-slate-700 font-medium">${escapeHtml(item.name)}</span>
           </div>
           <div class="space-x-1.5">
             <span class="text-slate-400 text-[11px]">${formatNumber(item.amount)}원</span>
@@ -852,7 +824,100 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       renderAssetInputs();
+      renderCatalogInventory();
     });
   </script>
+<script>
+
+// Basic facts and JEMPLE analytical labels, not a live quote feed or official risk rating.
+const PRODUCT_CATALOG = [
+{"code": "140710", "name": "KODEX 운송", "aliases": ["코덱스운송"], "productKind": "ETF", "assetType": "주식형", "region": "국내", "sector": "운송", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "099140", "name": "KODEX 차이나H", "aliases": ["코덱스차이나H"], "productKind": "ETF", "assetType": "주식형", "region": "중국", "sector": "다중산업", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "102970", "name": "KODEX 증권", "aliases": ["코덱스증권"], "productKind": "ETF", "assetType": "주식형", "region": "국내", "sector": "금융", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "266390", "name": "KODEX 경기소비재", "aliases": ["코덱스경기소비재"], "productKind": "ETF", "assetType": "주식형", "region": "국내", "sector": "경기소비재", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "456250", "name": "KODEX 유럽명품TOP10 STOXX", "aliases": ["코덱스유럽명품TOP10 STOXX"], "productKind": "ETF", "assetType": "주식형", "region": "유럽", "sector": "명품·소비재", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "283580", "name": "KODEX 차이나CSI300", "aliases": ["코덱스차이나CSI300"], "productKind": "ETF", "assetType": "주식형", "region": "중국", "sector": "다중산업", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "477730", "name": "KODEX 인도타타그룹", "aliases": ["코덱스인도타타그룹"], "productKind": "ETF", "assetType": "주식형", "region": "인도", "sector": "다중산업", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "117680", "name": "KODEX 철강", "aliases": ["코덱스철강"], "productKind": "ETF", "assetType": "주식형", "region": "국내", "sector": "금속·소재", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "372330", "name": "KODEX 차이나항셍테크", "aliases": ["코덱스차이나항셍테크"], "productKind": "ETF", "assetType": "주식형", "region": "중국", "sector": "IT·테크", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "453810", "name": "KODEX 인도Nifty50", "aliases": ["코덱스인도Nifty50"], "productKind": "ETF", "assetType": "주식형", "region": "인도", "sector": "다중산업", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "463640", "name": "KODEX 미국S&P500유틸리티", "aliases": ["코덱스미국S&P500유틸리티"], "productKind": "ETF", "assetType": "주식형", "region": "미국", "sector": "유틸리티", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "091180", "name": "KODEX 자동차", "aliases": ["코덱스자동차"], "productKind": "ETF", "assetType": "주식형", "region": "국내", "sector": "자동차", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "266410", "name": "KODEX 필수소비재", "aliases": ["코덱스필수소비재"], "productKind": "ETF", "assetType": "주식형", "region": "국내", "sector": "필수소비재", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "453630", "name": "KODEX 미국S&P500필수소비재", "aliases": ["코덱스미국S&P500필수소비재"], "productKind": "ETF", "assetType": "주식형", "region": "미국", "sector": "필수소비재", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "091170", "name": "KODEX 은행", "aliases": ["코덱스은행"], "productKind": "ETF", "assetType": "주식형", "region": "국내", "sector": "금융", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "117700", "name": "KODEX 건설", "aliases": ["코덱스건설"], "productKind": "ETF", "assetType": "주식형", "region": "국내", "sector": "건설", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "453640", "name": "KODEX 미국S&P500헬스케어", "aliases": ["코덱스미국S&P500헬스케어"], "productKind": "ETF", "assetType": "주식형", "region": "미국", "sector": "제약·헬스케어", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "453650", "name": "KODEX 미국S&P500금융", "aliases": ["코덱스미국S&P500금융"], "productKind": "ETF", "assetType": "주식형", "region": "미국", "sector": "금융", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "352560", "name": "KODEX 미국부동산리츠(H)", "aliases": ["코덱스미국부동산리츠(H)"], "productKind": "ETF", "assetType": "리츠형", "region": "미국", "sector": "부동산·리츠", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "117460", "name": "KODEX 에너지화학", "aliases": ["코덱스에너지화학"], "productKind": "ETF", "assetType": "주식형", "region": "국내", "sector": "에너지·화학", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "226490", "name": "KODEX 코스피", "aliases": ["코덱스코스피"], "productKind": "ETF", "assetType": "주식형", "region": "국내", "sector": "다중산업", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "292190", "name": "KODEX KRX300", "aliases": ["코덱스KRX300"], "productKind": "ETF", "assetType": "주식형", "region": "국내", "sector": "다중산업", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "101280", "name": "KODEX 일본TOPIX100", "aliases": ["코덱스일본TOPIX100"], "productKind": "ETF", "assetType": "주식형", "region": "일본", "sector": "다중산업", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "390390", "name": "KODEX 미국반도체", "aliases": ["코덱스미국반도체"], "productKind": "ETF", "assetType": "주식형", "region": "미국", "sector": "반도체", "index": "", "note": "운용사 2026-07-28 공지로 상품명·코드 확인. 잼플의 상품명·투자대상 기준 대표 분류이며 최신 상장상태·구성비·공식 위험등급 미확인", "source": "https://www.samsungfund.com/etf/lounge/notice-view.do?no=78273", "sourceDate": "2026-07-28"},
+{"code": "FAMILY-SY-1", "displayCode": "펀드군", "name": "신영연금가치증권전환형자투자신탁(주식)", "aliases": [], "productKind": "펀드", "assetType": "주식형", "region": "국내", "sector": "분류 미확인", "index": "", "note": "운용사 검색목록 기준 국내 주식형. 산업별 구성은 미확인. 펀드군 단위로 클래스·판매가능 여부 별도 확인. 자료 기준 2026-10-05", "source": "https://syfund.co.kr/fund/search", "sourceDate": "2026-10-05"},
+{"code": "FAMILY-SY-2", "displayCode": "펀드군", "name": "신영레벨업코리아증권자투자신탁(주식)", "aliases": [], "productKind": "펀드", "assetType": "주식형", "region": "국내", "sector": "분류 미확인", "index": "", "note": "운용사 검색목록 기준 국내 주식형. 산업별 구성은 미확인. 펀드군 단위로 클래스·판매가능 여부 별도 확인. 자료 기준 2026-10-05", "source": "https://syfund.co.kr/fund/search", "sourceDate": "2026-10-05"},
+{"code": "FAMILY-SY-3", "displayCode": "펀드군", "name": "신영장기주택마련가치증권자투자신탁(주식)", "aliases": [], "productKind": "펀드", "assetType": "주식형", "region": "국내", "sector": "분류 미확인", "index": "", "note": "운용사 검색목록 기준 국내 주식형. 산업별 구성은 미확인. 펀드군 단위로 클래스·판매가능 여부 별도 확인. 자료 기준 2026-10-05", "source": "https://syfund.co.kr/fund/search", "sourceDate": "2026-10-05"},
+{"code": "FAMILY-SY-4", "displayCode": "펀드군", "name": "신영퇴직연금가치주식증권자투자신탁(주식)", "aliases": [], "productKind": "펀드", "assetType": "주식형", "region": "국내", "sector": "분류 미확인", "index": "", "note": "운용사 검색목록 기준 국내 주식형. 산업별 구성은 미확인. 펀드군 단위로 클래스·판매가능 여부 별도 확인. 자료 기준 2026-10-05", "source": "https://syfund.co.kr/fund/search", "sourceDate": "2026-10-05"},
+{"code": "FAMILY-SY-5", "displayCode": "펀드군", "name": "신영마라톤분할적립증권자투자신탁(주식혼합)", "aliases": [], "productKind": "펀드", "assetType": "혼합자산", "region": "국내", "sector": "분류 미확인", "index": "", "note": "운용사 검색목록 기준 국내 혼합자산. 산업별 구성은 미확인. 펀드군 단위로 클래스·판매가능 여부 별도 확인. 자료 기준 2026-10-05", "source": "https://syfund.co.kr/fund/search", "sourceDate": "2026-10-05"},
+{"code": "FAMILY-SY-6", "displayCode": "펀드군", "name": "신영가치플랜2030증권전환형자투자신탁(주식)", "aliases": [], "productKind": "펀드", "assetType": "주식형", "region": "국내", "sector": "분류 미확인", "index": "", "note": "운용사 검색목록 기준 국내 주식형. 산업별 구성은 미확인. 펀드군 단위로 클래스·판매가능 여부 별도 확인. 자료 기준 2026-10-05", "source": "https://syfund.co.kr/fund/search", "sourceDate": "2026-10-05"},
+{"code": "FAMILY-SY-7", "displayCode": "펀드군", "name": "신영마라톤소득공제증권자투자신탁(주식)", "aliases": [], "productKind": "펀드", "assetType": "주식형", "region": "국내", "sector": "분류 미확인", "index": "", "note": "운용사 검색목록 기준 국내 주식형. 산업별 구성은 미확인. 펀드군 단위로 클래스·판매가능 여부 별도 확인. 자료 기준 2026-10-05", "source": "https://syfund.co.kr/fund/search", "sourceDate": "2026-10-05"},
+{"code": "FAMILY-SY-8", "displayCode": "펀드군", "name": "신영마라톤분할매수증권자투자신탁2호(주식혼합)", "aliases": [], "productKind": "펀드", "assetType": "혼합자산", "region": "국내", "sector": "분류 미확인", "index": "", "note": "운용사 검색목록 기준 국내 혼합자산. 산업별 구성은 미확인. 펀드군 단위로 클래스·판매가능 여부 별도 확인. 자료 기준 2026-10-05", "source": "https://syfund.co.kr/fund/search", "sourceDate": "2026-10-05"},
+{"code": "FAMILY-SY-9", "displayCode": "펀드군", "name": "신영마라톤증권투자신탁(주식)", "aliases": [], "productKind": "펀드", "assetType": "주식형", "region": "국내", "sector": "분류 미확인", "index": "", "note": "운용사 검색목록 기준 국내 주식형. 산업별 구성은 미확인. 펀드군 단위로 클래스·판매가능 여부 별도 확인. 자료 기준 2026-10-05", "source": "https://syfund.co.kr/fund/search", "sourceDate": "2026-10-05"},
+{"code": "FAMILY-GLOBAL-TECH", "displayCode": "펀드군", "name": "피델리티 글로벌 테크놀로지 증권 자투자신탁 (주식-재간접형)", "aliases": ["글로벌테크", "피델리티테크", "테크놀로지", "technology"], "productKind": "펀드", "assetType": "주식형", "region": "글로벌", "sector": "IT·테크", "index": "", "note": "글로벌 기술주 재간접 투자. 펀드군 분류: A·C-e 등 보유 클래스 별도 확인. 참고 설명서 효력일 2025-09-30, 최신 구성비·위험등급 미반영", "source": "https://www.fidelityinternational.com/legal/documents/KR-ko/spr.KR-ko.KR.D-57111.pdf"},
+{"code": "005930", "name": "삼성전자", "aliases": ["삼전", "Samsung Electronics"], "productKind": "주식", "assetType": "주식형", "region": "국내", "sector": "IT·테크", "index": "", "note": "반도체·전자기기 등 복수 사업. 단일 반도체 사업으로만 분류하지 않음 · 잼플 대표산업 분류 · 지역은 기업 소속 국가 기준", "source": "https://www.samsung.com/sec/ir/ir-resources/faq/"},
+{"code": "000270", "name": "기아", "aliases": ["기아차", "Kia"], "productKind": "주식", "assetType": "주식형", "region": "국내", "sector": "자동차", "index": "", "note": "완성차 제조·판매 · 잼플 대표산업 분류 · 지역은 기업 소속 국가 기준", "source": "https://englishdart.fss.or.kr/dsbc001/selectPopup.ax?selectKey=00106641"},
+{"code": "010140", "name": "삼성중공업", "aliases": ["삼중", "Samsung Heavy Industries"], "productKind": "주식", "assetType": "주식형", "region": "국내", "sector": "조선·해양", "index": "", "note": "선박·해양구조물 제조 중심 · 잼플 대표산업 분류 · 지역은 기업 소속 국가 기준", "source": "https://englishdart.fss.or.kr/dsbc001/selectPopup.ax?selectKey=00126478"},
+{"code": "000250", "name": "삼천당제약", "aliases": ["삼천당", "SCD"], "productKind": "주식", "assetType": "주식형", "region": "국내", "sector": "제약·헬스케어", "index": "", "note": "의약품 제조 · 잼플 대표산업 분류 · 지역은 기업 소속 국가 기준", "source": "https://englishdart.fss.or.kr/dsbc001/selectPopup.ax?selectKey=00128546"},
+{"code": "008040", "name": "사조동아원", "aliases": ["동아원"], "productKind": "주식", "assetType": "주식형", "region": "국내", "sector": "식품·사료", "index": "", "note": "제분·사료·펫푸드 사업 · 잼플 대표산업 분류 · 지역은 기업 소속 국가 기준", "source": "https://do.sajo.co.kr/"},
+{"code": "010130", "name": "고려아연", "aliases": ["Korea Zinc"], "productKind": "주식", "assetType": "주식형", "region": "국내", "sector": "금속·소재", "index": "", "note": "비철금속 제련. 회사 소속 국가 기준이며 해외 매출 노출은 반영하지 않음 · 잼플 대표산업 분류 · 지역은 기업 소속 국가 기준", "source": "https://www.koreazinc.co.kr/"},
+ {code:'FAMILY-CONSUMER-BRANDS',displayCode:'펀드군',name:'피델리티 글로벌 컨슈머 브랜드 증권 자투자신탁 (주식-재간접형)',aliases:['컨슈머','컨슈머브랜드','글로벌 소비자 브랜드','consumer brands'],productKind:'펀드',assetType:'주식형',region:'글로벌',sector:'소비자브랜드 테마',index:'',note:'글로벌 소비자 브랜드 기업에 재간접 투자. 펀드군 분류이며 A·C-e 등 보유 클래스는 별도 확인. 자료 기준 2025-08-28, 최신 구성비·위험등급 미반영',source:'https://www.fidelityinternational.com/legal/documents/KR-ko/spr.KR-ko.KR.D-66411.pdf'},
+ {code:'069500',name:'KODEX 200',aliases:['코덱스200'],productKind:'ETF',assetType:'주식형',region:'국내',sector:'다중산업',index:'KOSPI 200',note:'국내 대표지수 · 여러 산업에 투자',source:'https://m.samsungfund.com/etf/product/view.do?id=2ETF01'},
+ {code:'379800',name:'KODEX 미국S&P500',aliases:['코덱스미국S&P500'],productKind:'ETF',assetType:'주식형',region:'미국',sector:'다중산업',index:'S&P 500',note:'미국 대형주 대표지수 · 여러 산업에 투자',source:'https://m.samsungfund.com/etf/product/view.do?id=2ETFE4'},
+ {code:'379810',name:'KODEX 미국나스닥100',aliases:['코덱스미국나스닥100'],productKind:'ETF',assetType:'주식형',region:'미국',sector:'다중산업',index:'NASDAQ 100',note:'미국시장 중심 · 기술주 비중이 높은 다중산업 지수. 미국 외 기업도 포함 가능',source:'https://m.samsungfund.com/etf/product/view.do?id=2ETFE3'},
+ {code:'QQQ',name:'Invesco QQQ',aliases:['인베스코QQQ'],productKind:'ETF',assetType:'주식형',region:'미국',sector:'다중산업',index:'NASDAQ 100',note:'미국시장 중심 · 기술주 비중이 높은 다중산업 지수. 미국 외 기업도 포함 가능',source:'https://www.invesco.com/us/en/financial-products/etfs/invesco-qqq-trust-series-1.html'}
+].map(p=>({...p,checkedAt:'2026-11-02'}));
+function renderCatalogInventory(){const root=document.getElementById('catalogInventory');if(!root)return;root.innerHTML=PRODUCT_CATALOG.map(p=>'<div class="border-t py-2"><strong>'+escapeHtml(p.name)+'</strong><p>'+escapeHtml(p.displayCode||p.code)+' · '+[p.productKind,p.assetType,p.region,p.sector].map(escapeHtml).join(' · ')+'</p><a href="'+p.source+'" target="_blank" rel="noopener noreferrer" class="underline">공식 참고자료</a><p>확인일 '+p.checkedAt+(p.sourceDate?' · 자료 기준 '+p.sourceDate:'')+'</p></div>').join('');}
+function normalizeProductName(value){return String(value).normalize('NFKC').toUpperCase().replace(/코덱스/g,'KODEX').replace(/\s/g,'');}
+function searchProducts(value,kind='전체') {
+ const terms=String(value).trim().split(/\s+/).map(normalizeProductName).filter(Boolean);if(!terms.length)return [];
+ return PRODUCT_CATALOG.filter(p=>(kind==='전체'||p.productKind===kind)&&terms.every(q=>[p.name,p.code,...p.aliases].some(v=>normalizeProductName(v).includes(q)))).slice(0,8);
+}
+function setProductKind(id,kind){const item=assetList.find(a=>a.id===id);if(!item)return;item.searchKind=kind;changeProductName(id,item.name);renderAssetInputs();}
+function changeProductName(id,value) {
+ const item=assetList.find(a=>a.id===id);if(!item)return;
+ item.name=value;
+ for(const key of ['catalogCode','productKind','assetType','region','sector','classificationSource'])delete item[key];
+ analysisResultCache=null;
+ const node=document.getElementById('productInfo-'+id);if(node)node.innerHTML=renderClassification(item);
+}
+function selectProduct(id,code) {
+ const item=assetList.find(a=>a.id===id), p=PRODUCT_CATALOG.find(p=>p.code===code);if(!item||!p)return;
+ Object.assign(item,{classificationSource:'catalog',name:p.name,catalogCode:p.code,productKind:p.productKind,assetType:p.assetType,region:p.region,sector:p.sector});
+ analysisResultCache=null;renderAssetInputs();
+}
+function beginManualClassification(id){const item=assetList.find(a=>a.id===id);if(!item)return;delete item.catalogCode;item.classificationSource='manual';analysisResultCache=null;renderAssetInputs();}
+function renderClassification(item) {
+ const selected=PRODUCT_CATALOG.find(p=>p.code===item.catalogCode);
+ if(selected)return '';
+ const matches=searchProducts(item.name,item.searchKind||'전체');
+ return '<div class="space-y-1">'+matches.map(p=>'<button type="button" class="block w-full text-left border rounded-lg p-2 text-xs" onclick="selectProduct('+item.id+',\''+p.code+'\')">'+escapeHtml(p.name)+' ('+escapeHtml(p.displayCode||p.code)+')</button>').join('')+'<p class="text-[10px] text-amber-700">'+(matches.length?'정확한 상품을 선택하면 분류를 불러옵니다.':item.name.trim()?'등록된 상품을 찾지 못했습니다. 분류 미확인으로 표시됩니다.':'')+'</p>'+renderManualClassification(item)+'</div>';
+}
+</script>
+<script>
+const MANUAL_FIELDS={productKind:['펀드','ETF','주식'],assetType:['주식형','채권','혼합자산','현금성자산','기타'],region:['국내','미국','글로벌','중국','일본','인도','유럽','기타'],sector:['IT·테크','자동차','조선·해양','제약·헬스케어','식품·사료','금속·소재','다중산업','기타']};
+function renderManualClassification(item){
+ if(!item.name.trim())return '';
+ return '<details class="border rounded-xl p-2" '+(item.classificationSource==='manual'?'open':'')+'><summary class="text-xs font-bold cursor-pointer">직접 분류하기 (선택)</summary><div class="grid grid-cols-2 gap-2">'+Object.entries(MANUAL_FIELDS).map(([key,options],i)=>{
+ const listId='manual-'+item.id+'-'+key;
+ return '<label class="text-[10px]">'+['상품 형태','투자 유형','투자 지역','산업·테마'][i]+'<input aria-label="직접 '+['상품 형태','투자 유형','투자 지역','산업·테마'][i]+'" class="w-full border rounded p-1 text-xs" list="'+listId+'" value="'+escapeHtml(item[key]||'')+'" placeholder="모르면 비워두기" maxlength="60" oninput="setManualClassification('+item.id+',\''+key+'\',this.value)"><datalist id="'+listId+'">'+options.map(v=>'<option value="'+v+'">').join('')+'</datalist></label>';
+ }).join('')+'</div></details>';
+}
+function setManualClassification(id,key,value){
+ if(!Object.hasOwn(MANUAL_FIELDS,key))return;
+ const item=assetList.find(a=>a.id===id);if(!item||item.catalogCode)return;
+ item[key]=String(value).trim().slice(0,60);item.classificationSource='manual';analysisResultCache=null;
+}
+</script>
 </body>
 </html>

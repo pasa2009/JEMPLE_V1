@@ -229,6 +229,7 @@
     .btn-main:active { background: var(--primary-dark); }
     .btn-secondary { background: #FFF; border: 1.5px solid var(--border-color); color: var(--brown); border-radius: 14px; padding: 12px; font-size: 14px; font-weight: bold; width: 100%; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .onboarding-actions { display: grid; grid-template-columns: minmax(78px, 1fr) minmax(0, 2fr); gap: 8px; }
+    .onboarding-error { margin: 0; color: #a4261d; font-size: 13px; font-weight: bold; }
     .onboarding-actions button { min-width: 0; margin: 0; padding-inline: 8px; }
     .btn-secondary:active { background: #F8F9FA; }
     .action-row { display: flex; gap: 8px; margin-top: auto; }
@@ -436,14 +437,14 @@
           <img src="my_icon_payday.png" class="ui-input-icon" alt="정산일(급여일)">
           <span>매월 월급 기준일</span>
         </label>
-        <input type="text" id="input-payday" class="input-text" placeholder="예: 25일" inputmode="numeric" oninput="formatDayInput(this)">
+        <input type="text" id="input-payday" class="input-text" placeholder="예: 25일" inputmode="numeric" maxlength="2" onfocus="editCurrencyInput(this)" oninput="editCurrencyInput(this)" onblur="formatDayInput(this)">
       </div>
       <div class="input-group">
         <label class="ui-label-with-icon">
           <img src="my_icon_income.png" class="ui-input-icon" alt="총 수입">
           <span>한 달 총 수입</span>
         </label>
-        <input type="text" id="input-income" class="input-text" placeholder="예: 3,000,000원" inputmode="numeric" oninput="formatOnboardingAmount(this)">
+        <input type="text" id="input-income" class="input-text" placeholder="예: 3,000,000원" inputmode="numeric" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)">
       </div>
       <div class="onboarding-actions">
         <button type="button" class="btn-secondary" onclick="returnToWelcome()">← 이전</button>
@@ -465,7 +466,7 @@
           <img src="my_icon_fixed_list.png" class="ui-input-icon" alt="고정지출 총액">
           <span>고정지출 총액</span>
         </label>
-        <input type="text" id="input-fixed" class="input-text" placeholder="예: 700,000원" inputmode="numeric" oninput="formatOnboardingAmount(this)">
+        <input type="text" id="input-fixed" class="input-text" placeholder="예: 700,000원" inputmode="numeric" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)">
       </div>
       <div class="onboarding-actions">
         <button type="button" class="btn-secondary" onclick="goToStep(1)">← 이전</button>
@@ -487,7 +488,7 @@
           <img src="my_icon_savings.png" class="ui-input-icon" onerror="this.src='report_icon_base.png'" alt="기본 저축">
           <span>기본 저축·투자 금액</span>
         </label>
-        <input type="text" id="input-savings" class="input-text" placeholder="예: 500,000원" inputmode="numeric" oninput="formatOnboardingAmount(this)">
+        <input type="text" id="input-savings" class="input-text" placeholder="예: 500,000원" inputmode="numeric" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)">
       </div>
       <div class="onboarding-actions">
         <button type="button" class="btn-secondary" onclick="goToStep(2)">← 이전</button>
@@ -509,12 +510,13 @@
           <img src="my_icon_variable.png" class="ui-input-icon" alt="목표 생활비">
           <span>목표 생활비(변동지출)</span>
         </label>
-        <input type="text" id="input-variable" aria-describedby="onboarding-living-guide" class="input-text" placeholder="예: 1,000,000원" inputmode="numeric" oninput="formatOnboardingAmount(this); updateOnboardingLivingGuide()">
+        <input type="text" id="input-variable" aria-describedby="onboarding-living-guide onboarding-living-error" class="input-text" placeholder="예: 1,000,000원" inputmode="numeric" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this); updateOnboardingLivingGuide()" onblur="formatCurrencyInput(this)">
         <p id="onboarding-living-guide" class="step-sub" role="status"></p>
+        <p id="onboarding-living-error" class="onboarding-error" role="alert"></p>
       </div>
       <div class="onboarding-actions">
         <button type="button" class="btn-secondary" onclick="goToStep(3)">← 이전</button>
-        <button class="btn-main" onclick="advanceOnboarding(4)">내 도토리 정원 확인하기 →</button>
+        <button type="button" class="btn-main" onclick="advanceOnboarding(4)">내 도토리 정원 확인하기 →</button>
       </div>
     </div>
 
@@ -533,9 +535,10 @@
         • <b>기본저축: <span id="pie-savings-val" style="color:#2E7D32; font-weight:bold;">500,000원</span></b> (선저축 완료!)<br>
         • 생활비: <span id="pie-variable-val">1,000,000원</span><br>
         <hr style="border:none; border-top:1px dashed #E0E0E0; margin:8px 0;">
-        남는 여유 씨앗은 매월 <b style="color:var(--primary); font-size:17px;" id="pie-surplus-val">800,000원</b>이에요!
+        월 예산 잔액은 <b style="color:var(--primary); font-size:17px;" id="pie-surplus-val">800,000원</b>입니다.
       </div>
 
+      <p id="onboarding-settings-note" class="step-sub" role="status" hidden>비워둔 항목은 잼플을 시작한 뒤 메인 화면의 ‘마이’에서 꼭 설정해 주세요.</p>
       <div id="surplus-solution-box" class="card" style="background:var(--cream); border-color:#F5E5C9; margin-bottom:14px;"></div>
 
       <div class="card" style="background:#FFF; padding:14px; margin-bottom:16px;">
@@ -555,15 +558,16 @@
             </div>
             <span id="expected-months-badge" style="font-size:11px; color:var(--primary); font-weight:normal;">목표 금액 입력 후 계산</span>
           </label>
-          <input type="text" id="input-target-goal-amt" class="input-text" style="font-size:15px; padding:10px 12px;" inputmode="numeric" oninput="formatCurrencyInput(this); calculateTargetMonths(this);">
+          <input type="text" id="input-target-goal-amt" aria-describedby="onboarding-goal-error" class="input-text" style="font-size:15px; padding:10px 12px;" inputmode="numeric" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this); calculateTargetMonths(this);" onblur="formatCurrencyInput(this)">
         </div>
       </div>
 
+      <p id="onboarding-goal-error" class="onboarding-error" role="alert"></p>
       <div class="onboarding-actions">
         <button type="button" class="btn-secondary" onclick="goToStep(4)">← 이전</button>
-        <button class="btn-main" id="btn-start-routine" onclick="finishOnboarding()">
+        <button type="button" class="btn-main" id="btn-start-routine" onclick="finishOnboarding()">
           <img src="report_icon_wish.png" class="ui-btn-icon" alt="시작">
-          <span>재무링과 첫 돈 루틴 시작하기!</span>
+          <span>도토리 모으기 루틴 시작하기!</span>
         </button>
       </div>
     </div>
@@ -579,6 +583,10 @@
       </span>
     </div>
 
+    <div id="initial-settings-note" class="card" hidden>
+      <p>비워둔 항목이나 맞지 않는 예산은 마이에서 꼭 설정해 주세요. 급여일이 비어 있으면 달력은 임시로 25일을 기준으로 표시됩니다.</p>
+      <button type="button" class="btn-secondary" onclick="switchTab('my')">마이에서 설정하기</button>
+    </div>
     <!-- 상단: 여유자금 모으기 목표 진척도 카드 -->
     <div class="goal-progress-box">
       <div class="speech-bubble" id="ring-message">"목표를 향해 첫 씨앗을 심었어요!"</div>
@@ -630,6 +638,7 @@
         <span id="daily-recommend-label" style="font-weight:bold; color:#1976D2;">하루 약 33,000원 권장</span>
       </div>
       
+      <p id="living-budget-change-note" class="step-sub" hidden></p>
       <hr style="border:none; border-top:1px dashed #E0E0E0; margin:14px 0 12px 0;">
       <button class="btn-secondary" style="width:100%; padding:10px; font-size:13px; color:var(--text-main);" onclick="openHistorySheet()">
         <img src="my_icon_fixed_list.png" class="ui-input-icon" alt="내역">
@@ -925,7 +934,7 @@
           <img src="my_icon_payday.png" class="ui-input-icon" alt="정산일(급여일)">
           <span>정산일(급여일)</span>
         </label>
-        <input type="text" id="my-payday" class="input-text" oninput="formatDayInput(this)">
+        <input type="text" id="my-payday" class="input-text" inputmode="numeric" oninput="formatDayInput(this)">
         <p id="payday-change-hint" style="font-size:11px;color:#8B5A2B;margin-top:6px">정산일(급여일) 변경은 개인·사업 달력에 함께 적용되며, 기존 변경 정책에 따라 적용됩니다.</p>
       </div>
 
@@ -934,7 +943,7 @@
           <img src="my_icon_income.png" class="ui-input-icon" alt="한 달 총 수입">
           <span>한 달 총 수입</span>
         </label>
-        <input type="text" id="my-income" class="input-text" oninput="formatCurrencyInput(this)">
+        <input type="text" id="my-income" class="input-text" inputmode="numeric" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)">
       </div>
 
       <div class="input-group">
@@ -942,7 +951,7 @@
           <img src="my_icon_savings.png" class="ui-input-icon" onerror="this.src='report_icon_base.png'" alt="기본 저축">
           <span>기본 저축·투자 (선저축)</span>
         </label>
-        <input type="text" id="my-base-savings" class="input-text" oninput="formatCurrencyInput(this)">
+        <input type="text" id="my-base-savings" class="input-text" inputmode="numeric" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)">
       </div>
 
       <div class="input-group">
@@ -950,7 +959,8 @@
           <img src="my_icon_variable.png" class="ui-input-icon" alt="한 달 생활비 목표">
           <span>한 달 생활비 목표</span>
         </label>
-        <input type="text" id="my-variable" class="input-text" oninput="formatCurrencyInput(this)">
+        <input type="text" id="my-variable" class="input-text" aria-describedby="my-variable-lock-note" inputmode="numeric" onfocus="if (!this.readOnly) editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)">
+        <p id="my-variable-lock-note" class="step-sub" role="status" hidden></p>
       </div>
     </div>
 
@@ -979,7 +989,7 @@
 
     <div class="card">
       <label class="ui-label-with-icon">목표용으로 실제 모아둔 돈</label>
-      <input id="my-actual-saved" type="text" class="input-text" oninput="formatCurrencyInput(this)">
+      <input id="my-actual-saved" type="text" class="input-text" inputmode="numeric" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)">
       <p style="font-size:12px;color:var(--text-sub);margin-top:8px;line-height:1.6">목표용 통장 잔액을 확인해 입력하세요. 기본 저축·투자는 별도로 관리하며, 무지출 기록으로 이 금액이 늘어나지 않습니다.</p>
       <p id="legacy-money-note" style="font-size:12px;color:#B45309;margin-top:8px"></p>
     </div>
@@ -997,7 +1007,7 @@
           <img src="my_icon_piggy.png" class="ui-input-icon" alt="달성 목표 금액">
           <span>달성 목표 금액</span>
         </label>
-        <input type="text" id="my-goal-amt" class="input-text" oninput="formatCurrencyInput(this)">
+        <input type="text" id="my-goal-amt" class="input-text" inputmode="numeric" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)">
       </div>
     </div>
 
@@ -1127,7 +1137,7 @@
           <img src="report_icon_expense.png" class="ui-input-icon" alt="지출 금액">
           <span id="record-amount-label">지출 금액</span>
         </label>
-        <input type="text" id="sheet-amount" class="input-text" placeholder="15,000원" autofocus oninput="formatCurrencyInput(this)">
+        <input type="text" id="sheet-amount" class="input-text" placeholder="15,000원" autofocus inputmode="numeric" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)">
       </div>
 
       <div class="input-group">
@@ -1148,7 +1158,7 @@
       <div style="display:flex;gap:8px;align-items:stretch">
         <button type="button" id="expense-add-another" class="btn-secondary" style="flex:1;min-width:0;width:auto;margin:0;padding:14px 6px;font-size:13px;white-space:nowrap" onclick="addAnotherLivingExpense()" aria-label="생활비 저장하고 계속 입력">＋ 생활비 추가</button>
         <button type="button" id="income-add-another" class="btn-secondary" style="display:none;flex:1;min-width:0;width:auto;margin:0;padding:14px 6px;font-size:13px;white-space:nowrap" onclick="addAnotherIncome()" aria-label="수입 저장하고 계속 입력">＋ 수입 추가</button>
-        <button type="button" class="btn-main" style="flex:1;min-width:0;width:auto;margin:0;padding:14px 6px;font-size:13px;white-space:nowrap" onclick="submitExpense()">
+        <button type="button" class="btn-main" style="flex:1;min-width:0;width:auto;margin:0;padding:14px 6px;font-size:13px;white-space:nowrap" onclick="confirmExpenseSheet()">
           <span>등록하고 재무링 키우기</span>
         </button>
       </div>
@@ -1188,7 +1198,7 @@
       <div id="settlement-guidance" class="settlement-note"></div>
       <div id="settlement-input-area" style="display:none">
         <label class="ui-label-with-icon" for="settlement-transfer-input">실제로 목표 통장으로 이체한 금액</label>
-        <input type="text" inputmode="numeric" class="input-text" id="settlement-transfer-input" placeholder="0원" oninput="formatCurrencyInput(this)" value="0원" />
+        <input type="text" inputmode="numeric" class="input-text" id="settlement-transfer-input" placeholder="0원" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)" value="0원" />
         <div class="settlement-note">앱에서 실제 계좌이체를 실행하지 않습니다. 직접 이체한 금액만 입력하세요. 0원 결산도 가능합니다.</div>
         <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.5;margin-top:10px"><input type="checkbox" id="settlement-confirm-check" style="margin-top:2px;accent-color:var(--primary)"/> <span>수입·지출 기록을 확인했으며, 입력한 금액이 실제 이체한 금액임을 확인합니다.</span></label>
       </div>
@@ -1227,9 +1237,39 @@
     return parseInt(String(str).replace(/[^0-9]/g, '')) || 0;
   }
 
+  function editCurrencyInput(input) {
+    const value = input.value;
+    const digits = value.replace(/[^0-9]/g, '');
+    const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    if (value === formatted) return;
+
+    const digitsBeforeCursor = value.slice(0, input.selectionStart).replace(/[^0-9]/g, '').length;
+    let cursor = 0;
+    let digitsSeen = 0;
+    while (digitsSeen < digitsBeforeCursor && cursor < formatted.length) {
+      if (formatted[cursor++] !== ',') digitsSeen++;
+    }
+    input.value = formatted;
+    input.setSelectionRange(cursor, cursor);
+  }
+
+  function deleteCurrencySeparator(event, input) {
+    const cursor = input.selectionStart;
+    if (!event.cancelable || cursor !== input.selectionEnd) return;
+    if (event.inputType === 'deleteContentBackward' && input.value[cursor - 1] === ',') {
+      event.preventDefault();
+      input.setRangeText('', cursor - 2, cursor, 'end');
+    } else if (event.inputType === 'deleteContentForward' && input.value[cursor] === ',') {
+      event.preventDefault();
+      input.setRangeText('', cursor, cursor + 2, 'end');
+    } else {
+      return;
+    }
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
   function formatCurrencyInput(el) {
-    const num = parseNumber(el.value);
-    el.value = !num ? '' : num.toLocaleString() + '원';
+    el.value = /[0-9]/.test(el.value) ? toWon(parseNumber(el.value)) : '';
   }
 
   function formatDayInput(el) {
@@ -1357,27 +1397,20 @@
     document.getElementById('screen-welcome').classList.add('active');
   }
 
-  function formatOnboardingAmount(input) {
-    input.value = /[0-9]/.test(input.value) ? toWon(parseNumber(input.value)) : '';
-  }
-
   function advanceOnboarding(step) {
-    const fields = [
-      [['input-payday', '월급 기준일'], ['input-income', '한 달 총 수입']],
-      [['input-fixed', '고정지출 총액']],
-      [['input-savings', '저축·투자 금액']],
-      [['input-variable', '목표 생활비']]
-    ];
-    for (const [id, label] of fields[step - 1]) {
-      const input = document.getElementById(id);
-      if (!input.value.trim()) {
-        alert(id === 'input-payday' ? '월급 기준일을 입력해주세요.' : label + '을(를) 입력해주세요. 해당 금액이 없으면 0원을 입력해주세요.');
-        input.focus();
-        return;
-      }
+    if (step !== 4) {
+      goToStep(step + 1);
+      return;
     }
-    if (step === 4) calculateAndGoStep5();
-    else goToStep(step + 1);
+    const livingBudget = document.getElementById('input-variable');
+    const amount = parseNumber(livingBudget.value);
+    if (amount <= 0 || !Number.isSafeInteger(amount)) {
+      document.getElementById('onboarding-living-error').textContent = amount > 0
+        ? '목표 생활비 금액을 확인해 주세요.' : '목표 생활비는 필수 입력사항입니다.';
+      livingBudget.setAttribute('aria-invalid', 'true');
+      return;
+    }
+    calculateAndGoStep5();
   }
 
   function onboardingLivingBudgetLimit() {
@@ -1388,13 +1421,20 @@
   function updateOnboardingLivingGuide() {
     const limit = onboardingLivingBudgetLimit();
     const input = document.getElementById('input-variable');
-    const excess = parseNumber(input.value) - limit;
+    const livingBudget = parseNumber(input.value);
+    if (livingBudget > 0 && Number.isSafeInteger(livingBudget)) {
+      document.getElementById('onboarding-living-error').textContent = '';
+      input.removeAttribute('aria-invalid');
+    }
+    const excess = livingBudget - limit;
     const guide = document.getElementById('onboarding-living-guide');
-    if (limit < 0) {
-      guide.textContent = `고정지출과 저축이 수입보다 ${toWon(-limit)} 많아요. 이전 단계에서 수입·고정지출·저축을 조정해 주세요.`;
+    if (['input-income', 'input-fixed', 'input-savings'].some(id => !document.getElementById(id).value.trim())) {
+      guide.textContent = '수입·고정지출·저축을 입력하면 생활비 한도를 볼 수 있어요.';
+    } else if (limit < 0) {
+      guide.textContent = `고정지출과 저축이 수입보다 ${toWon(-limit)} 많아요. 지금 진행하고 나중에 마이에서 조정할 수 있어요.`;
     } else {
       guide.textContent = `수입에서 고정지출과 저축을 빼면 생활비는 최대 ${toWon(limit)}까지 설정할 수 있어요.`;
-      if (excess > 0) guide.textContent += ` 입력한 생활비를 ${toWon(excess)} 이상 줄여주세요.`;
+      if (excess > 0) guide.textContent += ` 입력한 생활비가 한도를 ${toWon(excess)} 초과했어요.`;
     }
   }
 
@@ -1404,7 +1444,14 @@
     document.getElementById(`step-${step}`).style.display = 'flex';
   }
 
+  const onboardingBudgetFields = ['input-payday', 'input-income', 'input-fixed', 'input-savings', 'input-variable'];
+
+  function hasBlankOnboardingBudget() {
+    return onboardingBudgetFields.some(id => !document.getElementById(id).value.trim());
+  }
+
   function calculateAndGoStep5() {
+    document.getElementById('onboarding-settings-note').hidden = !hasBlankOnboardingBudget();
     state.payday = parseNumber(document.getElementById('input-payday').value) || 25;
     state.income = parseNumber(document.getElementById('input-income').value);
     state.fixedExpenses = parseNumber(document.getElementById('input-fixed').value);
@@ -1424,9 +1471,10 @@
     document.getElementById('pie-surplus-val').innerText = toWon(state.surplus);
 
     const solutionBox = document.getElementById('surplus-solution-box');
-    const startBtn = document.getElementById('btn-start-routine');
 
-    if (state.surplus >= 1000000) {
+    if (state.surplus < 0) {
+      solutionBox.textContent = `지출과 저축이 수입보다 ${toWon(-state.surplus)} 많아요. 시작 후 메인 화면의 ‘마이’에서 조정할 수 있어요.`;
+    } else if (state.surplus >= 1000000) {
       solutionBox.innerHTML = `
         <div style="display:flex; gap:12px; align-items:flex-start;">
           <img src="RING4.png" style="width:48px; height:48px; object-fit:contain;" alt="성장 재무링">
@@ -1439,10 +1487,6 @@
           </div>
         </div>
       `;
-      startBtn.innerHTML = `
-        <img src="report_icon_wish.png" class="ui-btn-icon" alt="시작">
-        <span>목돈 모으기 루틴 시작하기!</span>
-      `;
     } else {
       solutionBox.innerHTML = `
         <div style="display:flex; gap:12px; align-items:flex-start;">
@@ -1454,10 +1498,6 @@
             </p>
           </div>
         </div>
-      `;
-      startBtn.innerHTML = `
-        <img src="report_icon_wish.png" class="ui-btn-icon" alt="시작">
-        <span>도토리 모으기 루틴 시작하기!</span>
       `;
     }
 
@@ -1513,15 +1553,21 @@
     customBox.style.display = 'block';
     const input = document.getElementById('input-custom-reward');
     input.focus();
-    state.targetGoalName = input.value.trim() || '나만의 300만 원 목표';
+    state.targetGoalName = input.value.trim() || '나만의 목표';
+    calculateTargetMonths();
   }
 
   function updateCustomRewardText(input) {
-    state.targetGoalName = input.value.trim() || '나만의 300만 원 목표';
+    state.targetGoalName = input.value.trim() || '나만의 목표';
   }
 
   function calculateTargetMonths(el) {
     if (el) state.targetGoalAmount = parseNumber(el.value);
+    if (state.targetGoalAmount > 0 && Number.isSafeInteger(state.targetGoalAmount)
+        && document.querySelector('#reward-chip-container .selected')) {
+      document.getElementById('onboarding-goal-error').textContent = '';
+      document.getElementById('input-target-goal-amt').removeAttribute('aria-invalid');
+    }
     const monthlyTotalSeed = Math.max(0, state.surplus);
     const months = monthlyTotalSeed > 0 ? Math.ceil(state.targetGoalAmount / monthlyTotalSeed) : null;
     document.getElementById('expected-months-badge').innerText = state.targetGoalAmount <= 0 ? '목표 금액 입력 후 계산' : months === null ? '여유자금 확보 후 달성기간을 계산해요' : `약 ${months}개월 소요 예상 (선저축 제외)`;
@@ -1555,14 +1601,33 @@
   }
 
   function finishOnboarding() {
-    if (!document.querySelector('#reward-chip-container .selected')) state.targetGoalName = '나만의 목표';
-    if (state.targetGoalAmount <= 0) return alert("목표금액을 1원 이상 입력해주세요.");
+    const goalError = document.getElementById('onboarding-goal-error');
+    if (!document.querySelector('#reward-chip-container .selected')) {
+      goalError.textContent = '달성 목표 선택은 필수 입력사항입니다.';
+      return;
+    }
+    const goalAmount = document.getElementById('input-target-goal-amt');
+    state.targetGoalAmount = parseNumber(goalAmount.value);
+    if (!Number.isSafeInteger(state.targetGoalAmount) || state.targetGoalAmount <= 0) {
+      goalError.textContent = goalAmount.value.trim()
+        ? '달성 목표 금액을 1원 이상 입력해 주세요.' : '달성 목표 금액은 필수 입력사항입니다.';
+      goalAmount.setAttribute('aria-invalid', 'true');
+      return;
+    }
+
+    goalError.textContent = '';
+    const hasBlankBudget = hasBlankOnboardingBudget();
+    state.initialSettingsPending = hasBlankBudget || state.surplus < 0;
+    if (hasBlankBudget) {
+      alert('비워둔 항목은 잼플을 시작한 뒤 메인 화면의 ‘마이’에서 꼭 설정해 주세요.');
+    }
     state.startYear = CURRENT_YEAR; state.startMonth = CURRENT_MONTH;
     state.expenseHistory = []; state.dailyRecords = {}; state.settledMonths = {};
     state.currentSaved = 0; state.periodBudgets = {}; state.legacyMoneyReview = false; state.giftHistory = []; state.incomeHistory = [];
     initializeBudgetV2();
     const firstPeriod = getViewPeriod();
     state.periodBudgets[firstPeriod.key] = prorateFirstBudget(firstPeriod.budget, firstPeriod);
+    state.firstLivingBudgetUnlockOn = localDateKey(firstPeriod.end);
     state.isUserOnboarded = true;
     saveStateToLocalStorage();
 
@@ -1583,12 +1648,13 @@
   }
 
   function updateGoalProgressBoard() {
-    const targetAmt = state.targetGoalAmount || 3000000;
+    const targetAmt = state.targetGoalAmount;
     const current = state.currentSaved || 0;
-    const percent = Math.min(100, Math.round((current / targetAmt) * 100));
+    const percent = targetAmt > 0 ? Math.min(100, Math.round((current / targetAmt) * 100)) : 0;
 
     document.getElementById('home-current-saved-val').innerText = toWon(current);
-    document.getElementById('home-target-goal-val').innerText = toWon(targetAmt);
+    document.getElementById('initial-settings-note').hidden = !state.initialSettingsPending;
+    document.getElementById('home-target-goal-val').innerText = targetAmt > 0 ? toWon(targetAmt) : '미설정';
     document.getElementById('home-goal-percent').innerText = `${percent}%`;
     document.getElementById('home-goal-progress-bar').style.width = `${percent}%`;
 
@@ -1800,8 +1866,28 @@
   function updateWaterLevel() {
     const isPreLaunch = isPreLaunchMonth(state.viewYear, state.viewMonth);
     syncViewSpent();
-    const periodBudgetValue = getViewPeriod().budget.variableBudget;
-    const remain = periodBudgetValue - state.currentSpent;
+    const period = getViewPeriod();
+    const today = jampleClock();
+    today.setHours(0, 0, 0, 0);
+    const currentPeriod = today >= period.start && today < period.end;
+    const segments = currentPeriod ? (period.budget.livingBudgetSegments || []) : [];
+    const active = segments.slice().reverse().find(segment => parseLocalDay(segment.start) <= today);
+    const pending = segments.find(segment => parseLocalDay(segment.start) > today);
+    const changeNote = document.getElementById('living-budget-change-note');
+    const activeStart = active && parseLocalDay(active.start);
+    const periodBudgetValue = active?.amount ?? period.budget.variableBudget;
+    const spent = active ? expensesInPeriod({ ...period, start: activeStart }).reduce((total, row) => total + row.amount, 0) : state.currentSpent;
+    const remain = periodBudgetValue - spent;
+    if (active) document.getElementById('target-budget-label').textContent = toWon(periodBudgetValue);
+    const nextPeriodBudget = currentPeriod ? period.budget.nextLivingBudgetOnPayday : undefined;
+    changeNote.hidden = !pending && nextPeriodBudget === undefined;
+    if (pending) {
+      const start = parseLocalDay(pending.start);
+      const days = dayDifference(start, period.end);
+      changeNote.textContent = `${start.getMonth() + 1}/${start.getDate()}부터 적용 · ${days}일 예산 ${toWon(pending.amount)} · 하루 ${toWon(Math.floor(pending.amount / days))}`;
+    } else if (nextPeriodBudget !== undefined) {
+      changeNote.textContent = `${period.end.getMonth() + 1}/${period.end.getDate()}부터 적용 · 새 관리기간 예산 ${toWon(nextPeriodBudget)}`;
+    }
     const gaugeFill = document.getElementById('gauge-fill');
     const remainText = document.getElementById('remain-variable-text');
     const recommendLabel = document.getElementById('daily-recommend-label');
@@ -1827,24 +1913,20 @@
       remainText.innerText = `남은 생활비 예산: ${toWon(remain)}`;
       remainText.style.color = '#1976D2';
       
-      const fillPercent = Math.min(100, (periodBudgetValue > 0 ? remain / (getViewPeriod().budget.fullVariableBudget ?? periodBudgetValue) : 0) * 100);
+      const gaugeBudget = active ? periodBudgetValue : (period.budget.fullVariableBudget ?? periodBudgetValue);
+      const fillPercent = gaugeBudget > 0 ? Math.min(100, remain / gaugeBudget * 100) : 0;
       gaugeFill.style.width = `${fillPercent}%`;
       gaugeFill.style.background = '#42A5F5';
 
-      const period = getViewPeriod();
       const daysLeft = remainingDays(period);
-      const periodBudget = period.budget.variableBudget;
-      const baseDailyRecommend = Math.floor((periodBudget / (period.budget.allocationDays || periodLength(period))) / 1000) * 1000;
-      let rawDailyRecommend = daysLeft > 0 ? Math.floor((remain / daysLeft) / 1000) * 1000 : 0;
-      const capLimit = Math.round((baseDailyRecommend * 1.5) / 1000) * 1000;
 
       recommendLabel.style.color = '#1976D2';
-      if (daysLeft === 0) { recommendLabel.innerText = '이 예산기간이 종료되었어요. 결산을 확인해주세요.'; return; }
-      if (rawDailyRecommend > capLimit) {
-        recommendLabel.innerText = `남은 ${daysLeft}일 · 하루 ${toWon(capLimit)} 권장 (상한 적용)`;
-      } else {
-        recommendLabel.innerText = `남은 ${daysLeft}일 · 하루 ${toWon(rawDailyRecommend)} 권장`;
+      if (daysLeft === 0) {
+        recommendLabel.innerText = '이 예산기간이 종료되었어요. 결산을 확인해주세요.';
+        return;
       }
+      const dailyRecommend = Math.floor(remain / daysLeft);
+      recommendLabel.innerText = `남은 ${daysLeft}일 · 하루 ${toWon(dailyRecommend)} 권장`;
     }
   }
 
@@ -1982,6 +2064,14 @@
     document.getElementById('expense-sheet').classList.remove('active');
   }
 
+  function confirmExpenseSheet() {
+    if (!document.getElementById('sheet-amount').value.trim()) {
+      closeExpenseSheet();
+      return;
+    }
+    submitExpense();
+  }
+
   function handleReceiptUpload(event) { /* 아래 v2 영수증 미리보기 구현 사용 */ }
 
   function selectCat(el) {
@@ -2114,7 +2204,7 @@
       el.innerHTML=`
         <input aria-label="항목명" value="${escapeHtml(item.name)}" onchange="updateFixedInline(${item.id},'name',this)">
         <input aria-label="출금일" inputmode="numeric" value="${item.day}일" onchange="updateFixedInline(${item.id},'day',this)">
-        <input aria-label="금액" inputmode="numeric" style="text-align:right" placeholder="금액 입력" value="${item.amount?toWon(item.amount):''}" onchange="updateFixedInline(${item.id},'amount',this)">
+        <input aria-label="금액" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)" inputmode="numeric" style="text-align:right" placeholder="금액 입력" value="${item.amount?toWon(item.amount):''}" onchange="updateFixedInline(${item.id},'amount',this)">
         <button type="button" aria-label="항목 삭제" style="color:#ff5733" onclick="deleteFixedItem(${item.id})">×</button>`;
       container.appendChild(el);
     });
@@ -2256,19 +2346,19 @@
         : `수입 ${toWon(displayBudget.income)} − 고정지출 ${toWon(displayBudget.fixedExpenses)} − 선저축 ${toWon(baseSavings)} − 생활비 지출 ${toWon(totalSpent)} = ${toWon(finalSurplus)}`;
     }
 
-    const targetAmt = state.targetGoalAmount || 3000000;
+    const targetAmt = state.targetGoalAmount;
     const currentSaved = state.currentSaved || 0;
-    const progressPercent = Math.min(100, Math.round((currentSaved / targetAmt) * 100));
+    const progressPercent = targetAmt > 0 ? Math.min(100, Math.round((currentSaved / targetAmt) * 100)) : 0;
 
     document.getElementById('report-goal-name').innerText = state.targetGoalName;
     document.getElementById('report-goal-progress-percent').innerText = `${progressPercent}% 달성`;
     document.getElementById('report-goal-progress-bar').style.width = `${progressPercent}%`;
     document.getElementById('report-current-saved').innerText = toWon(currentSaved);
-    document.getElementById('report-target-amt').innerText = toWon(targetAmt);
+    document.getElementById('report-target-amt').innerText = targetAmt > 0 ? toWon(targetAmt) : '미설정';
 
     const monthlyPace = Math.max(0, displayBudget.surplus);
     const monthsLeft = monthlyPace > 0 ? Math.ceil(Math.max(0, targetAmt - currentSaved) / monthlyPace) : null;
-    document.getElementById('report-pace-text').textContent = currentSaved >= targetAmt ? '목표를 달성했어요!' : monthsLeft === null ? '여유자금 확보 후 예상기간을 계산해요.' : `예정 여유자금 기준 약 ${monthsLeft}개월 예상 (선저축·투자수익 제외)`;
+    document.getElementById('report-pace-text').textContent = targetAmt <= 0 ? '마이에서 목표 금액을 설정해 주세요.' : currentSaved >= targetAmt ? '목표를 달성했어요!' : monthsLeft === null ? '여유자금 확보 후 예상기간을 계산해요.' : `예정 여유자금 기준 약 ${monthsLeft}개월 예상 (선저축·투자수익 제외)`;
 
     const spentPercent = displayBudget.variableBudget > 0 ? Math.round((totalSpent / displayBudget.variableBudget) * 100) : 0;
     document.getElementById('report-spent-ratio').innerText = `예산 대비 ${spentPercent}% 사용`;
@@ -2350,6 +2440,7 @@
       document.getElementById('my-income').value = toWon(state.income);
       document.getElementById('my-base-savings').value = toWon(state.baseSavings);
       document.getElementById('my-variable').value = toWon(state.variableBudget);
+      updateLivingBudgetLock();
       document.getElementById('my-toggle-fixed').checked = state.showFixedInCal;
       document.getElementById('my-goal-name').value = state.targetGoalName;
       document.getElementById('my-goal-amt').value = toWon(state.targetGoalAmount);
@@ -2823,17 +2914,6 @@
     updateReportScreen(); // 마이 변경 → 리포트 즉시 재계산
     switchTab('home', document.querySelectorAll('.nav-item')[0]);
     alert(requestedPaydayChange ? `설정 저장 완료! 급여일 ${newPayday}일은 다음 관리기간부터 적용됩니다. 현재 기간 및 과거 결산 기록은 유지됩니다.` : '설정이 저장되었습니다. 현재 급여기간의 생활비와 여유자금 계산을 갱신했습니다.');
-  };
-  const originalCalculate=calculateAndGoStep5;
-  calculateAndGoStep5=function() {
-    const limit = onboardingLivingBudgetLimit();
-    const input = document.getElementById('input-variable');
-    if (limit < 0 || parseNumber(input.value) > limit) {
-      updateOnboardingLivingGuide();
-      alert(document.getElementById('onboarding-living-guide').textContent);
-      return;
-    }
-    originalCalculate();
   };
   handleReceiptUpload=function(event) {
     const file=event.target.files[0];if(!file)return;
@@ -3524,13 +3604,74 @@ function confirmFixedSettingsChange(previous,next){
     dialog.showModal();
   });
 }
+function firstLivingBudgetUnlockDate() {
+  if (!state.isUserOnboarded) return null;
+  if (state.firstLivingBudgetUnlockOn) return parseLocalDay(state.firstLivingBudgetUnlockOn);
+
+  // 이전 버전에서는 첫 관리기간 예산에 이용 시작일을 저장했습니다.
+  const budgets = state.periodBudgets || {};
+  const firstKey = Object.keys(budgets).find(key => budgets[key].startedOn)
+    || `${state.startYear}-${state.startMonth}`;
+  const first = budgets[firstKey];
+  if (!first) return null;
+  const [year, month] = firstKey.split('-').map(Number);
+  const end = state.periodDateRanges?.[firstKey]?.end;
+  return end ? parseLocalDay(end) : paydayDate(year, month + 1, first.payday);
+}
+
+function updateLivingBudgetLock() {
+  const unlockDate = firstLivingBudgetUnlockDate();
+  const locked = unlockDate !== null && jampleClock() < unlockDate;
+  document.getElementById('my-variable').readOnly = locked;
+  const note = document.getElementById('my-variable-lock-note');
+  note.hidden = !locked;
+  note.textContent = locked
+    ? `첫 관리기간의 생활비 목표는 고정됩니다. ${unlockDate.getMonth() + 1}월 ${unlockDate.getDate()}일부터 수정할 수 있어요.`
+    : '';
+  return locked;
+}
+
+// 각 변경 금액은 적용일부터 급여일 전날까지의 예산입니다.
+function budgetAfterLivingChange(period, previous, next, effective, hasChanged) {
+  const originalStart = previous.startedOn || localDateKey(period.start);
+  const segments = previous.livingBudgetSegments || [{ start: originalStart, amount: previous.variableBudget }];
+  let schedule = segments;
+  if (hasChanged) {
+    schedule = segments.filter(segment => parseLocalDay(segment.start) < effective);
+    if (effective < period.end) {
+      const normalDays = periodLength(period);
+      const amount = Math.round(next.variableBudget * dayDifference(effective, period.end) / normalDays);
+      schedule.push({ start: localDateKey(effective), amount });
+    }
+  }
+
+  const allocated = schedule.reduce((total, segment, index) => {
+    const start = parseLocalDay(segment.start);
+    const following = schedule[index + 1];
+    const end = following ? parseLocalDay(following.start) : period.end;
+    return total + Math.round(segment.amount * dayDifference(start, end) / dayDifference(start, period.end));
+  }, 0);
+  return { ...previous, ...next, variableBudget: allocated,
+    surplus: next.income - next.fixedExpenses - next.baseSavings - allocated,
+    livingBudgetSegments: schedule,
+    nextLivingBudgetOnPayday: hasChanged
+      ? (effective >= period.end ? next.variableBudget : undefined)
+      : previous.nextLivingBudgetOnPayday };
+}
 saveMySettings=async function(){
   if(editingFixedItemId!==null)return settingsSaveFeedback('항목의 수정 내용을 먼저 반영하거나 수정 취소를 눌러주세요.');
   const get=id=>document.getElementById(id);
   const newPayday=parseNumber(get('my-payday').value);
   const income=parseNumber(get('my-income').value);
   const baseSavings=parseNumber(get('my-base-savings').value);
-  const variableBudget=parseNumber(get('my-variable').value);
+  const unlockDate = firstLivingBudgetUnlockDate();
+  const locked = updateLivingBudgetLock();
+  const requestedVariableBudget = parseNumber(get('my-variable').value);
+  if (locked && requestedVariableBudget !== state.variableBudget) {
+    get('my-variable').value = toWon(state.variableBudget);
+    return settingsSaveFeedback(get('my-variable-lock-note').textContent);
+  }
+  const variableBudget = requestedVariableBudget;
   const targetGoalAmount=parseNumber(get('my-goal-amt').value);
   const actualSaved=parseNumber(get('my-actual-saved').value);
   const fixedItems=fixedItemsForEditing();
@@ -3552,8 +3693,14 @@ saveMySettings=async function(){
   }
   const changed=newPayday!==state.payday;
   const today=jampleClock();today.setHours(0,0,0,0);
-  const a=activePeriod(today),oldKey=`${a.y}-${a.m}`;
+  const active = activePeriod(today);
+  const priorPeriod = getPeriod(active.y, active.m);
+  const previousMonthlyBudget = state.variableBudget;
+  const livingChanged = variableBudget !== previousMonthlyBudget;
+  const effective = new Date(today);
+  effective.setDate(effective.getDate() + 1);
   const before=JSON.stringify(state);
+  if (unlockDate) state.firstLivingBudgetUnlockOn = localDateKey(unlockDate);
   if(Array.isArray(state.fixedDraftList))state.fixedList=state.fixedDraftList.map(item=>({...item}));
   delete state.fixedDraftList;
   state.income=income;state.fixedExpenses=fixedExpenses;state.baseSavings=baseSavings;
@@ -3564,6 +3711,7 @@ saveMySettings=async function(){
   state.periodBudgets=state.periodBudgets||{};
   state.periodDateRanges=state.periodDateRanges||{};
   state.payday=newPayday;
+  delete state.initialSettingsPending;
   state.fullPaydayCycle=true;
   delete state.immediatePaydayTransition;
   delete state.pendingPayday;
@@ -3571,7 +3719,16 @@ saveMySettings=async function(){
   const current=activePeriod(today);
   const currentPeriod=getPeriod(current.y,current.m);
   if(!state.settledMonths?.[currentPeriod.key]) {
-    state.periodBudgets[currentPeriod.key]=budgetSnapshot();
+    const next = budgetSnapshot();
+    const samePeriod = !changed && +currentPeriod.start === +priorPeriod.start && +currentPeriod.end === +priorPeriod.end;
+    const priorBudget = samePeriod ? priorPeriod.budget : { ...next, variableBudget: previousMonthlyBudget };
+    if (livingChanged || (samePeriod && priorBudget.livingBudgetSegments)) {
+      state.periodBudgets[currentPeriod.key] = budgetAfterLivingChange(currentPeriod, priorBudget, next, effective, livingChanged);
+    } else if (samePeriod && priorBudget.startedOn) {
+      state.periodBudgets[currentPeriod.key] = prorateFirstBudget(next, currentPeriod, priorBudget.startedOn);
+    } else {
+      state.periodBudgets[currentPeriod.key] = next;
+    }
     delete state.periodDateRanges[currentPeriod.key];
   }
   state.viewYear=current.y;state.viewMonth=current.m;
@@ -3586,6 +3743,7 @@ saveMySettings=async function(){
   get('badge-reward-text').textContent=state.targetGoalName;
   syncViewSpent();renderCalendar();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();updateReportScreen();
   switchTab('home',document.querySelectorAll('.nav-item')[0]);
+  if (livingChanged) return settingsSaveFeedback('설정을 저장했습니다. 변경한 생활비 목표는 내일부터 적용됩니다.');
   settingsSaveFeedback(changed?'급여일 변경 완료! 새 급여일 기준 한 달의 생활비·달력·리포트를 갱신했습니다.':'설정을 저장하고 홈·리포트를 갱신했습니다.');
 };
 const saveSettingsWithFeedback=saveMySettings;
@@ -3604,6 +3762,7 @@ rollPeriodForward=function(){
   const a=activePeriod(),key=getPeriod(a.y,a.m).key;
   if(!state.periodBudgets[key] && !state.settledMonths?.[key])state.periodBudgets[key]=budgetSnapshot();
   state.viewYear=a.y;state.viewMonth=a.m;
+  updateLivingBudgetLock();
   syncViewSpent();renderCalendar();updateWaterLevel();updateGoalProgressBoard();checkSettlementDay();saveStateToLocalStorage();
 };
 
@@ -4101,7 +4260,7 @@ rollPeriodForward=function(){
   finishOnboarding=function(){
     const wasComplete=!!state.isUserOnboarded;
     finishBeforeRewards();
-    if(!wasComplete && state.isUserOnboarded)grantAcorns('onboarding:first',JAMPLE_REWARD_POINTS.onboarding,'최초 자금관리 설정 완료');
+    if(!wasComplete && state.isUserOnboarded && !state.initialSettingsPending)grantAcorns('onboarding:first',JAMPLE_REWARD_POINTS.onboarding,'최초 자금관리 설정 완료');
   };
   // 지출기록 보상: 같은 날짜는 여러 건 입력해도 하루 한 번만 (실제 지출 저장 성공한 경우)
   const submitBeforeRewards=submitExpense;
@@ -4420,10 +4579,10 @@ renderCalendar();
         </div>
         <div class="fixed-form-row">
           <input type="text" id="add-fixed-name" class="input-mini" placeholder="항목명 (예: 운동비, 월세)" style="flex: 1.4;">
-          <input type="text" id="add-fixed-day" class="input-mini" placeholder="출금일" style="flex: 0.9; text-align:right;" oninput="formatDayInput(this)">
+          <input type="text" id="add-fixed-day" class="input-mini" placeholder="출금일" style="flex: 0.9; text-align:right;" inputmode="numeric" oninput="formatDayInput(this)">
         </div>
         <div style="margin-bottom:8px;">
-          <input type="text" id="add-fixed-amt" class="input-mini" placeholder="금액 (예: 150,000원)" style="text-align:right;" oninput="formatCurrencyInput(this)">
+          <input type="text" id="add-fixed-amt" class="input-mini" placeholder="금액 (예: 150,000원)" style="text-align:right;" inputmode="numeric" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)">
         </div>
         <div style="display:flex;gap:8px;align-items:stretch">
           <button type="button" id="fixed-item-add-another" class="btn-secondary" style="flex:1;min-width:0;width:auto;margin:0;padding:12px 8px;font-size:13px;border-radius:10px" onclick="addFixedItem(true)">＋ 추가</button>
@@ -4450,11 +4609,11 @@ renderCalendar();
 <dialog id="biz-record-dialog" class="biz-dialog"><h3 id="biz-record-title">사업 수입·경비 기록</h3>
 <form id="biz-record-form"><input id="biz-edit-id" type="hidden"><label>날짜</label><input id="biz-date" type="date" required>
 <div style="display:flex;gap:8px;margin:12px 0"><button type="button" id="biz-expense-tab" class="btn-secondary" style="flex:1;margin:0" onclick="bizChooseType('variable')">지출(경비)</button><button type="button" id="biz-income-tab" class="btn-secondary" style="flex:1;margin:0" onclick="bizChooseType('income')">수입</button></div><select id="biz-type" hidden aria-hidden="true" tabindex="-1" onchange="bizRecordFields()"><option value="income">수입</option><option value="variable">변동경비</option></select>
-<label>분류</label><select id="biz-category"></select><label>금액 (원)</label><input id="biz-amount" type="text" inputmode="numeric" maxlength="25" oninput="formatCurrencyInput(this)" style="text-align:right" placeholder="예: 15,000원" required>
+<label>분류</label><select id="biz-category"></select><label>금액 (원)</label><input id="biz-amount" type="text" inputmode="numeric" maxlength="25" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)" style="text-align:right" placeholder="예: 15,000원" required>
 <div id="biz-vat-fields"><label>부가세 구분 (10% 적용 거래용)</label><select id="biz-vat-mode"><option value="included">입력 금액에 부가세 포함</option><option value="exclusive">입력 금액에 부가세 별도</option><option value="none">부가세 해당 없음</option></select><p id="biz-input-vat-note" class="biz-note">포함·별도 선택 시 매입 부가세에 반영합니다. 실제 공제 여부는 증빙·공제 요건을 확인하세요.</p><p class="biz-note">10% 적용 거래의 부가세를 구분합니다. 별도 선택 시 입력 금액에 부가세를 더해 기록합니다.</p></div>
 <label>내용 / 메모</label><input id="biz-memo" maxlength="120" placeholder="예: 컨설팅, 강의처, 협업 상대">
 <p id="biz-record-feedback" class="biz-note" role="status"></p><div style="display:flex;gap:8px"><button type="button" class="btn-secondary" style="flex:1" onclick="bizSaveRecord(true)">＋ 추가</button><button type="button" onclick="bizConfirmRecord()" class="btn-main" style="flex:1">확인</button></div></form></dialog>
-<dialog id="biz-fixed-dialog" class="biz-dialog" aria-labelledby="biz-fixed-title" style="max-width:380px;padding:18px"><div class="fixed-form-card"><div style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:bold;margin-bottom:8px"><img src="my_icon_add.png" style="width:18px;height:18px;object-fit:contain" alt="등록"><span id="biz-fixed-title">새로운 고정경비 등록</span></div><form id="biz-fixed-form"><input id="biz-fixed-id" type="hidden"><div class="fixed-form-row"><input id="biz-fixed-name" class="input-mini" placeholder="항목명 (예: 임차료, 통신비)" style="flex:1.4" maxlength="80" required aria-label="항목명"><input id="biz-fixed-day" class="input-mini" type="text" inputmode="numeric" placeholder="출금일" style="flex:.9;text-align:right" oninput="formatDayInput(this)" required aria-label="출금일"></div><div style="margin-bottom:8px"><input id="biz-fixed-amount" class="input-mini" type="text" inputmode="numeric" maxlength="25" oninput="formatCurrencyInput(this)" style="text-align:right" placeholder="금액 (예: 150,000원)" required aria-label="금액"></div><label style="display:flex;align-items:center;gap:8px;margin:8px 0 14px;font-size:12px"><input id="biz-fixed-vat-applicable" type="checkbox" style="width:auto;padding:0">부가세 해당</label><p class="biz-note" style="font-size:11px;margin:0 0 12px">등록 금액은 부가세 포함 금액입니다. 체크하면 이번 달부터 출금일 기준으로 매입 부가세에 반영됩니다.</p><div style="display:flex;gap:8px;align-items:stretch"><button type="button" class="btn-secondary" style="flex:1;min-width:0;width:auto;margin:0;padding:12px 8px;font-size:13px;border-radius:10px" onclick="bizSaveFixed(true)">＋ 추가</button><button type="button" class="btn-main" style="flex:1;min-width:0;width:auto;margin:0;padding:12px 8px;font-size:13px;border-radius:10px" onclick="bizSaveFixed(false)">확인</button></div></form></div></dialog>
+<dialog id="biz-fixed-dialog" class="biz-dialog" aria-labelledby="biz-fixed-title" style="max-width:380px;padding:18px"><div class="fixed-form-card"><div style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:bold;margin-bottom:8px"><img src="my_icon_add.png" style="width:18px;height:18px;object-fit:contain" alt="등록"><span id="biz-fixed-title">새로운 고정경비 등록</span></div><form id="biz-fixed-form"><input id="biz-fixed-id" type="hidden"><div class="fixed-form-row"><input id="biz-fixed-name" class="input-mini" placeholder="항목명 (예: 임차료, 통신비)" style="flex:1.4" maxlength="80" required aria-label="항목명"><input id="biz-fixed-day" class="input-mini" type="text" inputmode="numeric" placeholder="출금일" style="flex:.9;text-align:right" oninput="formatDayInput(this)" required aria-label="출금일"></div><div style="margin-bottom:8px"><input id="biz-fixed-amount" class="input-mini" type="text" inputmode="numeric" maxlength="25" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)" style="text-align:right" placeholder="금액 (예: 150,000원)" required aria-label="금액"></div><label style="display:flex;align-items:center;gap:8px;margin:8px 0 14px;font-size:12px"><input id="biz-fixed-vat-applicable" type="checkbox" style="width:auto;padding:0">부가세 해당</label><p class="biz-note" style="font-size:11px;margin:0 0 12px">등록 금액은 부가세 포함 금액입니다. 체크하면 이번 달부터 출금일 기준으로 매입 부가세에 반영됩니다.</p><div style="display:flex;gap:8px;align-items:stretch"><button type="button" class="btn-secondary" style="flex:1;min-width:0;width:auto;margin:0;padding:12px 8px;font-size:13px;border-radius:10px" onclick="bizSaveFixed(true)">＋ 추가</button><button type="button" class="btn-main" style="flex:1;min-width:0;width:auto;margin:0;padding:12px 8px;font-size:13px;border-radius:10px" onclick="bizSaveFixed(false)">확인</button></div></form></div></dialog>
 <dialog id="biz-history-dialog" class="biz-dialog"><h3 id="biz-history-title">이번 기간 경비 내역</h3><div style="display:flex;gap:8px;margin:12px 0"><button type="button" id="biz-history-expense-tab" class="btn-secondary" onclick="bizHistoryKind('expense')">경비</button><button type="button" id="biz-history-income-tab" class="btn-secondary" onclick="bizHistoryKind('income')">수입</button></div><div id="biz-history-summary"></div><div id="biz-history-list"></div><button type="button" class="btn-secondary" onclick="this.closest('dialog').close()">닫기</button></dialog>
 <script>
 // 사업 데이터는 개인의 예산·기록·도토리와 별도로 보관합니다.

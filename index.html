@@ -437,7 +437,8 @@
           <img src="my_icon_payday.png" class="ui-input-icon" alt="정산일(급여일)">
           <span>매월 월급 기준일</span>
         </label>
-        <input type="text" id="input-payday" class="input-text" placeholder="예: 25일" inputmode="numeric" maxlength="2" onfocus="editCurrencyInput(this)" oninput="editCurrencyInput(this)" onblur="formatDayInput(this)">
+        <input type="text" id="input-payday" aria-describedby="onboarding-payday-note" class="input-text" placeholder="예: 25일" inputmode="numeric" maxlength="2" onfocus="editCurrencyInput(this)" oninput="editCurrencyInput(this)" onblur="formatDayInput(this)">
+        <p id="onboarding-payday-note" style="font-size:12px;color:var(--text-sub);margin:6px 0 0;line-height:1.5">말일이면 31 입력</p>
       </div>
       <div class="input-group">
         <label class="ui-label-with-icon">
@@ -2172,6 +2173,27 @@
     document.getElementById('fixed-detail-guidance').textContent=fixedItemsForEditing().some(item=>item.amount===0)
       ? `현재 적용 총액 ${toWon(state.fixedExpenses)} 유지 · 항목명·날짜·금액을 바로 수정할 수 있습니다. 사용하지 않는 항목은 삭제 후 작성 완료를 눌러주세요.`:'';
   }
+  function syncFixedAmountsFromMyTab(){
+    const amountInputs = document.querySelectorAll('#fixed-items-list [data-fixed-amount-id]');
+    const amounts = new Map();
+    for (const input of amountInputs) {
+      const amount = parseNumber(input.value);
+      if (!Number.isSafeInteger(amount) || amount < 0) return false;
+      amounts.set(Number(input.dataset.fixedAmountId), amount);
+    }
+
+    const items = fixedItemsForEditing();
+    if (items.some(item => amounts.has(item.id) && amounts.get(item.id) !== item.amount)) {
+      preserveFixedReference();
+      state.fixedDraftList = items.map(item => ({
+        ...item,
+        amount: amounts.get(item.id) ?? item.amount
+      }));
+      refreshFixedDraftTotal();
+    }
+    return true;
+  }
+
   function fixedItemsForEditing(){
     return Array.isArray(state.fixedDraftList) ? state.fixedDraftList : state.fixedList;
   }
@@ -2204,7 +2226,7 @@
       el.innerHTML=`
         <input aria-label="항목명" value="${escapeHtml(item.name)}" onchange="updateFixedInline(${item.id},'name',this)">
         <input aria-label="출금일" inputmode="numeric" value="${item.day}일" onchange="updateFixedInline(${item.id},'day',this)">
-        <input aria-label="금액" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)" inputmode="numeric" style="text-align:right" placeholder="금액 입력" value="${item.amount?toWon(item.amount):''}" onchange="updateFixedInline(${item.id},'amount',this)">
+        <input aria-label="금액" data-fixed-amount-id="${item.id}" onfocus="editCurrencyInput(this)" onbeforeinput="deleteCurrencySeparator(event, this)" oninput="editCurrencyInput(this)" onblur="formatCurrencyInput(this)" inputmode="numeric" style="text-align:right" placeholder="금액 입력" value="${item.amount?toWon(item.amount):''}" onchange="updateFixedInline(${item.id},'amount',this)">
         <button type="button" aria-label="항목 삭제" style="color:#ff5733" onclick="deleteFixedItem(${item.id})">×</button>`;
       container.appendChild(el);
     });
@@ -3674,6 +3696,7 @@ saveMySettings=async function(){
   const variableBudget = requestedVariableBudget;
   const targetGoalAmount=parseNumber(get('my-goal-amt').value);
   const actualSaved=parseNumber(get('my-actual-saved').value);
+  if (!syncFixedAmountsFromMyTab()) return settingsSaveFeedback('고정지출 금액을 확인해주세요.');
   const fixedItems=fixedItemsForEditing();
   const fixedExpenses=Array.isArray(state.fixedDraftList)
     ? fixedItems.reduce((sum,i)=>sum+Number(i.amount||0),0) : state.fixedExpenses;
